@@ -1,0 +1,48 @@
+mysql:
+  host: localhost
+  port: 3306
+  user: "root"
+  password: "your_pwd"
+  dbname: "database_name"
+  max_open_conns: 20
+  max_idle_conns: 20
+
+redis:
+  host: localhost
+  port: 6379
+  password: "your_pwd"
+  db: 0
+  pool_size: 100
+
+jwt:
+  # 设置jwt签名加密时使用的前端秘钥
+  admin_secret_key: "your_admin_secret_key"
+  # 设置jwt签名加密时使用的后端秘钥
+  service_secret_key: "your_service_secret_key"
+  # 设置jwt过期时间为7天
+  admin_ttl: 0
+  admin_suv: 0
+
+elasticsearch:
+  hosts:
+    - "http(s)://address:port"
+  username: "your_username"
+  password: "your_pwd"
+
+etcd:
+  endpoints: localhost:2379
+  username: "your_username"
+  password: "your_pwd"
+
+hertz:
+  host: 127.0.0.1
+  port: 0
+
+user:
+  host: 127.0.0.1
+  port: 0
+  service_name: "your_service_name"
+
+logger:
+  level: "error" # 设置日志级别为error
+  output: "./log.txt" # 输出到标准错误，也可以设置为文件路径
