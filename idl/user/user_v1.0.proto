@@ -1,5 +1,6 @@
 syntax = "proto3";
 package user;
+option go_package = "/user";
 
 import "google/protobuf/timestamp.proto";
 
@@ -239,20 +240,20 @@ message CompleteBindEmailReq {
 
 message StartUnbindEmailReq {
   bytes target_user_id = 1;
-  bytes request_User_id=2;
+  bytes request_user_id=2;
 }
 
 message CompleteUnbindEmailReq {
   bytes target_user_id = 1;
   string verification_code = 2;
   string request_id=3;
-  bytes request_User_id=4;
+  bytes request_user_id=4;
 }
 
 message StartBindPhoneReq {
   bytes target_user_id = 1;       // 当前用户ID
   string new_phone = 2;    // 要绑定的新手机号
-  bytes request_User_id=3;   // 操作者ID
+  bytes request_user_id=3;   // 操作者ID
 }
 
 message CompleteBindPhoneReq {
