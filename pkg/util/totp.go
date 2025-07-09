@@ -1,4 +1,4 @@
-package totp
+package util
 
 import (
 	"crypto/hmac"
