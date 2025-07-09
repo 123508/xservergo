@@ -9,6 +9,7 @@ import (
 	"github.com/cloudwego/kitex/server"
 	etcd "github.com/kitex-contrib/registry-etcd"
 	"log"
+	"net"
 )
 
 func main() {
@@ -34,7 +35,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.UserConfig.Host, config.Conf.UserConfig.Port))
 	svr := user.NewServer(new(UserServiceImpl),
+		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
 			&rpcinfo.EndpointBasicInfo{
