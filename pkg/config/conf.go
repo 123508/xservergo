@@ -14,6 +14,7 @@ type AppConfig struct {
 	*ElasticSearch `mapstructure:"elasticsearch"`
 	*HertzConfig   `mapstructure:"hertz"`
 	*UserConfig    `mapstructure:"user"`
+	*LoggerConfig  `mapstructure:"logger"`
 }
 
 type MySQLConfig struct {
@@ -63,6 +64,28 @@ type UserConfig struct {
 	Host        string `mapstructure:"host"`
 	Port        int    `mapstructure:"port"`
 	ServiceName string `mapstructure:"service_name"`
+}
+
+type LoggerConfig struct {
+	StdOut        *StdOutConfig     `mapstructure:"stdout"`
+	FileOutput    *FileOutputConfig `mapstructure:"file_output"`
+	SampleInitial int               `mapstructure:"sample_initial"`
+	SampleBurst   int               `mapstructure:"sample_burst"`
+}
+
+type StdOutConfig struct {
+	Allowed bool   `mapstructure:"allowed"`
+	Level   string `mapstructure:"level"`
+}
+
+type FileOutputConfig struct {
+	Allowed    bool   `mapstructure:"allowed"`
+	AccessPath string `mapstructure:"access_path"`
+	MaxSize    int    `mapstructure:"max_size"`
+	MaxBackups int    `mapstructure:"max_backups"`
+	MaxAge     int    `mapstructure:"max_age"`
+	Compress   bool   `mapstructure:"compress"`
+	Level      string `mapstructure:"level"`
 }
 
 var Conf AppConfig

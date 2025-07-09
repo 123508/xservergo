@@ -47,5 +47,16 @@ user:
   service_name: "your_service_name"
 
 logger:
-  level: "error" # 设置日志级别为error
-  output: "./log.txt" # 输出到标准错误，也可以设置为文件路径
+  stdout:
+    allowed: true    # 控制台输出
+    level: "info"    # 输出级别
+  file_output:
+    allowed: true    # 文件输出
+    access_path: "./log/access.log" #输出路径，默认为./log/access.log
+    max_size: 100     # MB
+    max_backups: 14   # 保留两周日志
+    max_age: 14       # 自动删除14天前的日志
+    compress: false   # 压缩归档
+    level: "info"     # 输出级别
+  sample_initial: 100 # 每秒100条开始采样
+  sample_burst: 200   # 突发流量200条
