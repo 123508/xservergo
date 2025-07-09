@@ -2,11 +2,22 @@ package main
 
 import (
 	"context"
+	"github.com/123508/xservergo/apps/user/service"
 	user "github.com/123508/xservergo/kitex_gen/user"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // UserServiceImpl implements the last service interface defined in the IDL.
-type UserServiceImpl struct{}
+type UserServiceImpl struct {
+	userService service.UserService
+}
+
+func NewUserServiceImpl(database *gorm.DB, rds *redis.Client) *UserServiceImpl {
+	return &UserServiceImpl{
+		userService: service.NewService(database, rds),
+	}
+}
 
 // Register implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.OperationResult, err error) {
