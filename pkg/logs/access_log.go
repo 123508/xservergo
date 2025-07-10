@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -26,10 +25,10 @@ var levelMap = map[string]zapcore.Level{
 var AccessLogger *zap.Logger
 
 func init() {
-	initLogger()
+	initAccessLogger()
 }
 
-func initLogger() {
+func initAccessLogger() {
 	// 创建核心列表
 	var cores []zapcore.Core
 
@@ -90,28 +89,6 @@ func shouldEnableFileOutput() bool {
 	return config.Conf.LoggerConfig == nil ||
 		config.Conf.LoggerConfig.FileOutput == nil ||
 		config.Conf.LoggerConfig.FileOutput.Allowed
-}
-
-// 获取采样配置
-type samplerConfig struct {
-	first, thereafter int
-}
-
-func getSamplerConfig() samplerConfig {
-	cfg := samplerConfig{
-		first:      100,
-		thereafter: 200,
-	}
-
-	if config.Conf.LoggerConfig != nil {
-		if config.Conf.LoggerConfig.SampleInitial > 0 {
-			cfg.first = config.Conf.LoggerConfig.SampleInitial
-		}
-		if config.Conf.LoggerConfig.SampleBurst > 0 {
-			cfg.thereafter = config.Conf.LoggerConfig.SampleBurst
-		}
-	}
-	return cfg
 }
 
 func createConsoleCore() (zapcore.Core, error) {
@@ -190,19 +167,6 @@ func createLumberJackLogger() (*lumberjack.Logger, error) {
 	}
 
 	return lumberJackLogger, nil
-}
-
-// 确保日志目录存在
-func ensureLogDir(filePath string) error {
-	dir := filepath.Dir(filePath)
-	if dir == "" || dir == "." {
-		return nil // 当前目录无需创建
-	}
-
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("创建日志目录'%s'失败: %w", dir, err)
-	}
-	return nil
 }
 
 // 获取动态日志级别
