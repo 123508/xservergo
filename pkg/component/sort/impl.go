@@ -2,6 +2,7 @@ package sort
 
 import (
 	"fmt"
+	"github.com/123508/xservergo/pkg/component/pub"
 	"regexp"
 	"strings"
 )
@@ -26,6 +27,10 @@ type SortExpr struct {
 
 func (s SortExpr) ToSortItem() string {
 
+	if !pub.IsValidField(s.FieldName) {
+		return ""
+	}
+
 	if s.Order != ASC && s.Order != DESC {
 		return fmt.Sprintf("%s %s", s.FieldName, ASC)
 	}
@@ -34,6 +39,11 @@ func (s SortExpr) ToSortItem() string {
 }
 
 func (s SortExpr) Reverse() string {
+
+	if !pub.IsValidField(s.FieldName) {
+		return ""
+	}
+
 	if s.Order != ASC && s.Order != DESC {
 		return fmt.Sprintf("%s %s", s.FieldName, DESC)
 	}
@@ -59,7 +69,7 @@ func (r RowExpr) checkRight() (bool, string) {
 
 	if len(sp) == 2 &&
 		(sp[0] != "asc" && sp[0] != "desc") &&
-		(sp[1] == "asc" || sp[1] == "desc") {
+		(sp[1] == "asc" || sp[1] == "desc") && pub.IsValidField(sp[0]) {
 		return true, ""
 	}
 
@@ -138,7 +148,7 @@ func (s *SortOnMySQL) ToSorts(reverse bool) []string {
 
 		single[v.GetKey()]++
 
-		if single[v.GetKey()] > 1 {
+		if single[v.GetKey()] > 1 || !pub.IsValidField(v.GetKey()) {
 			continue
 		}
 
@@ -149,6 +159,7 @@ func (s *SortOnMySQL) ToSorts(reverse bool) []string {
 		}
 
 		parts = append(parts, part)
+
 	}
 
 	return parts

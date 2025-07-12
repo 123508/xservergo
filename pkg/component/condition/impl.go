@@ -2,6 +2,7 @@ package condition
 
 import (
 	"fmt"
+	"github.com/123508/xservergo/pkg/component/pub"
 	"reflect"
 	"strings"
 )
@@ -16,6 +17,11 @@ type Expr struct {
 //将表达式转换为sql查询
 
 func (e Expr) ToSQL() (string, []interface{}) {
+
+	if !pub.IsValidField(e.Field) {
+		return "1=0", nil
+	}
+
 	switch strings.ToLower(e.Operator) {
 	//处理 in
 	case "in":
@@ -60,6 +66,7 @@ type And struct {
 }
 
 func (a And) ToSQL() (string, []interface{}) {
+
 	var parts []string
 	var params []interface{}
 	for _, c := range a.Conditions {
