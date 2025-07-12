@@ -3,7 +3,7 @@ syntax="proto3";
 package auth;
 
 import "google/protobuf/timestamp.proto";
-import "idl/user/user_v1.0.proto";
+import "user/user_v1.0.proto";
 
 option go_package="/auth";
 
