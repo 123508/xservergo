@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 )
@@ -14,6 +15,7 @@ type AppConfig struct {
 	*ElasticSearch `mapstructure:"elasticsearch"`
 	*HertzConfig   `mapstructure:"hertz"`
 	*UserConfig    `mapstructure:"user"`
+	*AuthConfig    `mapstructure:"auth"`
 	*LoggerConfig  `mapstructure:"logger"`
 }
 
@@ -61,6 +63,12 @@ type HertzConfig struct {
 }
 
 type UserConfig struct {
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	ServiceName string `mapstructure:"service_name"`
+}
+
+type AuthConfig struct {
 	Host        string `mapstructure:"host"`
 	Port        int    `mapstructure:"port"`
 	ServiceName string `mapstructure:"service_name"`

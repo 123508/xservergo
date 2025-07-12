@@ -46,6 +46,11 @@ user:
   port: 0
   service_name: "your_service_name"
 
+auth:
+  host: 127.0.0.1
+  port: 0
+  service_name: "auth_service"
+
 logger:
   stdout:
     allowed: true    # 控制台输出
