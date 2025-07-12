@@ -187,7 +187,7 @@ message RemoveRoleFromUserReq{
 
 message GetUserRolesReq{
   string access_token=1;        // 查询者AccessToken
-  uint64 target_user_name=2;    // 目标用户名
+  string target_user_name=2;    // 目标用户名
 }
 
 message GetUserRolesResp{
@@ -250,7 +250,7 @@ message RemoveUserFromGroupReq{
 
 message GetUserGroupsReq{
   string access_token=1;        // 查询者AccessToken
-  uint64 target_user_name=2;    // 目标用户名
+  string target_user_name=2;    // 目标用户名
 }
 
 message GetUserGroupsResp{
