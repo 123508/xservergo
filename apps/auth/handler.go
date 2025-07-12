@@ -1,0 +1,195 @@
+package main
+
+import (
+	"context"
+
+	"github.com/123508/xservergo/apps/auth/service"
+	auth "github.com/123508/xservergo/kitex_gen/auth"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
+)
+
+// AuthServiceImpl implements the last service interface defined in the IDL.
+type AuthServiceImpl struct {
+	authService service.AuthService
+}
+
+func NewAuthServiceImpl(database *gorm.DB, rds *redis.Client) *AuthServiceImpl {
+	return &AuthServiceImpl{
+		authService: service.NewService(database, rds),
+	}
+}
+
+// CreatePermission implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.CreatePermissionReq) (resp *auth.Permission, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// UpdatePermission implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.UpdatePermissionReq) (resp *auth.Permission, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// DeletePermission implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) DeletePermission(ctx context.Context, req *auth.DeletePermissionReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetPermission implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermissionReq) (resp *auth.Permission, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// CreateRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleReq) (resp *auth.Role, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// UpdateRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) UpdateRole(ctx context.Context, req *auth.UpdateRoleReq) (resp *auth.Role, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// DeleteRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) DeleteRole(ctx context.Context, req *auth.DeleteRoleReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetRole(ctx context.Context, req *auth.GetRoleReq) (resp *auth.Role, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GrantPermissionToRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GrantPermissionToRole(ctx context.Context, req *auth.GrantPermissionToRoleReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RevokePermissionFromRole implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) RevokePermissionFromRole(ctx context.Context, req *auth.RevokePermissionFromRoleReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetRolePermissions implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetRolePermissions(ctx context.Context, req *auth.GetRolePermissionsReq) (resp *auth.GetRolePermissionsResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// AssignRoleToUser implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) AssignRoleToUser(ctx context.Context, req *auth.AssignRoleToUserReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RemoveRoleFromUser implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) RemoveRoleFromUser(ctx context.Context, req *auth.RemoveRoleFromUserReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserRoles implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserRoles(ctx context.Context, req *auth.GetUserRolesReq) (resp *auth.GetUserRolesResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// CreateUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateUserGroupReq) (resp *auth.UserGroup, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// UpdateUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateUserGroupReq) (resp *auth.UserGroup, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// DeleteUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) DeleteUserGroup(ctx context.Context, req *auth.DeleteUserGroupReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserGroup(ctx context.Context, req *auth.GetUserGroupReq) (resp *auth.UserGroup, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserGroupMembers implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserGroupMembers(ctx context.Context, req *auth.GetUserGroupMembersReq) (resp *auth.GetUserGroupMembersResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserGroupPermissions implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserGroupPermissions(ctx context.Context, req *auth.GetUserGroupPermissionsReq) (resp *auth.GetUserGroupPermissionsResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// AssignUserToGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) AssignUserToGroup(ctx context.Context, req *auth.AssignUserToGroupReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RemoveUserFromGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) RemoveUserFromGroup(ctx context.Context, req *auth.RemoveUserFromGroupReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserGroups implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserGroups(ctx context.Context, req *auth.GetUserGroupsReq) (resp *auth.GetUserGroupsResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// GetUserPermissions implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserPermissions(ctx context.Context, req *auth.GetUserPermissionsReq) (resp *auth.GetUserPermissionsResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// HasPermission implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) HasPermission(ctx context.Context, req *auth.HasPermissionReq) (resp *auth.HasPermissionResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// CanAccess implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) CanAccess(ctx context.Context, req *auth.CanAccessReq) (resp *auth.CanAccessResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// ListRoles implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) ListRoles(ctx context.Context, req *auth.ListRolesReq) (resp *auth.ListRolesResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// ListUserGroups implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) ListUserGroups(ctx context.Context, req *auth.ListUserGroupsReq) (resp *auth.ListUserGroupsResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// ListPermissions implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPermissionsReq) (resp *auth.ListPermissionsResp, err error) {
+	// TODO: Your code here...
+	return
+}

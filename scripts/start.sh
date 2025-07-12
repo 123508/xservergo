@@ -41,6 +41,12 @@ if [ "$SERVICE_NAME" == "user" ]; then
     export KITEX_PORT_TO_REGISTRY=$config_user_port
     cd $SERVICE_DIR
     go run .
+elif [ "$SERVICE_NAME" == "auth" ]; then
+    SERVICE_DIR="$PROJECT_ROOT/apps/auth"
+    export KITEX_IP_TO_REGISTRY=$config_ip_to_register
+    export KITEX_PORT_TO_REGISTRY=$config_auth_port
+    cd $SERVICE_DIR
+    go run .
 else
     echo "Unknown service: $SERVICE_NAME"
     exit 1
