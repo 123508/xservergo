@@ -1,0 +1,322 @@
+syntax="proto3";
+
+package auth;
+
+import "google/protobuf/timestamp.proto";
+import "idl/user/user_v1.0.proto";
+
+option go_package="/auth";
+
+service AuthService {
+  // 权限相关
+  rpc CreatePermission(CreatePermissionReq) returns (Permission){}                                // 创建权限
+  rpc UpdatePermission(UpdatePermissionReq) returns (Permission){}                                // 更新权限
+  rpc DeletePermission(DeletePermissionReq) returns (OperationResult){}                           // 删除权限
+  rpc GetPermission(GetPermissionReq) returns (Permission){}                                      // 查询权限
+
+  // 角色相关
+  rpc CreateRole(CreateRoleReq) returns (Role){}                                                  // 创建角色
+  rpc UpdateRole(UpdateRoleReq) returns (Role){}                                                  // 更新角色
+  rpc DeleteRole(DeleteRoleReq) returns (OperationResult){}                                       // 删除角色
+  rpc GetRole(GetRoleReq) returns (Role){}                                                        // 查询角色
+
+  // 角色权限相关
+  rpc GrantPermissionToRole(GrantPermissionToRoleReq) returns (OperationResult){}                 // 给角色分配权限
+  rpc RevokePermissionFromRole(RevokePermissionFromRoleReq) returns (OperationResult){}           // 移除角色的权限
+  rpc GetRolePermissions(GetRolePermissionsReq) returns (GetRolePermissionsResp){}                // 查询角色所有权限
+
+  // 用户角色相关
+  rpc AssignRoleToUser(AssignRoleToUserReq) returns (OperationResult){}                           // 给用户分配角色
+  rpc RemoveRoleFromUser(RemoveRoleFromUserReq) returns (OperationResult){}                       // 移除用户的角色
+  rpc GetUserRoles(GetUserRolesReq) returns (GetUserRolesResp){}                                  // 查询用户所有角色
+
+  // 用户组相关
+  rpc CreateUserGroup(CreateUserGroupReq) returns (UserGroup){}                                   // 创建用户组
+  rpc UpdateUserGroup(UpdateUserGroupReq) returns (UserGroup){}                                   // 更新用户组
+  rpc DeleteUserGroup(DeleteUserGroupReq) returns (OperationResult){}                             // 删除用户组
+  rpc GetUserGroup(GetUserGroupReq) returns (UserGroup){}                                         // 查询用户组
+  rpc GetUserGroupMembers(GetUserGroupMembersReq) returns (GetUserGroupMembersResp){}             // 查询用户组成员
+  rpc GetUserGroupPermissions(GetUserGroupPermissionsReq) returns (GetUserGroupPermissionsResp){} // 查询用户组权限
+
+  // 用户-用户组相关
+  rpc AssignUserToGroup(AssignUserToGroupReq) returns (OperationResult){}                         // 给用户分配用户组
+  rpc RemoveUserFromGroup(RemoveUserFromGroupReq) returns (OperationResult){}                     // 移除用户的用户组
+  rpc GetUserGroups(GetUserGroupsReq) returns (GetUserGroupsResp){}                               // 查询用户所有用户组
+
+  // 用户权限相关
+  rpc GetUserPermissions(GetUserPermissionsReq) returns(GetUserPermissionsResp){}                 // 查询用户所有权限（含角色、用户组下权限）
+  rpc HasPermission(HasPermissionReq) returns (HasPermissionResp){}                               // 判断用户是否拥有某个权限
+  rpc CanAccess(CanAccessReq) returns (CanAccessResp){}                                           // 判断用户是否可对某资源执行操作
+
+  // 查询辅助
+  rpc ListRoles(ListRolesReq) returns (ListRolesResp){}                                           // 查询所有角色
+  rpc ListUserGroups(ListUserGroupsReq) returns (ListUserGroupsResp){}                            // 查询所有用户组
+  rpc ListPermissions(ListPermissionsReq) returns (ListPermissionsResp){}                         // 查询所有权限
+}
+
+// ====================== 数据结构 ====================== //
+
+// ---------- 通用结构 ---------- //
+
+message OperationResult {
+  bool success = 1;                        // 操作是否成功
+  string code = 2;                         // 业务状态码
+  string message = 3;                      // 用户提示信息
+  string request_id = 4;                   // 请求追踪ID
+  google.protobuf.Timestamp timestamp = 5; // 服务器时间戳(毫秒)
+}
+
+message Role{
+  bytes  id=1;                   // uuid主键, 16字节
+  string code=2;                 // 角色唯一标识符
+  string role_name=3;            // 角色名称
+  string description=4;          // 角色详细描述
+  bool   status=5;               // 角色是否启用： true=启用, false=禁用
+}
+
+message Permission{
+  bytes  id=1;                   // uuid主键, 16字节
+  string code=2;                 // 权限唯一标识符
+  string permission_name=3;      // 权限名称
+  string description=4;          // 权限详细描述
+  bytes  parent_id=5;            // 父权限ID, 为空时表示顶级权限
+  enum Type {
+    API = 0;                     // 接口权限
+    MENU = 1;                    // 菜单权限
+    BUTTON = 2;                  // 按钮权限
+    DATA = 3;                    // 数据权限
+    FIELD = 4;                   // 字段权限
+    MODULE = 5;                  // 模块权限
+    FILE = 6;                    // 文件权限
+    TASK = 7;                    // 任务权限
+  }
+  Type type=6;                   // 权限类型
+  string resource=7;             // 权限对应资源
+  string method=8;               // 权限对应方法
+  bool   status=9;               // 权限是否启用： true=启用, false=禁用
+}
+
+message UserGroup {
+  bytes  id=1;                   // uuid主键, 16字节
+  string code=2;                 // 用户组唯一标识符
+  string group_name=3;           // 用户组名称
+  bool   status=4;               // 用户组是否启用： true=启用, false=禁用
+  bytes  parent_id=5;            // 父用户组ID, 为空时表示顶级用户组
+}
+
+// ---------- 权限相关 ---------- //
+
+message CreatePermissionReq{
+  string access_token=1;   // 创建者AccessToken
+  Permission permission=2; // 权限信息
+}
+
+message UpdatePermissionReq{
+  string access_token=1;   // 更新者AccessToken
+  Permission permission=2; // 权限信息
+}
+
+message DeletePermissionReq{
+  string access_token=1;   // 删除者AccessToken
+  bytes permission_id=2;   // 权限ID(16字节UUID)
+}
+
+message GetPermissionReq{
+  string access_token=1;   // 查询者AccessToken
+  bytes permission_id=2;   // 权限ID(16字节UUID)
+}
+
+// ---------- 角色相关 ---------- //
+
+message CreateRoleReq{
+  string access_token=1;    // 创建者AccessToken
+  Role role=2;              // 角色信息
+}
+
+message UpdateRoleReq{
+  string access_token=1;    // 更新者AccessToken
+  Role role=2;              // 角色信息
+}
+
+message DeleteRoleReq{
+  string access_token=1;    // 删除者AccessToken
+  bytes role_id=2;          // 角色ID(16字节UUID)
+}
+
+message GetRoleReq{
+  string access_token=1;    // 查询者AccessToken
+  bytes role_id=2;          // 角色ID(16字节UUID)
+}
+
+// ---------- 角色权限相关 ---------- //
+
+message GrantPermissionToRoleReq{
+  string access_token=1;       // 操作者AccessToken
+  string role_code=2;          // 角色唯一标识符
+  string permission_code=3;    // 权限唯一标识符
+}
+
+message RevokePermissionFromRoleReq{
+  string access_token=1;       // 操作者AccessToken
+  string role_code=2;          // 角色唯一标识符
+  string permission_code=3;    // 权限唯一标识符
+}
+
+message GetRolePermissionsReq{
+  string access_token=1;       // 查询者AccessToken
+  string role_code=2;          // 角色唯一标识符
+}
+
+message GetRolePermissionsResp{
+  repeated Permission permissions=1;
+}
+
+// ---------- 用户角色相关 ---------- //
+
+message AssignRoleToUserReq{
+  string access_token=1;        // 操作者AccessToken
+  string target_user_name=2;    // 目标用户名
+  string role_code=3;           // 角色唯一标识符
+}
+
+message RemoveRoleFromUserReq{
+  string access_token=1;        // 操作者AccessToken
+  string target_user_name=2;    // 目标用户名
+  string role_code=3;           // 角色唯一标识符
+}
+
+message GetUserRolesReq{
+  string access_token=1;        // 查询者AccessToken
+  uint64 target_user_name=2;    // 目标用户名
+}
+
+message GetUserRolesResp{
+  repeated Role roles=1;
+}
+
+// ---------- 用户组相关 ---------- //
+
+message CreateUserGroupReq{
+  string access_token=1;    // 创建者AccessToken
+  UserGroup user_group=2;   // 用户组信息
+}
+
+message UpdateUserGroupReq{
+  string access_token=1;    // 更新者AccessToken
+  UserGroup user_group=2;   // 用户组信息
+}
+
+message DeleteUserGroupReq{
+  string access_token=1;       // 删除者AccessToken
+  string user_group_name=2;    // 用户组名称
+}
+
+message GetUserGroupReq{
+  string access_token=1;       // 查询者AccessToken
+  string user_group_name=2;    // 用户组名称
+}
+
+message GetUserGroupMembersReq{
+  string access_token=1;       // 查询者AccessToken
+  string user_group_name=2;    // 用户组名称
+}
+
+message GetUserGroupMembersResp{
+  repeated user.UserInfo users=1; // 用户组成员列表
+}
+
+message GetUserGroupPermissionsReq{
+  string access_token=1;       // 查询者AccessToken
+  string user_group_name=2;    // 用户组名称
+}
+
+message GetUserGroupPermissionsResp{
+  repeated Permission permissions=1; // 用户组权限列表
+}
+
+// ---------- 用户-用户组相关 ---------- //
+
+message AssignUserToGroupReq{
+  string access_token=1;        // 操作者AccessToken
+  string target_user_name=2;    // 目标用户名
+  string user_group_name=3;     // 用户组名称
+}
+
+message RemoveUserFromGroupReq{
+  string access_token=1;        // 操作者AccessToken
+  string target_user_name=2;    // 目标用户名
+  string user_group_name=3;     // 用户组名称
+}
+
+message GetUserGroupsReq{
+  string access_token=1;        // 查询者AccessToken
+  uint64 target_user_name=2;    // 目标用户名
+}
+
+message GetUserGroupsResp{
+  repeated UserGroup user_groups=1; // 用户组列表
+}
+
+// ---------- 用户权限相关 ---------- //
+
+message GetUserPermissionsReq{
+  string access_token=1;        // 查询者AccessToken
+  string target_user_name=2;    // 目标用户名
+}
+
+message GetUserPermissionsResp{
+  repeated Permission permissions=1;
+}
+
+message HasPermissionReq{
+  string access_token=1;       // 查询者AccessToken
+  string target_user_name=2;   // 目标用户名
+  string permission_code=3;    // 权限唯一标识符
+}
+
+message  HasPermissionResp{
+  bool  ok=1;
+}
+
+message CanAccessReq{
+  string access_token=1;      // 查询者AccessToken
+  string target_user_name=2;  // 目标用户名
+  string resource=3;          // 资源标识符
+  string method=4;            // 操作方法
+}
+
+message CanAccessResp{
+  bool ok=1;
+}
+
+// ---------- 查询辅助 ---------- //
+
+message ListRolesReq{
+  string access_token=1; // 查询者AccessToken
+  uint32 page=2;
+  uint32 pageSize=3;
+}
+
+message ListRolesResp{
+  repeated Role roles=1;
+}
+
+message ListUserGroupsReq{
+  string access_token=1; // 查询者AccessToken
+  uint32 page=2;
+  uint32 pageSize=3;
+}
+
+message ListUserGroupsResp{
+  repeated UserGroup user_groups=1;
+}
+
+message ListPermissionsReq{
+  string access_token=1; // 查询者AccessToken
+  uint32 page=2;
+  uint32 pageSize=3;
+}
+
+message ListPermissionsResp{
+  repeated Permission perms=1;
+}
