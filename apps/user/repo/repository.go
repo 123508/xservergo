@@ -19,7 +19,7 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *models.User) (int, error)
 	DeleteUser(ctx context.Context, userID util.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
-	UpdatePassword(ctx context.Context, userID util.UUID, password string, v int) (int, error)
+	UpdatePassword(ctx context.Context, userID util.UUID, password string) error
 	RemoveEmail(ctx context.Context, userID util.UUID, version int) (int, error)
 	SetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error)
 	FreezeUser(ctx context.Context, userID util.UUID, version int) (int, error)
@@ -50,20 +50,20 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 
 		//创建用户对象
 		insertUserStmt := `insert into 
-    tiktok.users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at,created_at) 
-		values (?,?,?,?,?,?,?,?,?,?,null,CURRENT_TIMESTAMP)`
+    tiktok.users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at) 
+		values (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,null)`
 
 		if err := tx.Exec(insertUserStmt, user.ID, user.UserName, user.NickName,
-			user.Email, user.Phone, user.Gender, user.Avatar, user.Status, user.CreatedAt, user.Version).Error; err != nil {
+			user.Email, user.Phone, user.Gender, user.Avatar, user.Status, user.AuditFields.Version).Error; err != nil {
 			return err
 		}
 
 		//创建用户
 		insertULoginStmt := `insert into 
-    tiktok.user_login(user_id, password, created_at, version,deleted_at,created_at) 
-		values (?,?,?,?,null,CURRENT_TIMESTAMP)`
+    tiktok.user_login(user_id, password, created_at, version,deleted_at) 
+		values (?,?,current_timestamp,?,null)`
 
-		if err := tx.Exec(insertULoginStmt, user.ID, uLogin.Password, uLogin.CreatedAt, uLogin.Version).Error; err != nil {
+		if err := tx.Exec(insertULoginStmt, user.ID, uLogin.Password, uLogin.AuditFields.Version).Error; err != nil {
 			return err
 		}
 		return nil
@@ -147,7 +147,7 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User) (int, error) 
 
 	// 2. 执行更新（带乐观锁检查）
 	result := r.DB.WithContext(ctx).Model(&models.User{}).
-		Where("id = ? AND version = ? AND deleted_at IS NULL", u.ID, u.Version).
+		Where("id = ? AND version = ? AND deleted_at IS NULL", u.ID, u.AuditFields.Version).
 		Updates(updates)
 
 	if result.Error != nil {
@@ -215,27 +215,27 @@ func (r *RepoImpl) ListUsers(ctx context.Context,
 	return users, nil
 }
 
-func (r *RepoImpl) UpdatePassword(ctx context.Context, userID util.UUID, password string, version int) (int, error) {
+func (r *RepoImpl) UpdatePassword(ctx context.Context, userID util.UUID, password string) error {
 
 	updateStmt := `update tiktok.user_login 
 set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
-                                        where user_id = ? and version = ? and is_deleted = 0`
+                                        where user_id = ? and is_deleted = 0`
 
-	result := r.DB.WithContext(ctx).Exec(updateStmt, password, userID, version)
+	result := r.DB.WithContext(ctx).Exec(updateStmt, password, userID)
 
 	if err := result.Error; err != nil {
 		logs.ErrorLogger.Error("更新用户密码错误", zap.Error(err))
-		return version, err
+		return err
 	}
 
 	// 检查是否成功更新
 	if result.RowsAffected == 0 {
 		err := errors.New("更新密码失败：用户不存在或版本不匹配")
 		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return version, err
+		return err
 	}
 
-	return version + 1, nil
+	return nil
 }
 
 func (r *RepoImpl) RemoveEmail(ctx context.Context, userID util.UUID, version int) (int, error) {
