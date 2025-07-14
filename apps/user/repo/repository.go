@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"errors"
+
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
@@ -51,7 +52,7 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 
 		//创建用户对象
 		insertUserStmt := `insert into 
-    tiktok.users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at) 
+    users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at) 
 		values (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,null)`
 
 		if err := tx.Exec(insertUserStmt, user.ID, user.UserName, user.NickName,
@@ -61,7 +62,7 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 
 		//创建用户
 		insertULoginStmt := `insert into 
-    tiktok.user_login(user_id, password, created_at, version,deleted_at) 
+    user_login(user_id, password, created_at, version,deleted_at) 
 		values (?,?,current_timestamp,?,null)`
 
 		if err := tx.Exec(insertULoginStmt, user.ID, uLogin.Password, uLogin.AuditFields.Version).Error; err != nil {
@@ -82,7 +83,7 @@ func (r *RepoImpl) ComparePassword(ctx context.Context, userID util.UUID, passwo
 	var res int
 
 	compStmt := `select exists(
-  select 1 from tiktok.user_login 
+  select 1 from user_login 
   where user_id = ? and password = ? and is_deleted = 0
 )`
 
@@ -99,7 +100,7 @@ func (r *RepoImpl) GetUserByID(ctx context.Context, userID util.UUID) (*models.U
 
 	queryStmt := `select 
     id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
-from tiktok.users where id = ? and is_deleted = 0 limit 1`
+from users where id = ? and is_deleted = 0 limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, userID).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过id获取用户信息", zap.Error(err))
@@ -115,7 +116,7 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 
 	queryStmt := `select 
     id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
-		from tiktok.users where email = ? and is_deleted = 0 limit 1`
+		from users where email = ? and is_deleted = 0 limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, email).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过email获取用户信息", zap.Error(err))
@@ -176,13 +177,13 @@ func (r *RepoImpl) DeleteUser(ctx context.Context, UserID util.UUID) error {
 
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
-		delUserStmt := `update tiktok.users set deleted_at = CURRENT_TIMESTAMP where id = ? and is_deleted = 0`
+		delUserStmt := `update users set deleted_at = CURRENT_TIMESTAMP where id = ? and is_deleted = 0`
 
 		if err := tx.Exec(delUserStmt, UserID).Error; err != nil {
 			return err
 		}
 
-		delULoginStmt := `update tiktok.user_login set deleted_at = CURRENT_TIMESTAMP where user_id = ? and is_deleted = 0`
+		delULoginStmt := `update user_login set deleted_at = CURRENT_TIMESTAMP where user_id = ? and is_deleted = 0`
 
 		if err := tx.Exec(delULoginStmt, UserID).Error; err != nil {
 			return err
@@ -218,7 +219,7 @@ func (r *RepoImpl) ListUsers(ctx context.Context,
 
 func (r *RepoImpl) UpdatePassword(ctx context.Context, userID util.UUID, password string) error {
 
-	updateStmt := `update tiktok.user_login 
+	updateStmt := `update user_login 
 set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
                                         where user_id = ? and is_deleted = 0`
 
@@ -241,7 +242,7 @@ set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
 
 func (r *RepoImpl) RemoveEmail(ctx context.Context, userID util.UUID, version int) (int, error) {
 
-	removeStmt := `update tiktok.users 
+	removeStmt := `update users 
 						set email = '', version =version+1 , updated_at = CURRENT_TIMESTAMP
 						where id = ? and version = ? and is_deleted = 0`
 
@@ -264,7 +265,7 @@ func (r *RepoImpl) RemoveEmail(ctx context.Context, userID util.UUID, version in
 
 func (r *RepoImpl) SetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error) {
 
-	setStmt := `update tiktok.users 
+	setStmt := `update users 
 						set email = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP
 						where id = ? and version = ? and is_deleted = 0`
 
@@ -287,7 +288,7 @@ func (r *RepoImpl) SetEmail(ctx context.Context, userID util.UUID, email string,
 
 func (r *RepoImpl) FreezeUser(ctx context.Context, userID util.UUID, version int) (int, error) {
 
-	freezeStmt := `update tiktok.users 
+	freezeStmt := `update users 
 						set status = 1 , version = version+1 , updated_at = CURRENT_TIMESTAMP
  						where id = ? and version = ? and is_deleted = 0`
 
@@ -310,7 +311,7 @@ func (r *RepoImpl) FreezeUser(ctx context.Context, userID util.UUID, version int
 
 func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID util.UUID, version int) (int, error) {
 
-	unFreezeStmt := `update tiktok.users 
+	unFreezeStmt := `update users 
 						set status = 0 , version = version+1 , updated_at = CURRENT_TIMESTAMP
  						where id = ? and version = ? and is_deleted = 0`
 
