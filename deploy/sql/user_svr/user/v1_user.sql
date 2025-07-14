@@ -1,5 +1,5 @@
-create database if not exists tiktok;
-use tiktok;
+create database if not exists xservergo;
+use xservergo;
 
 -- 用户表
 create table if not exists users(
