@@ -57,7 +57,7 @@ service UserService {
 // ---------- 通用结构 ---------- //
 message OperationResult {
   bool success = 1;
-  string code = 2;        // 业务状态码
+  uint64 code = 2;        // 业务状态码
   string message = 3;     // 用户提示信息
   string request_id = 4;  // 请求追踪ID
   google.protobuf.Timestamp timestamp = 5;    // 服务器时间戳(毫秒)
@@ -69,9 +69,9 @@ message UserInfo {
   string nickname=3;
   string email = 4;
   string phone = 5;
-  int32 gender = 6;         // 0-未知 1-男 2-女
+  uint64 gender = 6;         // 0-未知 1-男 2-女
   string avatar = 7;
-  int32 status = 8;         // 0-正常 1-冻结
+  uint64 status = 8;         // 0-正常 1-冻结
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
   bool is_deleted = 11;     // 是否已删除
@@ -94,10 +94,10 @@ message SafeFilter {
   Operator op = 2;
   oneof value {
     string str_val = 3;
-    int64 int_val = 4;
+    uint64 int_val = 4;
     double float_val = 5;
     bool bool_val = 6;
-    int64 timestamp = 7;  // UNIX毫秒时间戳
+    uint64 timestamp = 7;  // UNIX毫秒时间戳
   }
 }
 
@@ -109,7 +109,7 @@ message RegisterReq {
   string confirm_password=4;
   string email = 5;
   string phone = 6;
-  int32 gender = 7;  // 0-未知 1-男 2-女
+  uint64 gender = 7;  // 0-未知 1-男 2-女
 }
 
 message EmailLoginReq {
@@ -129,7 +129,7 @@ message AccountLoginReq {
 
 message LoginResp {
   string access_token = 1;
-  int64 expires_in = 2;  // 过期时间(秒)
+  uint64 expires_in = 2;  // 过期时间(秒)
   UserInfo user_info = 3;
 }
 
@@ -154,7 +154,7 @@ message SmsLoginResp {
 
 message CodeSentInfo {
   string request_id = 1;
-  int64 expire_time = 2;  // 过期时间戳(毫秒)
+  uint64 expire_time = 2;  // 过期时间戳(毫秒)
 }
 
 message LoginSuccess {
@@ -169,7 +169,7 @@ message QrCodeLoginReq {
 message QrCodeLoginResp {
   string qr_code_url = 1;   // 二维码图片URL
   string session_id = 2;     // 登录会话ID
-  int64 expires_at = 3;      // 过期时间戳(毫秒)
+  uint64 expires_at = 3;      // 过期时间戳(毫秒)
 }
 
 message ConfirmQrLoginReq {
@@ -195,7 +195,7 @@ message SessionCheckReq {
 
 message SessionStatusResp {
   bool is_valid = 1;
-  int64 last_active = 2;  // 最后活动时间戳(毫秒)
+  uint64 last_active = 2;  // 最后活动时间戳(毫秒)
   string device_info = 3;
 }
 
@@ -312,8 +312,8 @@ message UpdateUserInfoReq {
 }
 
 message ListUsersReq {
-  int32 page = 1;                  // 页码(从1开始)
-  int32 page_size = 2;             // 每页数量
+  uint64 page = 1;                  // 页码(从1开始)
+  uint64 page_size = 2;             // 每页数量
   repeated SafeFilter filters = 3; // 过滤条件
   repeated OrderBy order_by=4;     // 排序字段
   bytes request_user_id=5;
@@ -334,16 +334,16 @@ message ListUsersResp {
 
 message SearchUserByNicknameReq {
   string keyword = 1;      // 查询关键字，支持模糊匹配
-  int32 page = 2;          // 页码，从1开始
-  int32 page_size = 3;     // 每页数量，建议默认20
+  uint64 page = 2;          // 页码，从1开始
+  uint64 page_size = 3;     // 每页数量，建议默认20
   bytes request_user_id=4;
 }
 
 message SearchUserByNicknameResp {
   repeated UserInfo users = 1;   // 匹配到的用户列表
-  int32 total_count = 2;         // 总数
-  int32 total_pages = 3;         // 总页数
-  int32 current_page = 4;        // 当前页
+  uint64 total_count = 2;         // 总数
+  uint64 total_pages = 3;         // 总页数
+  uint64 current_page = 4;        // 当前页
 }
 
 // ---------- 账户状态 ---------- //
