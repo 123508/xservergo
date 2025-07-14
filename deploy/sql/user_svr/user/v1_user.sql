@@ -26,7 +26,8 @@ create table if not exists users(
 
     -- 审计字段
     version  int not null default 0 comment '版本号',
-    last_updated_by binary(16) comment '最后修改人',
+    created_by binary(16) null comment '创建人id',   -- 允许null
+    updated_by binary(16) null comment '修改人id',   -- 允许null
 
     primary key (id),
 

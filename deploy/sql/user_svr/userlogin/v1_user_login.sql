@@ -18,6 +18,8 @@ create table if not exists user_login(
 
     -- 审计字段
     version  int not null default 0 comment '版本号',
+    created_by binary(16) null comment '创建人id',   -- 允许null
+    updated_by binary(16) null comment '修改人id',   -- 允许null
 
     primary key (user_id),
     index user_login_idx_user_pwd(user_id,password)

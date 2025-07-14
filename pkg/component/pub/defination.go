@@ -65,10 +65,9 @@ var allowedFields = map[string]bool{
 	"deleted_at_fixed": true,
 
 	// 审计字段
-	"version":         true,
-	"created_by":      true,
-	"updated_by":      true,
-	"last_updated_by": true,
+	"version":    true,
+	"created_by": true,
+	"updated_by": true,
 }
 
 func IsValidField(field string) bool {
