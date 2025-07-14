@@ -74,13 +74,8 @@ func (x *OperationResult) fastReadField4(buf []byte, _type int8) (offset int, er
 }
 
 func (x *OperationResult) fastReadField5(buf []byte, _type int8) (offset int, err error) {
-	var v timestamppb.Timestamp
-	offset, err = fastpb.ReadMessage(buf, _type, &v)
-	if err != nil {
-		return offset, err
-	}
-	x.Timestamp = &v
-	return offset, nil
+	x.Timestamp, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
 }
 
 func (x *UserInfo) FastRead(buf []byte, _type int8, number int32) (offset int, err error) {
@@ -194,23 +189,13 @@ func (x *UserInfo) fastReadField8(buf []byte, _type int8) (offset int, err error
 }
 
 func (x *UserInfo) fastReadField9(buf []byte, _type int8) (offset int, err error) {
-	var v timestamppb.Timestamp
-	offset, err = fastpb.ReadMessage(buf, _type, &v)
-	if err != nil {
-		return offset, err
-	}
-	x.CreatedAt = &v
-	return offset, nil
+	x.CreatedAt, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
 }
 
 func (x *UserInfo) fastReadField10(buf []byte, _type int8) (offset int, err error) {
-	var v timestamppb.Timestamp
-	offset, err = fastpb.ReadMessage(buf, _type, &v)
-	if err != nil {
-		return offset, err
-	}
-	x.UpdatedAt = &v
-	return offset, nil
+	x.UpdatedAt, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
 }
 
 func (x *UserInfo) fastReadField11(buf []byte, _type int8) (offset int, err error) {
@@ -2565,10 +2550,10 @@ func (x *OperationResult) fastWriteField4(buf []byte) (offset int) {
 }
 
 func (x *OperationResult) fastWriteField5(buf []byte) (offset int) {
-	if x.Timestamp == nil {
+	if x.Timestamp == "" {
 		return offset
 	}
-	offset += fastpb.WriteMessage(buf[offset:], 5, x.GetTimestamp())
+	offset += fastpb.WriteString(buf[offset:], 5, x.GetTimestamp())
 	return offset
 }
 
@@ -2655,18 +2640,18 @@ func (x *UserInfo) fastWriteField8(buf []byte) (offset int) {
 }
 
 func (x *UserInfo) fastWriteField9(buf []byte) (offset int) {
-	if x.CreatedAt == nil {
+	if x.CreatedAt == "" {
 		return offset
 	}
-	offset += fastpb.WriteMessage(buf[offset:], 9, x.GetCreatedAt())
+	offset += fastpb.WriteString(buf[offset:], 9, x.GetCreatedAt())
 	return offset
 }
 
 func (x *UserInfo) fastWriteField10(buf []byte) (offset int) {
-	if x.UpdatedAt == nil {
+	if x.UpdatedAt == "" {
 		return offset
 	}
-	offset += fastpb.WriteMessage(buf[offset:], 10, x.GetUpdatedAt())
+	offset += fastpb.WriteString(buf[offset:], 10, x.GetUpdatedAt())
 	return offset
 }
 
@@ -4414,10 +4399,10 @@ func (x *OperationResult) sizeField4() (n int) {
 }
 
 func (x *OperationResult) sizeField5() (n int) {
-	if x.Timestamp == nil {
+	if x.Timestamp == "" {
 		return n
 	}
-	n += fastpb.SizeMessage(5, x.GetTimestamp())
+	n += fastpb.SizeString(5, x.GetTimestamp())
 	return n
 }
 
@@ -4504,18 +4489,18 @@ func (x *UserInfo) sizeField8() (n int) {
 }
 
 func (x *UserInfo) sizeField9() (n int) {
-	if x.CreatedAt == nil {
+	if x.CreatedAt == "" {
 		return n
 	}
-	n += fastpb.SizeMessage(9, x.GetCreatedAt())
+	n += fastpb.SizeString(9, x.GetCreatedAt())
 	return n
 }
 
 func (x *UserInfo) sizeField10() (n int) {
-	if x.UpdatedAt == nil {
+	if x.UpdatedAt == "" {
 		return n
 	}
-	n += fastpb.SizeMessage(10, x.GetUpdatedAt())
+	n += fastpb.SizeString(10, x.GetUpdatedAt())
 	return n
 }
 

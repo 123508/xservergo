@@ -3,9 +3,14 @@ package main
 import (
 	"context"
 	"github.com/123508/xservergo/apps/user/service"
-	user "github.com/123508/xservergo/kitex_gen/user"
+	"github.com/123508/xservergo/pkg/cerrors"
+	"github.com/123508/xservergo/pkg/models"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"net/http"
+	"time"
+
+	user "github.com/123508/xservergo/kitex_gen/user"
 )
 
 // UserServiceImpl implements the last service interface defined in the IDL.
@@ -21,8 +26,56 @@ func NewUserServiceImpl(database *gorm.DB, rds *redis.Client) *UserServiceImpl {
 
 // Register implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+
+	u := &models.User{
+		NickName: req.Nickname,
+		UserName: req.Username,
+		Email:    req.Email,
+		Phone:    req.Phone,
+		Gender:   req.Gender,
+		Status:   0,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			Version:   0,
+		},
+	}
+
+	uLogin := &models.UserLogin{
+		Password: req.Password,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			Version:   0,
+		},
+	}
+
+	err = s.userService.Register(ctx, u, uLogin)
+
+	if err == nil {
+		resp = &user.OperationResult{
+			Success:   true,
+			Code:      http.StatusOK,
+			Message:   "创建用户成功",
+			Timestamp: time.Now().String(),
+		}
+	} else {
+		com, ok := err.(*cerrors.CommonError)
+		if !ok {
+			resp = &user.OperationResult{
+				Success:   false,
+				Code:      http.StatusInternalServerError,
+				Message:   "创建用户失败",
+				Timestamp: time.Now().String(),
+			}
+		} else {
+			resp = &user.OperationResult{
+				Success:   false,
+				Code:      com.Code,
+				Message:   com.Message,
+				Timestamp: time.Now().String(),
+			}
+		}
+	}
+	return resp, err
 }
 
 // EmailLogin implements the UserServiceImpl interface.
