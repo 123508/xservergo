@@ -7,6 +7,8 @@ require (
 	github.com/cloudwego/kitex v0.14.1
 	github.com/cloudwego/prutal v0.1.2
 	github.com/fsnotify/fsnotify v1.9.0
+	github.com/golang-jwt/jwt/v4 v4.4.2
+	github.com/google/uuid v1.6.0
 	github.com/kitex-contrib/registry-etcd v0.2.6
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/spf13/viper v1.20.1

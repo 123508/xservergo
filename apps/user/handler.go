@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	user "github.com/123508/xservergo/kitex_gen/user"
+	"github.com/123508/xservergo/kitex_gen/user"
 )
 
 // UserServiceImpl implements the last service interface defined in the IDL.

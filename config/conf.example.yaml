@@ -20,8 +20,6 @@ redis:
 jwt:
   # 设置jwt签名加密时使用的前端秘钥
   admin_secret_key: "your_admin_secret_key"
-  # 设置jwt签名加密时使用的后端秘钥
-  service_secret_key: "your_service_secret_key"
   # 设置jwt过期时间为7天
   admin_ttl: 0
   admin_suv: 0

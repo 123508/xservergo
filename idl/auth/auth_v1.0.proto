@@ -3,7 +3,7 @@ syntax="proto3";
 package auth;
 
 import "google/protobuf/timestamp.proto";
-import "user/user_v1.0.proto";
+import "idl/user/user_v1.0.proto";
 
 option go_package="/auth";
 
@@ -52,6 +52,11 @@ service AuthService {
   rpc ListRoles(ListRolesReq) returns (ListRolesResp){}                                           // 查询所有角色
   rpc ListUserGroups(ListUserGroupsReq) returns (ListUserGroupsResp){}                            // 查询所有用户组
   rpc ListPermissions(ListPermissionsReq) returns (ListPermissionsResp){}                         // 查询所有权限
+
+  // 令牌相关部分
+  rpc IssueToken(IssueTokenReq) returns (IssueTokenResp){}                                        //分发token
+  rpc RefreshToken(RefreshTokenReq) returns (RefreshTokenResp) {}                                 //刷新token
+  rpc VerifyToken(VerifyTokenReq) returns (VerifyTokenResp) {}                                    //验证+解析token
 }
 
 // ====================== 数据结构 ====================== //
@@ -319,4 +324,31 @@ message ListPermissionsReq{
 
 message ListPermissionsResp{
   repeated Permission perms=1;
+}
+
+message IssueTokenReq{
+  bytes user_id = 1;
+}
+
+message IssueTokenResp{
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message RefreshTokenReq{
+  string refresh_token=1;
+}
+
+message RefreshTokenResp{
+  string access_token=2;
+}
+
+message VerifyTokenReq{
+  string access_token=1;
+}
+
+message VerifyTokenResp{
+  bytes user_id=1;
+  repeated string permissions=2;
+  uint64 version=3;
 }

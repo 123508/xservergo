@@ -5,7 +5,6 @@ package user
 import (
 	fmt "fmt"
 	fastpb "github.com/cloudwego/fastpb"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -529,7 +528,7 @@ func (x *LoginResp) fastReadField1(buf []byte, _type int8) (offset int, err erro
 }
 
 func (x *LoginResp) fastReadField2(buf []byte, _type int8) (offset int, err error) {
-	x.ExpiresIn, offset, err = fastpb.ReadUint64(buf, _type)
+	x.RefreshToken, offset, err = fastpb.ReadString(buf, _type)
 	return offset, err
 }
 
@@ -884,6 +883,11 @@ func (x *LogoutReq) FastRead(buf []byte, _type int8, number int32) (offset int, 
 		if err != nil {
 			goto ReadFieldError
 		}
+	case 4:
+		offset, err = x.fastReadField4(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -908,6 +912,11 @@ func (x *LogoutReq) fastReadField2(buf []byte, _type int8) (offset int, err erro
 }
 
 func (x *LogoutReq) fastReadField3(buf []byte, _type int8) (offset int, err error) {
+	x.RefreshToken, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *LogoutReq) fastReadField4(buf []byte, _type int8) (offset int, err error) {
 	x.RequestUserId, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
@@ -921,6 +930,11 @@ func (x *SessionCheckReq) FastRead(buf []byte, _type int8, number int32) (offset
 		}
 	case 2:
 		offset, err = x.fastReadField2(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
+	case 3:
+		offset, err = x.fastReadField3(buf, _type)
 		if err != nil {
 			goto ReadFieldError
 		}
@@ -943,6 +957,11 @@ func (x *SessionCheckReq) fastReadField1(buf []byte, _type int8) (offset int, er
 }
 
 func (x *SessionCheckReq) fastReadField2(buf []byte, _type int8) (offset int, err error) {
+	x.RefreshToken, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *SessionCheckReq) fastReadField3(buf []byte, _type int8) (offset int, err error) {
 	x.RequestUserId, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
@@ -2897,10 +2916,10 @@ func (x *LoginResp) fastWriteField1(buf []byte) (offset int) {
 }
 
 func (x *LoginResp) fastWriteField2(buf []byte) (offset int) {
-	if x.ExpiresIn == 0 {
+	if x.RefreshToken == "" {
 		return offset
 	}
-	offset += fastpb.WriteUint64(buf[offset:], 2, x.GetExpiresIn())
+	offset += fastpb.WriteString(buf[offset:], 2, x.GetRefreshToken())
 	return offset
 }
 
@@ -3137,6 +3156,7 @@ func (x *LogoutReq) FastWrite(buf []byte) (offset int) {
 	offset += x.fastWriteField1(buf[offset:])
 	offset += x.fastWriteField2(buf[offset:])
 	offset += x.fastWriteField3(buf[offset:])
+	offset += x.fastWriteField4(buf[offset:])
 	return offset
 }
 
@@ -3157,10 +3177,18 @@ func (x *LogoutReq) fastWriteField2(buf []byte) (offset int) {
 }
 
 func (x *LogoutReq) fastWriteField3(buf []byte) (offset int) {
+	if x.RefreshToken == "" {
+		return offset
+	}
+	offset += fastpb.WriteString(buf[offset:], 3, x.GetRefreshToken())
+	return offset
+}
+
+func (x *LogoutReq) fastWriteField4(buf []byte) (offset int) {
 	if len(x.RequestUserId) == 0 {
 		return offset
 	}
-	offset += fastpb.WriteBytes(buf[offset:], 3, x.GetRequestUserId())
+	offset += fastpb.WriteBytes(buf[offset:], 4, x.GetRequestUserId())
 	return offset
 }
 
@@ -3170,6 +3198,7 @@ func (x *SessionCheckReq) FastWrite(buf []byte) (offset int) {
 	}
 	offset += x.fastWriteField1(buf[offset:])
 	offset += x.fastWriteField2(buf[offset:])
+	offset += x.fastWriteField3(buf[offset:])
 	return offset
 }
 
@@ -3182,10 +3211,18 @@ func (x *SessionCheckReq) fastWriteField1(buf []byte) (offset int) {
 }
 
 func (x *SessionCheckReq) fastWriteField2(buf []byte) (offset int) {
+	if x.RefreshToken == "" {
+		return offset
+	}
+	offset += fastpb.WriteString(buf[offset:], 2, x.GetRefreshToken())
+	return offset
+}
+
+func (x *SessionCheckReq) fastWriteField3(buf []byte) (offset int) {
 	if len(x.RequestUserId) == 0 {
 		return offset
 	}
-	offset += fastpb.WriteBytes(buf[offset:], 2, x.GetRequestUserId())
+	offset += fastpb.WriteBytes(buf[offset:], 3, x.GetRequestUserId())
 	return offset
 }
 
@@ -4746,10 +4783,10 @@ func (x *LoginResp) sizeField1() (n int) {
 }
 
 func (x *LoginResp) sizeField2() (n int) {
-	if x.ExpiresIn == 0 {
+	if x.RefreshToken == "" {
 		return n
 	}
-	n += fastpb.SizeUint64(2, x.GetExpiresIn())
+	n += fastpb.SizeString(2, x.GetRefreshToken())
 	return n
 }
 
@@ -4986,6 +5023,7 @@ func (x *LogoutReq) Size() (n int) {
 	n += x.sizeField1()
 	n += x.sizeField2()
 	n += x.sizeField3()
+	n += x.sizeField4()
 	return n
 }
 
@@ -5006,10 +5044,18 @@ func (x *LogoutReq) sizeField2() (n int) {
 }
 
 func (x *LogoutReq) sizeField3() (n int) {
+	if x.RefreshToken == "" {
+		return n
+	}
+	n += fastpb.SizeString(3, x.GetRefreshToken())
+	return n
+}
+
+func (x *LogoutReq) sizeField4() (n int) {
 	if len(x.RequestUserId) == 0 {
 		return n
 	}
-	n += fastpb.SizeBytes(3, x.GetRequestUserId())
+	n += fastpb.SizeBytes(4, x.GetRequestUserId())
 	return n
 }
 
@@ -5019,6 +5065,7 @@ func (x *SessionCheckReq) Size() (n int) {
 	}
 	n += x.sizeField1()
 	n += x.sizeField2()
+	n += x.sizeField3()
 	return n
 }
 
@@ -5031,10 +5078,18 @@ func (x *SessionCheckReq) sizeField1() (n int) {
 }
 
 func (x *SessionCheckReq) sizeField2() (n int) {
+	if x.RefreshToken == "" {
+		return n
+	}
+	n += fastpb.SizeString(2, x.GetRefreshToken())
+	return n
+}
+
+func (x *SessionCheckReq) sizeField3() (n int) {
 	if len(x.RequestUserId) == 0 {
 		return n
 	}
-	n += fastpb.SizeBytes(2, x.GetRequestUserId())
+	n += fastpb.SizeBytes(3, x.GetRequestUserId())
 	return n
 }
 
@@ -6262,7 +6317,7 @@ var fieldIDToName_AccountLoginReq = map[int32]string{
 
 var fieldIDToName_LoginResp = map[int32]string{
 	1: "AccessToken",
-	2: "ExpiresIn",
+	2: "RefreshToken",
 	3: "UserInfo",
 }
 
@@ -6311,12 +6366,14 @@ var fieldIDToName_OAuthLoginReq = map[int32]string{
 var fieldIDToName_LogoutReq = map[int32]string{
 	1: "TargetUserId",
 	2: "AccessToken",
-	3: "RequestUserId",
+	3: "RefreshToken",
+	4: "RequestUserId",
 }
 
 var fieldIDToName_SessionCheckReq = map[int32]string{
 	1: "AccessToken",
-	2: "RequestUserId",
+	2: "RefreshToken",
+	3: "RequestUserId",
 }
 
 var fieldIDToName_SessionStatusResp = map[int32]string{
@@ -6511,5 +6568,3 @@ var fieldIDToName_SendVerificationReq = map[int32]string{
 	1: "Identity",
 	2: "Type",
 }
-
-var _ = timestamppb.File_google_protobuf_timestamp_proto
