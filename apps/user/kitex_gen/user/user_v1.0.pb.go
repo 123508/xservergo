@@ -4,7 +4,6 @@ package user
 
 import (
 	"context"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"strconv"
 
 	"github.com/cloudwego/prutal"
@@ -143,11 +142,11 @@ func (x VerificationType) String() string {
 
 // ---------- 通用结构 ---------- //
 type OperationResult struct {
-	Success   bool                   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
-	Code      string                 `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`             // 业务状态码
-	Message   string                 `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`       // 用户提示信息
-	RequestId string                 `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"` // 请求追踪ID
-	Timestamp *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`   // 服务器时间戳(毫秒)
+	Success   bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
+	Code      uint64 `protobuf:"varint,2,opt,name=code" json:"code,omitempty"`            // 业务状态码
+	Message   string `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`       // 用户提示信息
+	RequestId string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"` // 请求追踪ID
+	Timestamp string `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`   // 服务器时间戳(毫秒)
 }
 
 func (x *OperationResult) Reset() { *x = OperationResult{} }
@@ -163,11 +162,11 @@ func (x *OperationResult) GetSuccess() bool {
 	return false
 }
 
-func (x *OperationResult) GetCode() string {
+func (x *OperationResult) GetCode() uint64 {
 	if x != nil {
 		return x.Code
 	}
-	return ""
+	return 0
 }
 
 func (x *OperationResult) GetMessage() string {
@@ -184,25 +183,25 @@ func (x *OperationResult) GetRequestId() string {
 	return ""
 }
 
-func (x *OperationResult) GetTimestamp() *timestamppb.Timestamp {
+func (x *OperationResult) GetTimestamp() string {
 	if x != nil {
 		return x.Timestamp
 	}
-	return nil
+	return ""
 }
 
 type UserInfo struct {
-	UserId    []byte                 `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"` // 二进制格式的UUID (16 bytes)
-	Username  string                 `protobuf:"bytes,2,opt,name=username" json:"username,omitempty"`
-	Nickname  string                 `protobuf:"bytes,3,opt,name=nickname" json:"nickname,omitempty"`
-	Email     string                 `protobuf:"bytes,4,opt,name=email" json:"email,omitempty"`
-	Phone     string                 `protobuf:"bytes,5,opt,name=phone" json:"phone,omitempty"`
-	Gender    int32                  `protobuf:"varint,6,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
-	Avatar    string                 `protobuf:"bytes,7,opt,name=avatar" json:"avatar,omitempty"`
-	Status    int32                  `protobuf:"varint,8,opt,name=status" json:"status,omitempty"` // 0-正常 1-冻结
-	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
-	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
-	IsDeleted bool                   `protobuf:"varint,11,opt,name=is_deleted" json:"is_deleted,omitempty"` // 是否已删除
+	UserId    []byte `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"` // 二进制格式的UUID (16 bytes)
+	Username  string `protobuf:"bytes,2,opt,name=username" json:"username,omitempty"`
+	Nickname  string `protobuf:"bytes,3,opt,name=nickname" json:"nickname,omitempty"`
+	Email     string `protobuf:"bytes,4,opt,name=email" json:"email,omitempty"`
+	Phone     string `protobuf:"bytes,5,opt,name=phone" json:"phone,omitempty"`
+	Gender    uint64 `protobuf:"varint,6,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
+	Avatar    string `protobuf:"bytes,7,opt,name=avatar" json:"avatar,omitempty"`
+	Status    uint64 `protobuf:"varint,8,opt,name=status" json:"status,omitempty"` // 0-正常 1-冻结
+	CreatedAt string `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
+	UpdatedAt string `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
+	IsDeleted bool   `protobuf:"varint,11,opt,name=is_deleted" json:"is_deleted,omitempty"` // 是否已删除
 }
 
 func (x *UserInfo) Reset() { *x = UserInfo{} }
@@ -246,7 +245,7 @@ func (x *UserInfo) GetPhone() string {
 	return ""
 }
 
-func (x *UserInfo) GetGender() int32 {
+func (x *UserInfo) GetGender() uint64 {
 	if x != nil {
 		return x.Gender
 	}
@@ -260,25 +259,25 @@ func (x *UserInfo) GetAvatar() string {
 	return ""
 }
 
-func (x *UserInfo) GetStatus() int32 {
+func (x *UserInfo) GetStatus() uint64 {
 	if x != nil {
 		return x.Status
 	}
 	return 0
 }
 
-func (x *UserInfo) GetCreatedAt() *timestamppb.Timestamp {
+func (x *UserInfo) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return nil
+	return ""
 }
 
-func (x *UserInfo) GetUpdatedAt() *timestamppb.Timestamp {
+func (x *UserInfo) GetUpdatedAt() string {
 	if x != nil {
 		return x.UpdatedAt
 	}
-	return nil
+	return ""
 }
 
 func (x *UserInfo) GetIsDeleted() bool {
@@ -334,7 +333,7 @@ func (x *SafeFilter) GetStrVal() string {
 	return ""
 }
 
-func (x *SafeFilter) GetIntVal() int64 {
+func (x *SafeFilter) GetIntVal() uint64 {
 	if p, ok := x.GetValue().(*SafeFilter_IntVal); ok {
 		return p.IntVal
 	}
@@ -355,7 +354,7 @@ func (x *SafeFilter) GetBoolVal() bool {
 	return false
 }
 
-func (x *SafeFilter) GetTimestamp() int64 {
+func (x *SafeFilter) GetTimestamp() uint64 {
 	if p, ok := x.GetValue().(*SafeFilter_Timestamp); ok {
 		return p.Timestamp
 	}
@@ -384,7 +383,7 @@ type SafeFilter_StrVal struct {
 func (*SafeFilter_StrVal) isSafeFilter_Value() {}
 
 type SafeFilter_IntVal struct {
-	IntVal int64 `protobuf:"varint,4,opt,name=int_val" json:"int_val,omitempty"`
+	IntVal uint64 `protobuf:"varint,4,opt,name=int_val" json:"int_val,omitempty"`
 }
 
 func (*SafeFilter_IntVal) isSafeFilter_Value() {}
@@ -402,7 +401,7 @@ type SafeFilter_BoolVal struct {
 func (*SafeFilter_BoolVal) isSafeFilter_Value() {}
 
 type SafeFilter_Timestamp struct {
-	Timestamp int64 `protobuf:"varint,7,opt,name=timestamp" json:"timestamp,omitempty"` // UNIX毫秒时间戳
+	Timestamp uint64 `protobuf:"varint,7,opt,name=timestamp" json:"timestamp,omitempty"` // UNIX毫秒时间戳
 }
 
 func (*SafeFilter_Timestamp) isSafeFilter_Value() {}
@@ -415,7 +414,7 @@ type RegisterReq struct {
 	ConfirmPassword string `protobuf:"bytes,4,opt,name=confirm_password" json:"confirm_password,omitempty"`
 	Email           string `protobuf:"bytes,5,opt,name=email" json:"email,omitempty"`
 	Phone           string `protobuf:"bytes,6,opt,name=phone" json:"phone,omitempty"`
-	Gender          int32  `protobuf:"varint,7,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
+	Gender          uint64 `protobuf:"varint,7,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
 }
 
 func (x *RegisterReq) Reset() { *x = RegisterReq{} }
@@ -466,7 +465,7 @@ func (x *RegisterReq) GetPhone() string {
 	return ""
 }
 
-func (x *RegisterReq) GetGender() int32 {
+func (x *RegisterReq) GetGender() uint64 {
 	if x != nil {
 		return x.Gender
 	}
@@ -549,9 +548,9 @@ func (x *AccountLoginReq) GetPassword() string {
 }
 
 type LoginResp struct {
-	AccessToken string    `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
-	ExpiresIn   int64     `protobuf:"varint,2,opt,name=expires_in" json:"expires_in,omitempty"` // 过期时间(秒)
-	UserInfo    *UserInfo `protobuf:"bytes,3,opt,name=user_info" json:"user_info,omitempty"`
+	AccessToken  string    `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	RefreshToken string    `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	UserInfo     *UserInfo `protobuf:"bytes,3,opt,name=user_info" json:"user_info,omitempty"`
 }
 
 func (x *LoginResp) Reset() { *x = LoginResp{} }
@@ -567,11 +566,11 @@ func (x *LoginResp) GetAccessToken() string {
 	return ""
 }
 
-func (x *LoginResp) GetExpiresIn() int64 {
+func (x *LoginResp) GetRefreshToken() string {
 	if x != nil {
-		return x.ExpiresIn
+		return x.RefreshToken
 	}
-	return 0
+	return ""
 }
 
 func (x *LoginResp) GetUserInfo() *UserInfo {
@@ -682,7 +681,7 @@ func (*SmsLoginResp_Login) isSmsLoginResp_Result() {}
 
 type CodeSentInfo struct {
 	RequestId  string `protobuf:"bytes,1,opt,name=request_id" json:"request_id,omitempty"`
-	ExpireTime int64  `protobuf:"varint,2,opt,name=expire_time" json:"expire_time,omitempty"` // 过期时间戳(毫秒)
+	ExpireTime uint64 `protobuf:"varint,2,opt,name=expire_time" json:"expire_time,omitempty"` // 过期时间戳(毫秒)
 }
 
 func (x *CodeSentInfo) Reset() { *x = CodeSentInfo{} }
@@ -698,7 +697,7 @@ func (x *CodeSentInfo) GetRequestId() string {
 	return ""
 }
 
-func (x *CodeSentInfo) GetExpireTime() int64 {
+func (x *CodeSentInfo) GetExpireTime() uint64 {
 	if x != nil {
 		return x.ExpireTime
 	}
@@ -750,7 +749,7 @@ func (x *QrCodeLoginReq) GetSessionId() string {
 type QrCodeLoginResp struct {
 	QrCodeUrl string `protobuf:"bytes,1,opt,name=qr_code_url" json:"qr_code_url,omitempty"` // 二维码图片URL
 	SessionId string `protobuf:"bytes,2,opt,name=session_id" json:"session_id,omitempty"`   // 登录会话ID
-	ExpiresAt int64  `protobuf:"varint,3,opt,name=expires_at" json:"expires_at,omitempty"`  // 过期时间戳(毫秒)
+	ExpiresAt uint64 `protobuf:"varint,3,opt,name=expires_at" json:"expires_at,omitempty"`  // 过期时间戳(毫秒)
 }
 
 func (x *QrCodeLoginResp) Reset() { *x = QrCodeLoginResp{} }
@@ -773,7 +772,7 @@ func (x *QrCodeLoginResp) GetSessionId() string {
 	return ""
 }
 
-func (x *QrCodeLoginResp) GetExpiresAt() int64 {
+func (x *QrCodeLoginResp) GetExpiresAt() uint64 {
 	if x != nil {
 		return x.ExpiresAt
 	}
@@ -833,7 +832,8 @@ func (x *OAuthLoginReq) GetAuthCode() string {
 type LogoutReq struct {
 	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	AccessToken   string `protobuf:"bytes,2,opt,name=access_token" json:"access_token,omitempty"`
-	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RefreshToken  string `protobuf:"bytes,3,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
 func (x *LogoutReq) Reset() { *x = LogoutReq{} }
@@ -856,6 +856,13 @@ func (x *LogoutReq) GetAccessToken() string {
 	return ""
 }
 
+func (x *LogoutReq) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
 func (x *LogoutReq) GetRequestUserId() []byte {
 	if x != nil {
 		return x.RequestUserId
@@ -865,7 +872,8 @@ func (x *LogoutReq) GetRequestUserId() []byte {
 
 type SessionCheckReq struct {
 	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
-	RequestUserId []byte `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RefreshToken  string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
 func (x *SessionCheckReq) Reset() { *x = SessionCheckReq{} }
@@ -881,6 +889,13 @@ func (x *SessionCheckReq) GetAccessToken() string {
 	return ""
 }
 
+func (x *SessionCheckReq) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
 func (x *SessionCheckReq) GetRequestUserId() []byte {
 	if x != nil {
 		return x.RequestUserId
@@ -890,7 +905,7 @@ func (x *SessionCheckReq) GetRequestUserId() []byte {
 
 type SessionStatusResp struct {
 	IsValid    bool   `protobuf:"varint,1,opt,name=is_valid" json:"is_valid,omitempty"`
-	LastActive int64  `protobuf:"varint,2,opt,name=last_active" json:"last_active,omitempty"` // 最后活动时间戳(毫秒)
+	LastActive uint64 `protobuf:"varint,2,opt,name=last_active" json:"last_active,omitempty"` // 最后活动时间戳(毫秒)
 	DeviceInfo string `protobuf:"bytes,3,opt,name=device_info" json:"device_info,omitempty"`
 }
 
@@ -907,7 +922,7 @@ func (x *SessionStatusResp) GetIsValid() bool {
 	return false
 }
 
-func (x *SessionStatusResp) GetLastActive() int64 {
+func (x *SessionStatusResp) GetLastActive() uint64 {
 	if x != nil {
 		return x.LastActive
 	}
@@ -1631,8 +1646,8 @@ func (x *UpdateUserInfoReq) GetRequestUserId() []byte {
 }
 
 type ListUsersReq struct {
-	Page          int32         `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`           // 页码(从1开始)
-	PageSize      int32         `protobuf:"varint,2,opt,name=page_size" json:"page_size,omitempty"` // 每页数量
+	Page          uint64        `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`           // 页码(从1开始)
+	PageSize      uint64        `protobuf:"varint,2,opt,name=page_size" json:"page_size,omitempty"` // 每页数量
 	Filters       []*SafeFilter `protobuf:"bytes,3,rep,name=filters" json:"filters,omitempty"`      // 过滤条件
 	OrderBy       []*OrderBy    `protobuf:"bytes,4,rep,name=order_by" json:"order_by,omitempty"`    // 排序字段
 	RequestUserId []byte        `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
@@ -1644,14 +1659,14 @@ func (x *ListUsersReq) Marshal(in []byte) ([]byte, error) { return prutal.Marsha
 
 func (x *ListUsersReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *ListUsersReq) GetPage() int32 {
+func (x *ListUsersReq) GetPage() uint64 {
 	if x != nil {
 		return x.Page
 	}
 	return 0
 }
 
-func (x *ListUsersReq) GetPageSize() int32 {
+func (x *ListUsersReq) GetPageSize() uint64 {
 	if x != nil {
 		return x.PageSize
 	}
@@ -1755,8 +1770,8 @@ func (x *ListUsersResp) GetCurrentPage() int32 {
 
 type SearchUserByNicknameReq struct {
 	Keyword       string `protobuf:"bytes,1,opt,name=keyword" json:"keyword,omitempty"`      // 查询关键字，支持模糊匹配
-	Page          int32  `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`           // 页码，从1开始
-	PageSize      int32  `protobuf:"varint,3,opt,name=page_size" json:"page_size,omitempty"` // 每页数量，建议默认20
+	Page          uint64 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`           // 页码，从1开始
+	PageSize      uint64 `protobuf:"varint,3,opt,name=page_size" json:"page_size,omitempty"` // 每页数量，建议默认20
 	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
@@ -1775,14 +1790,14 @@ func (x *SearchUserByNicknameReq) GetKeyword() string {
 	return ""
 }
 
-func (x *SearchUserByNicknameReq) GetPage() int32 {
+func (x *SearchUserByNicknameReq) GetPage() uint64 {
 	if x != nil {
 		return x.Page
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameReq) GetPageSize() int32 {
+func (x *SearchUserByNicknameReq) GetPageSize() uint64 {
 	if x != nil {
 		return x.PageSize
 	}
@@ -1798,9 +1813,9 @@ func (x *SearchUserByNicknameReq) GetRequestUserId() []byte {
 
 type SearchUserByNicknameResp struct {
 	Users       []*UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`                // 匹配到的用户列表
-	TotalCount  int32       `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"`   // 总数
-	TotalPages  int32       `protobuf:"varint,3,opt,name=total_pages" json:"total_pages,omitempty"`   // 总页数
-	CurrentPage int32       `protobuf:"varint,4,opt,name=current_page" json:"current_page,omitempty"` // 当前页
+	TotalCount  uint64      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"`   // 总数
+	TotalPages  uint64      `protobuf:"varint,3,opt,name=total_pages" json:"total_pages,omitempty"`   // 总页数
+	CurrentPage uint64      `protobuf:"varint,4,opt,name=current_page" json:"current_page,omitempty"` // 当前页
 }
 
 func (x *SearchUserByNicknameResp) Reset() { *x = SearchUserByNicknameResp{} }
@@ -1818,21 +1833,21 @@ func (x *SearchUserByNicknameResp) GetUsers() []*UserInfo {
 	return nil
 }
 
-func (x *SearchUserByNicknameResp) GetTotalCount() int32 {
+func (x *SearchUserByNicknameResp) GetTotalCount() uint64 {
 	if x != nil {
 		return x.TotalCount
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameResp) GetTotalPages() int32 {
+func (x *SearchUserByNicknameResp) GetTotalPages() uint64 {
 	if x != nil {
 		return x.TotalPages
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameResp) GetCurrentPage() int32 {
+func (x *SearchUserByNicknameResp) GetCurrentPage() uint64 {
 	if x != nil {
 		return x.CurrentPage
 	}
