@@ -2,8 +2,6 @@ syntax = "proto3";
 package user;
 option go_package = "/user";
 
-import "google/protobuf/timestamp.proto";
-
 // ====================== 服务定义 ====================== //
 service UserService {
   // ---------- 认证模块 ---------- //
@@ -61,7 +59,6 @@ message OperationResult {
   string message = 3;     // 用户提示信息
   string request_id = 4;  // 请求追踪ID
   string timestamp = 5;   // 服务器时间戳(毫秒)
-//  google.protobuf.Timestamp timestamp = 5;    // 服务器时间戳(毫秒)
 }
 
 message UserInfo {
@@ -130,7 +127,7 @@ message AccountLoginReq {
 
 message LoginResp {
   string access_token = 1;
-  uint64 expires_in = 2;  // 过期时间(秒)
+  string refresh_token = 2;
   UserInfo user_info = 3;
 }
 
@@ -186,12 +183,14 @@ message OAuthLoginReq {
 message LogoutReq {
   bytes target_user_id = 1;
   string access_token = 2;
-  bytes request_user_id=3;
+  string refresh_token = 3;
+  bytes request_user_id = 4;
 }
 
 message SessionCheckReq {
   string access_token = 1;
-  bytes request_user_id=2;
+  string refresh_token = 2;
+  bytes request_user_id = 3;
 }
 
 message SessionStatusResp {

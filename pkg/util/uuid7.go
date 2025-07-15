@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var EmptyUUID UUID
+
 // UUID 表示符合 UUID v7 规范的 128 位标识符
 type UUID [16]byte
 
