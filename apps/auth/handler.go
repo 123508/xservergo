@@ -193,3 +193,21 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 	// TODO: Your code here...
 	return
 }
+
+// IssueToken implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenReq) (resp *auth.IssueTokenResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RefreshToken implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTokenReq) (resp *auth.RefreshTokenResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// VerifyToken implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyTokenReq) (resp *auth.VerifyTokenResp, err error) {
+	// TODO: Your code here...
+	return
+}

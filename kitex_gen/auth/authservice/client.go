@@ -40,6 +40,9 @@ type Client interface {
 	ListRoles(ctx context.Context, Req *auth.ListRolesReq, callOptions ...callopt.Option) (r *auth.ListRolesResp, err error)
 	ListUserGroups(ctx context.Context, Req *auth.ListUserGroupsReq, callOptions ...callopt.Option) (r *auth.ListUserGroupsResp, err error)
 	ListPermissions(ctx context.Context, Req *auth.ListPermissionsReq, callOptions ...callopt.Option) (r *auth.ListPermissionsResp, err error)
+	IssueToken(ctx context.Context, Req *auth.IssueTokenReq, callOptions ...callopt.Option) (r *auth.IssueTokenResp, err error)
+	RefreshToken(ctx context.Context, Req *auth.RefreshTokenReq, callOptions ...callopt.Option) (r *auth.RefreshTokenResp, err error)
+	VerifyToken(ctx context.Context, Req *auth.VerifyTokenReq, callOptions ...callopt.Option) (r *auth.VerifyTokenResp, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -214,4 +217,19 @@ func (p *kAuthServiceClient) ListUserGroups(ctx context.Context, Req *auth.ListU
 func (p *kAuthServiceClient) ListPermissions(ctx context.Context, Req *auth.ListPermissionsReq, callOptions ...callopt.Option) (r *auth.ListPermissionsResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.ListPermissions(ctx, Req)
+}
+
+func (p *kAuthServiceClient) IssueToken(ctx context.Context, Req *auth.IssueTokenReq, callOptions ...callopt.Option) (r *auth.IssueTokenResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.IssueToken(ctx, Req)
+}
+
+func (p *kAuthServiceClient) RefreshToken(ctx context.Context, Req *auth.RefreshTokenReq, callOptions ...callopt.Option) (r *auth.RefreshTokenResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.RefreshToken(ctx, Req)
+}
+
+func (p *kAuthServiceClient) VerifyToken(ctx context.Context, Req *auth.VerifyTokenReq, callOptions ...callopt.Option) (r *auth.VerifyTokenResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.VerifyToken(ctx, Req)
 }
