@@ -252,12 +252,12 @@ func serviceInfo() *kitex.ServiceInfo {
 	return authServiceServiceInfo
 }
 
-// for stream client
+// for stream cli
 func serviceInfoForStreamClient() *kitex.ServiceInfo {
 	return authServiceServiceInfoForStreamClient
 }
 
-// for client
+// for cli
 func serviceInfoForClient() *kitex.ServiceInfo {
 	return authServiceServiceInfoForClient
 }

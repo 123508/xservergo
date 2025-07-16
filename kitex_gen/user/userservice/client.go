@@ -46,7 +46,7 @@ type Client interface {
 	SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 }
 
-// NewClient creates a client for the service defined in IDL.
+// NewClient creates a cli for the service defined in IDL.
 func NewClient(destService string, opts ...client.Option) (Client, error) {
 	var options []client.Option
 	options = append(options, client.WithDestService(destService))
@@ -62,7 +62,7 @@ func NewClient(destService string, opts ...client.Option) (Client, error) {
 	}, nil
 }
 
-// MustNewClient creates a client for the service defined in IDL. It panics if any error occurs.
+// MustNewClient creates a cli for the service defined in IDL. It panics if any error occurs.
 func MustNewClient(destService string, opts ...client.Option) Client {
 	kc, err := NewClient(destService, opts...)
 	if err != nil {

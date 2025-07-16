@@ -174,3 +174,41 @@ func (nu NullUUID) Value() (driver.Value, error) {
 	}
 	return nu.UUID.Value()
 }
+
+// Marshal 实现 proto.Marshaler 接口
+func (u UUID) Marshal() ([]byte, error) {
+	return u[:], nil // 直接返回底层数组的切片
+}
+
+// Unmarshal 实现 proto.Unmarshaler 接口
+func (u *UUID) Unmarshal(data []byte) error {
+	if len(data) != 16 {
+		return fmt.Errorf("invalid UUID length: expected 16 bytes, got %d", len(data))
+	}
+	copy(u[:], data)
+	return nil
+}
+
+// MarshalBinary 实现 encoding.BinaryMarshaler 接口
+func (u UUID) MarshalBinary() ([]byte, error) {
+	return u[:], nil
+}
+
+// UnmarshalBinary 实现 encoding.BinaryUnmarshaler 接口
+func (u UUID) UnmarshalBinary(data []byte) error {
+	if len(data) != 16 {
+		return fmt.Errorf("invalid UUID length: expected 16 bytes, got %d", len(data))
+	}
+	copy(u[:], data)
+	return nil
+}
+
+// MarshalText 实现 encoding.TextMarshaler 接口 (用于JSON等文本序列化)
+func (u UUID) MarshalText() ([]byte, error) {
+	return []byte(u.String()), nil
+}
+
+// UnmarshalText 实现 encoding.TextUnmarshaler 接口
+func (u UUID) UnmarshalText(text []byte) error {
+	return u.unmarshalString(string(text))
+}

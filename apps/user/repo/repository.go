@@ -123,6 +123,10 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
 	}
 
+	if row.ID == util.EmptyUUID {
+		return nil, nil
+	}
+
 	return &row, nil
 }
 

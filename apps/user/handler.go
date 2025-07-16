@@ -66,6 +66,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 				Message:   "创建用户失败",
 				Timestamp: time.Now().String(),
 			}
+
 		} else {
 			resp = &user.OperationResult{
 				Success:   false,
@@ -73,6 +74,8 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 				Message:   com.Message,
 				Timestamp: time.Now().String(),
 			}
+
+			err = cerrors.NewGRPCError(com.Code, com.Message)
 		}
 	}
 	return resp, err
@@ -80,8 +83,30 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 
 // EmailLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginReq) (resp *user.LoginResp, err error) {
-	// TODO: Your code here...
-	return
+
+	login, token, err := s.userService.EmailLogin(ctx, req.Email, req.Password)
+
+	resp = &user.LoginResp{}
+
+	if err != nil {
+
+		com, ok := err.(*cerrors.CommonError)
+
+		if ok {
+			err = cerrors.NewGRPCError(com.Code, com.Message)
+		}
+
+	} else {
+		resp.AccessToken = token.AccessToken
+		resp.RefreshToken = token.RefreshToken
+		resp.UserInfo = &user.UserInfo{
+			Nickname: login.NickName,
+			Email:    login.Email,
+			Avatar:   login.Avatar,
+		}
+	}
+
+	return resp, err
 }
 
 // PhoneLogin implements the UserServiceImpl interface.
