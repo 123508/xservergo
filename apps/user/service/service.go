@@ -133,6 +133,7 @@ func (s *ServiceImpl) loginWithResp(ctx context.Context, usr *models.User, pwd s
 	}
 
 	loginUsr := &models.User{
+		ID:       usr.ID,
 		NickName: usr.NickName,
 		Email:    usr.Email,
 		Avatar:   usr.Avatar,

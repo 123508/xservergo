@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
-
 	"github.com/123508/xservergo/apps/auth/service"
 	auth "github.com/123508/xservergo/kitex_gen/auth"
+	"github.com/123508/xservergo/pkg/cerrors"
+	"github.com/123508/xservergo/pkg/models"
+	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 // AuthServiceImpl implements the last service interface defined in the IDL.
@@ -196,18 +199,67 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 
 // IssueToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenReq) (resp *auth.IssueTokenResp, err error) {
-	// TODO: Your code here...
-	return
+
+	uid := util.NewUUID()
+
+	if err = uid.Unmarshal(req.UserId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求内容不正确")
+	}
+
+	token, err := s.authService.IssueToken(ctx, uid)
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+
+	return &auth.IssueTokenResp{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+	}, nil
 }
 
 // RefreshToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTokenReq) (resp *auth.RefreshTokenResp, err error) {
-	// TODO: Your code here...
-	return
+	uid := util.NewUUID()
+
+	if err = uid.Unmarshal(req.UserId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求内容不正确")
+	}
+
+	token := models.Token{
+		AccessToken:  req.AccessToken,
+		RefreshToken: req.RefreshToken,
+	}
+
+	Token, err := s.authService.RefreshToken(ctx, token, uid)
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+
+	return &auth.RefreshTokenResp{
+		AccessToken:  Token.AccessToken,
+		RefreshToken: Token.RefreshToken,
+	}, nil
 }
 
 // VerifyToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyTokenReq) (resp *auth.VerifyTokenResp, err error) {
-	// TODO: Your code here...
-	return
+	uid, perms, ver, err := s.authService.VerifyToken(ctx, req.AccessToken)
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+
+	Uid, err := uid.Marshal()
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+
+	return &auth.VerifyTokenResp{
+		UserId:      Uid,
+		Permissions: perms,
+		Version:     ver,
+	}, nil
 }

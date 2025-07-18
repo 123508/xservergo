@@ -97,9 +97,17 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 		}
 
 	} else {
+
+		marshal, err := login.ID.Marshal()
+
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
+		}
+
 		resp.AccessToken = token.AccessToken
 		resp.RefreshToken = token.RefreshToken
 		resp.UserInfo = &user.UserInfo{
+			UserId:   marshal,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
@@ -125,9 +133,16 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 		}
 
 	} else {
+		marshal, err := login.ID.Marshal()
+
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
+		}
+
 		resp.AccessToken = token.AccessToken
 		resp.RefreshToken = token.RefreshToken
 		resp.UserInfo = &user.UserInfo{
+			UserId:   marshal,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
@@ -152,9 +167,16 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 		}
 
 	} else {
+		marshal, err := login.ID.Marshal()
+
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
+		}
+
 		resp.AccessToken = token.AccessToken
 		resp.RefreshToken = token.RefreshToken
 		resp.UserInfo = &user.UserInfo{
+			UserId:   marshal,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,

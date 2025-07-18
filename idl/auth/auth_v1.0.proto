@@ -3,7 +3,7 @@ syntax="proto3";
 package auth;
 
 import "google/protobuf/timestamp.proto";
-import "idl/user/user_v1.0.proto";
+import "/user/user_v1.0.proto";
 
 option go_package="/auth";
 
@@ -68,7 +68,7 @@ message OperationResult {
   string code = 2;                         // 业务状态码
   string message = 3;                      // 用户提示信息
   string request_id = 4;                   // 请求追踪ID
-  google.protobuf.Timestamp timestamp = 5; // 服务器时间戳(毫秒)
+  string timestamp = 5; // 服务器时间戳(毫秒)
 }
 
 message Role{
@@ -366,11 +366,14 @@ message IssueTokenResp{
 }
 
 message RefreshTokenReq{
-  string refresh_token=1;
+  string access_token = 1;
+  string refresh_token = 2;
+  bytes user_id=3;
 }
 
 message RefreshTokenResp{
-  string access_token=2;
+  string access_token = 1;
+  string refresh_token = 2;
 }
 
 message VerifyTokenReq{
