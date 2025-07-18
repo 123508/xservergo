@@ -14,3 +14,7 @@ type UserGroup struct {
 	Path     string     `gorm:"column:path;comment '用户组路径'"`
 	AuditFields
 }
+
+func (UserGroup) TableName() string {
+	return "user_group"
+}

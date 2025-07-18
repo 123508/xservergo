@@ -16,3 +16,7 @@ type User struct {
 	Status   uint64    `gorm:"column:status;comment '用户状态 0正常 1冻结'"`
 	AuditFields
 }
+
+func (User) TableName() string {
+	return "users"
+}

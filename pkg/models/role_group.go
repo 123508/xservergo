@@ -12,3 +12,7 @@ type RoleGroup struct {
 	OperatorID *util.UUID `gorm:"column:operator_id;comment '操作人(null=系统)'"`
 	AuditFields
 }
+
+func (RoleGroup) TableName() string {
+	return "role_group"
+}
