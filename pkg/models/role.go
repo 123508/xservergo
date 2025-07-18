@@ -10,3 +10,7 @@ type Role struct {
 	Status      int8      `gorm:"column:status;comment '角色是否启用:0不启用 1启用'"`
 	AuditFields
 }
+
+func (Role) TableName() string {
+	return "roles"
+}

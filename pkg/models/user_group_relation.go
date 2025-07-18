@@ -12,3 +12,7 @@ type UserGroupRelation struct {
 	OperatorID *util.UUID `gorm:"column:operator_id;comment '操作人(null=系统)'"`
 	AuditFields
 }
+
+func (UserGroupRelation) TableName() string {
+	return "user_group_relation"
+}

@@ -9,3 +9,7 @@ type UserLogin struct {
 	Password string    `gorm:"column:password; comment '加密后的密码'"`
 	AuditFields
 }
+
+func (UserLogin) TableName() string {
+	return "user_login"
+}
