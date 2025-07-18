@@ -148,8 +148,6 @@ func (s *ServiceImpl) loginWithResp(ctx context.Context, usr *models.User, pwd s
 // 辅助函数(用于请求token)
 func (s *ServiceImpl) requestToken(ctx context.Context, userId util.UUID) (*auth.IssueTokenResp, error) {
 
-	return &auth.IssueTokenResp{}, nil
-
 	marshal, err := userId.Marshal()
 
 	if err != nil {
