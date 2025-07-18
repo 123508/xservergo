@@ -20,6 +20,8 @@ type UserService interface {
 	GetRedis() *redis.Client
 	Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) error
 	EmailLogin(ctx context.Context, email, pwd string) (*models.User, *models.Token, error)
+	PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error)
+	UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error)
 }
 
 type ServiceImpl struct {
@@ -73,6 +75,33 @@ func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*model
 
 	usr, err := s.userRepo.GetUserByEmail(ctx, email)
 
+	return s.loginWithResp(ctx, usr, pwd, err)
+
+}
+
+func (s *ServiceImpl) PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error) {
+	if phone == "" || pwd == "" {
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+	}
+
+	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
+
+	return s.loginWithResp(ctx, usr, pwd, err)
+}
+
+func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error) {
+	if username == "" || pwd == "" {
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+	}
+
+	usr, err := s.userRepo.GetUserByUsername(ctx, username)
+
+	return s.loginWithResp(ctx, usr, pwd, err)
+}
+
+// 辅助函数(用于用户登录)
+func (s *ServiceImpl) loginWithResp(ctx context.Context, usr *models.User, pwd string, err error) (*models.User, *models.Token, error) {
+
 	if err != nil {
 		if errors.Is(err, &cerrors.SQLError{}) {
 			return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "用户登录失败", "", nil)
@@ -94,7 +123,7 @@ func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*model
 	}
 
 	if !ok {
-		return &models.User{}, &models.Token{}, nil
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "用户名或者密码错误", "", nil)
 	}
 
 	resp, err := s.requestToken(ctx, usr.ID)
@@ -118,6 +147,8 @@ func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*model
 
 // 辅助函数(用于请求token)
 func (s *ServiceImpl) requestToken(ctx context.Context, userId util.UUID) (*auth.IssueTokenResp, error) {
+
+	return &auth.IssueTokenResp{}, nil
 
 	marshal, err := userId.Marshal()
 

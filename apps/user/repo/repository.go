@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"errors"
-
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
@@ -18,6 +17,8 @@ type UserRepository interface {
 	ComparePassword(ctx context.Context, userID util.UUID, password string) (bool, error)
 	GetUserByID(ctx context.Context, userID util.UUID) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
 	UpdateUser(ctx context.Context, user *models.User) (int, error)
 	DeleteUser(ctx context.Context, userID util.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
@@ -91,6 +92,7 @@ func (r *RepoImpl) ComparePassword(ctx context.Context, userID util.UUID, passwo
 		logs.ErrorLogger.Error("查询用户密码错误", zap.Error(err))
 		return false, cerrors.NewSQLError("GET_USER_PWD_FAIL", err)
 	}
+
 	return res != 0, nil
 }
 
@@ -123,8 +125,49 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
 	}
 
-	if row.ID == util.EmptyUUID {
-		return nil, nil
+	if row.ID.IsZero() {
+		return nil, cerrors.NewParamError("用户账户或密码错误")
+	}
+
+	return &row, nil
+}
+
+func (r *RepoImpl) GetUserByPhone(ctx context.Context, phone string) (*models.User, error) {
+
+	var row models.User
+
+	queryStmt := `select 
+    id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
+		from users where phone = ? and is_deleted = 0 limit 1`
+
+	if err := r.DB.WithContext(ctx).Raw(queryStmt, phone).Scan(&row).Error; err != nil {
+		logs.ErrorLogger.Error("通过phone获取用户信息", zap.Error(err))
+		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+	}
+
+	if row.ID.IsZero() {
+		return nil, cerrors.NewParamError("用户账户或密码错误")
+	}
+
+	return &row, nil
+
+}
+
+func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
+
+	var row models.User
+
+	queryStmt := `select 
+    id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
+		from users where username = ? and is_deleted = 0 limit 1`
+
+	if err := r.DB.WithContext(ctx).Raw(queryStmt, username).Scan(&row).Error; err != nil {
+		logs.ErrorLogger.Error("通过username获取用户信息", zap.Error(err))
+		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+	}
+
+	if row.ID.IsZero() {
+		return nil, cerrors.NewParamError("用户账户或密码错误")
 	}
 
 	return &row, nil

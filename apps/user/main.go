@@ -5,11 +5,13 @@ import (
 	user "github.com/123508/xservergo/kitex_gen/user/userservice"
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
+	"github.com/cloudwego/kitex/pkg/limiter"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	etcd "github.com/kitex-contrib/registry-etcd"
 	"log"
 	"net"
+	"time"
 )
 
 func main() {
@@ -44,6 +46,9 @@ func main() {
 				ServiceName: config.Conf.UserConfig.ServiceName,
 			},
 		),
+		server.WithReadWriteTimeout(10*time.Second),                      // 增加读写超时时间
+		server.WithMaxConnIdleTime(30*time.Second),                       // 最大空闲时间
+		server.WithConnectionLimiter(limiter.NewConnectionLimiter(1000)), // 提高并发处理数
 	)
 
 	err = svr.Run()
