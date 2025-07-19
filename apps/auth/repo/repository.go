@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"time"
+
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/models"
 	"gorm.io/gorm"
@@ -51,7 +53,7 @@ type AuthRepository interface {
 	// UpdateUserGroup 更新用户组
 	UpdateUserGroup(userGroup *models.UserGroup) error
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(groupID string) error
+	DeleteUserGroup(groupName string) error
 	// GetUserGroupByID 根据用户组ID获取用户组
 	GetUserGroupByID(groupID []byte) (*models.UserGroup, error)
 	// GetUserGroupByName 根据用户组名称获取用户组
@@ -112,156 +114,687 @@ func (r *RepoImpl) CreatePermission(permission *models.Permission) error {
 }
 
 func (r *RepoImpl) UpdatePermission(permission *models.Permission) error {
-	//TODO implement me
-	panic("implement me")
+	if permission == nil {
+		return cerrors.NewParamError("permission cannot be nil")
+	}
+
+	if err := r.DB.Save(permission).Error; err != nil {
+		return cerrors.NewSQLError("failed to update permission: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) DeletePermission(permissionCode string) error {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" {
+		return cerrors.NewParamError("permission code cannot be empty")
+	}
+
+	if err := r.DB.Model(&models.Permission{}).Where("code = ?", permissionCode).Update("deleted_at", time.Now()).Error; err != nil {
+		return cerrors.NewSQLError("failed to soft delete permission: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) GetPermissionByID(permissionID []byte) (*models.Permission, error) {
-	//TODO implement me
-	panic("implement me")
+	if len(permissionID) == 0 {
+		return nil, cerrors.NewParamError("permission ID cannot be empty")
+	}
+
+	var permission models.Permission
+	if err := r.DB.Where("id = ?", permissionID).First(&permission).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get permission by ID: ", err)
+	}
+	return &permission, nil
 }
 
 func (r *RepoImpl) GetPermissionByCode(permissionCode string) (*models.Permission, error) {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" {
+		return nil, cerrors.NewParamError("permission code cannot be empty")
+	}
+
+	var permission models.Permission
+	if err := r.DB.Where("code = ?", permissionCode).First(&permission).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get permission by code: ", err)
+	}
+	return &permission, nil
 }
 
 func (r *RepoImpl) CreateRole(role *models.Role) error {
-	//TODO implement me
-	panic("implement me")
+	if role == nil {
+		return cerrors.NewParamError("role cannot be nil")
+	}
+
+	if err := r.DB.Create(role).Error; err != nil {
+		return cerrors.NewSQLError("failed to create role: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) UpdateRole(role *models.Role) error {
-	//TODO implement me
-	panic("implement me")
+	if role == nil {
+		return cerrors.NewParamError("role cannot be nil")
+	}
+
+	if err := r.DB.Save(role).Error; err != nil {
+		return cerrors.NewSQLError("failed to update role: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) DeleteRole(roleCode string) error {
-	//TODO implement me
-	panic("implement me")
+	if roleCode == "" {
+		return cerrors.NewParamError("role code cannot be empty")
+	}
+
+	if err := r.DB.Model(&models.Role{}).Where("code = ?", roleCode).Update("deleted_at", time.Now()).Error; err != nil {
+		return cerrors.NewSQLError("failed to soft delete role: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) GetRoleByID(roleID []byte) (*models.Role, error) {
-	//TODO implement me
-	panic("implement me")
+	if len(roleID) == 0 {
+		return nil, cerrors.NewParamError("role ID cannot be empty")
+	}
+
+	var role models.Role
+	if err := r.DB.Where("id = ?", roleID).First(&role).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get role by ID: ", err)
+	}
+	return &role, nil
 }
 
 func (r *RepoImpl) GetRoleByCode(roleCode string) (*models.Role, error) {
-	//TODO implement me
-	panic("implement me")
+	if roleCode == "" {
+		return nil, cerrors.NewParamError("role code cannot be empty")
+	}
+
+	var role models.Role
+	if err := r.DB.Where("code = ?", roleCode).First(&role).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get role by code: ", err)
+	}
+	return &role, nil
 }
 
 func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string) error {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" || roleCode == "" {
+		return cerrors.NewParamError("permission code and role code cannot be empty")
+	}
+
+	// 获取权限和角色
+	permission, err := r.GetPermissionByCode(permissionCode)
+	if err != nil {
+		return err
+	}
+	if permission == nil {
+		return cerrors.NewParamError("permission not found")
+	}
+
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 检查是否已存在关联
+	var existing models.RolePermission
+	err = r.DB.Where("role_id = ? AND permission_id = ?", role.ID, permission.ID).First(&existing).Error
+	if err == nil {
+		// 如果已存在，更新状态为启用
+		existing.Status = 1
+		if err := r.DB.Save(&existing).Error; err != nil {
+			return cerrors.NewSQLError("failed to update role permission: ", err)
+		}
+		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return cerrors.NewSQLError("failed to check existing role permission: ", err)
+	}
+
+	// 创建新的角色权限关联
+	rolePermission := &models.RolePermission{
+		RoleID:       role.ID,
+		PermissionID: permission.ID,
+		Status:       1,
+	}
+
+	if err := r.DB.Create(rolePermission).Error; err != nil {
+		return cerrors.NewSQLError("failed to grant permission to role: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) RevokePermissionFromRole(permissionCode string, roleCode string) error {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" || roleCode == "" {
+		return cerrors.NewParamError("permission code and role code cannot be empty")
+	}
+
+	// 获取权限和角色
+	permission, err := r.GetPermissionByCode(permissionCode)
+	if err != nil {
+		return err
+	}
+	if permission == nil {
+		return cerrors.NewParamError("permission not found")
+	}
+
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 软删除：将状态设置为0
+	if err := r.DB.Model(&models.RolePermission{}).
+		Where("role_id = ? AND permission_id = ?", role.ID, permission.ID).
+		Update("status", 0).Error; err != nil {
+		return cerrors.NewSQLError("failed to revoke permission from role: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if roleCode == "" {
+		return nil, cerrors.NewParamError("role code cannot be empty")
+	}
+
+	var permissionCodes []string
+	if err := r.DB.Model(&models.Permission{}).
+		Select("permission.code").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN roles ON role_permission.role_id = roles.id").
+		Where("roles.code = ? AND role_permission.status = 1", roleCode).
+		Pluck("permission.code", &permissionCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get role permissions: ", err)
+	}
+	return permissionCodes, nil
 }
 
 func (r *RepoImpl) AssignRoleToUser(roleCode string, username string) error {
-	//TODO implement me
-	panic("implement me")
+	if roleCode == "" || username == "" {
+		return cerrors.NewParamError("role code and username cannot be empty")
+	}
+
+	// 获取角色
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 获取用户
+	var user models.User
+	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return cerrors.NewParamError("user not found")
+		}
+		return cerrors.NewSQLError("failed to get user: ", err)
+	}
+
+	// 检查是否已存在关联
+	var existing models.UserRole
+	err = r.DB.Where("user_id = ? AND role_id = ?", user.ID, role.ID).First(&existing).Error
+	if err == nil {
+		// 如果已存在，更新状态为启用
+		existing.Status = 1
+		if err := r.DB.Save(&existing).Error; err != nil {
+			return cerrors.NewSQLError("failed to update user role: ", err)
+		}
+		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return cerrors.NewSQLError("failed to check existing user role: ", err)
+	}
+
+	// 创建新的用户角色关联
+	userRole := &models.UserRole{
+		UserID: user.ID,
+		RoleID: role.ID,
+		Status: 1,
+	}
+
+	if err := r.DB.Create(userRole).Error; err != nil {
+		return cerrors.NewSQLError("failed to assign role to user: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) RevokeRoleFromUser(roleCode string, username string) error {
-	//TODO implement me
-	panic("implement me")
+	if roleCode == "" || username == "" {
+		return cerrors.NewParamError("role code and username cannot be empty")
+	}
+
+	// 获取角色
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 获取用户
+	var user models.User
+	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return cerrors.NewParamError("user not found")
+		}
+		return cerrors.NewSQLError("failed to get user: ", err)
+	}
+
+	// 软删除：将状态设置为0
+	if err := r.DB.Model(&models.UserRole{}).
+		Where("user_id = ? AND role_id = ?", user.ID, role.ID).
+		Update("status", 0).Error; err != nil {
+		return cerrors.NewSQLError("failed to revoke role from user: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) GetUserRoles(username string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if username == "" {
+		return nil, cerrors.NewParamError("username cannot be empty")
+	}
+
+	var roleCodes []string
+	if err := r.DB.Model(&models.Role{}).
+		Select("roles.code").
+		Joins("JOIN user_role ON roles.id = user_role.role_id").
+		Joins("JOIN users ON user_role.user_id = users.id").
+		Where("users.username = ? AND user_role.status = 1", username).
+		Pluck("roles.code", &roleCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user roles: ", err)
+	}
+	return roleCodes, nil
 }
 
 func (r *RepoImpl) CreateUserGroup(userGroup *models.UserGroup) error {
-	//TODO implement me
-	panic("implement me")
+	if userGroup == nil {
+		return cerrors.NewParamError("user group cannot be nil")
+	}
+
+	if err := r.DB.Create(userGroup).Error; err != nil {
+		return cerrors.NewSQLError("failed to create user group: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) UpdateUserGroup(userGroup *models.UserGroup) error {
-	//TODO implement me
-	panic("implement me")
+	if userGroup == nil {
+		return cerrors.NewParamError("user group cannot be nil")
+	}
+
+	if err := r.DB.Save(userGroup).Error; err != nil {
+		return cerrors.NewSQLError("failed to update user group: ", err)
+	}
+	return nil
 }
 
-func (r *RepoImpl) DeleteUserGroup(groupID string) error {
-	//TODO implement me
-	panic("implement me")
+func (r *RepoImpl) DeleteUserGroup(groupName string) error {
+	if groupName == "" {
+		return cerrors.NewParamError("group name cannot be empty")
+	}
+
+	// 软删除：设置 deleted_at 字段为当前时间
+	if err := r.DB.Model(&models.UserGroup{}).Where("name = ?", groupName).Update("deleted_at", time.Now()).Error; err != nil {
+		return cerrors.NewSQLError("failed to soft delete user group: ", err)
+	}
+
+	return nil
 }
 
 func (r *RepoImpl) GetUserGroupByID(groupID []byte) (*models.UserGroup, error) {
-	//TODO implement me
-	panic("implement me")
+	if len(groupID) == 0 {
+		return nil, cerrors.NewParamError("group ID cannot be empty")
+	}
+
+	var userGroup models.UserGroup
+	if err := r.DB.Where("id = ?", groupID).First(&userGroup).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get user group by ID: ", err)
+	}
+	return &userGroup, nil
 }
 
 func (r *RepoImpl) GetUserGroupByName(groupName string) (*models.UserGroup, error) {
-	//TODO implement me
-	panic("implement me")
+	if groupName == "" {
+		return nil, cerrors.NewParamError("group name cannot be empty")
+	}
+
+	var userGroup models.UserGroup
+	if err := r.DB.Where("name = ?", groupName).First(&userGroup).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError("failed to get user group by name: ", err)
+	}
+	return &userGroup, nil
 }
 
 func (r *RepoImpl) GetUserGroupMembers(groupName string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if groupName == "" {
+		return nil, cerrors.NewParamError("group name cannot be empty")
+	}
+
+	var usernames []string
+	if err := r.DB.Model(&models.User{}).
+		Select("users.username").
+		Joins("JOIN user_group_relation ON users.id = user_group_relation.user_id").
+		Joins("JOIN user_group ON user_group_relation.group_id = user_group.id").
+		Where("user_group.name = ? AND user_group_relation.status = 1", groupName).
+		Pluck("users.username", &usernames).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group members: ", err)
+	}
+	return usernames, nil
 }
 
 func (r *RepoImpl) GetUserGroupPermissions(groupName string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if groupName == "" {
+		return nil, cerrors.NewParamError("group name cannot be empty")
+	}
+
+	var permissionCodes []string
+	if err := r.DB.Model(&models.Permission{}).
+		Select("DISTINCT permission.code").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
+		Joins("JOIN user_group ON role_group.group_id = user_group.id").
+		Where("user_group.name = ? AND role_permission.status = 1 AND role_group.status = 1", groupName).
+		Pluck("permission.code", &permissionCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group permissions: ", err)
+	}
+	return permissionCodes, nil
 }
 
 func (r *RepoImpl) AssignUserToGroup(username string, groupName string) error {
-	//TODO implement me
-	panic("implement me")
+	if username == "" || groupName == "" {
+		return cerrors.NewParamError("username and group name cannot be empty")
+	}
+
+	// 获取用户
+	var user models.User
+	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return cerrors.NewParamError("user not found")
+		}
+		return cerrors.NewSQLError("failed to get user: ", err)
+	}
+
+	// 获取用户组
+	userGroup, err := r.GetUserGroupByName(groupName)
+	if err != nil {
+		return err
+	}
+	if userGroup == nil {
+		return cerrors.NewParamError("user group not found")
+	}
+
+	// 检查是否已存在关联
+	var existing models.UserGroupRelation
+	err = r.DB.Where("user_id = ? AND group_id = ?", user.ID, userGroup.ID).First(&existing).Error
+	if err == nil {
+		// 如果已存在，更新状态为启用
+		existing.Status = 1
+		if err := r.DB.Save(&existing).Error; err != nil {
+			return cerrors.NewSQLError("failed to update user group relation: ", err)
+		}
+		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return cerrors.NewSQLError("failed to check existing user group relation: ", err)
+	}
+
+	// 创建新的用户组关联
+	userGroupRelation := &models.UserGroupRelation{
+		UserID:  user.ID,
+		GroupID: userGroup.ID,
+		Status:  1,
+	}
+
+	if err := r.DB.Create(userGroupRelation).Error; err != nil {
+		return cerrors.NewSQLError("failed to assign user to group: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) RevokeUserFromGroup(username string, groupName string) error {
-	//TODO implement me
-	panic("implement me")
+	if username == "" || groupName == "" {
+		return cerrors.NewParamError("username and group name cannot be empty")
+	}
+
+	// 获取用户
+	var user models.User
+	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return cerrors.NewParamError("user not found")
+		}
+		return cerrors.NewSQLError("failed to get user: ", err)
+	}
+
+	// 获取用户组
+	userGroup, err := r.GetUserGroupByName(groupName)
+	if err != nil {
+		return err
+	}
+	if userGroup == nil {
+		return cerrors.NewParamError("user group not found")
+	}
+
+	// 软删除：将状态设置为0
+	if err := r.DB.Model(&models.UserGroupRelation{}).
+		Where("user_id = ? AND group_id = ?", user.ID, userGroup.ID).
+		Update("status", 0).Error; err != nil {
+		return cerrors.NewSQLError("failed to revoke user from group: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) GetUserGroups(username string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if username == "" {
+		return nil, cerrors.NewParamError("username cannot be empty")
+	}
+
+	var groupNames []string
+	if err := r.DB.Model(&models.UserGroup{}).
+		Select("user_group.name").
+		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
+		Joins("JOIN users ON user_group_relation.user_id = users.id").
+		Where("users.username = ? AND user_group_relation.status = 1", username).
+		Pluck("user_group.name", &groupNames).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user groups: ", err)
+	}
+	return groupNames, nil
 }
 
 func (r *RepoImpl) GetUserPermissions(username string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if username == "" {
+		return nil, cerrors.NewParamError("username cannot be empty")
+	}
+
+	var permissionCodes []string
+
+	// 获取用户直接分配的角色权限
+	directPermissions, err := r.getUserDirectPermissions(username)
+	if err != nil {
+		return nil, err
+	}
+	permissionCodes = append(permissionCodes, directPermissions...)
+
+	// 获取用户通过用户组获得的权限
+	groupPermissions, err := r.getUserGroupPermissions(username)
+	if err != nil {
+		return nil, err
+	}
+	permissionCodes = append(permissionCodes, groupPermissions...)
+
+	// 去重
+	seen := make(map[string]bool)
+	var uniquePermissions []string
+	for _, perm := range permissionCodes {
+		if !seen[perm] {
+			seen[perm] = true
+			uniquePermissions = append(uniquePermissions, perm)
+		}
+	}
+
+	return uniquePermissions, nil
+}
+
+// getUserDirectPermissions 获取用户通过直接角色分配获得的权限
+func (r *RepoImpl) getUserDirectPermissions(username string) ([]string, error) {
+	var permissionCodes []string
+	if err := r.DB.Model(&models.Permission{}).
+		Select("DISTINCT permission.code").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN user_role ON role_permission.role_id = user_role.role_id").
+		Joins("JOIN users ON user_role.user_id = users.id").
+		Where("users.username = ? AND role_permission.status = 1 AND user_role.status = 1", username).
+		Pluck("permission.code", &permissionCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user direct permissions: ", err)
+	}
+	return permissionCodes, nil
+}
+
+// getUserGroupPermissions 获取用户通过用户组获得的权限
+func (r *RepoImpl) getUserGroupPermissions(username string) ([]string, error) {
+	var permissionCodes []string
+	if err := r.DB.Model(&models.Permission{}).
+		Select("DISTINCT permission.code").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
+		Joins("JOIN user_group_relation ON role_group.group_id = user_group_relation.group_id").
+		Joins("JOIN users ON user_group_relation.user_id = users.id").
+		Where("users.username = ? AND role_permission.status = 1 AND role_group.status = 1 AND user_group_relation.status = 1", username).
+		Pluck("permission.code", &permissionCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group permissions: ", err)
+	}
+	return permissionCodes, nil
 }
 
 func (r *RepoImpl) HasPermission(username string, permissionCode string) bool {
-	//TODO implement me
-	panic("implement me")
+	if username == "" || permissionCode == "" {
+		return false
+	}
+
+	permissions, err := r.GetUserPermissions(username)
+	if err != nil {
+		return false
+	}
+
+	for _, perm := range permissions {
+		if perm == permissionCode {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *RepoImpl) CanAccess(username string, resource string, method string) bool {
-	//TODO implement me
-	panic("implement me")
+	if username == "" || resource == "" || method == "" {
+		return false
+	}
+
+	// 检查用户是否有对应资源和方法的权限
+	var count int64
+	err := r.DB.Model(&models.Permission{}).
+		Select("COUNT(DISTINCT permission.id)").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN user_role ON role_permission.role_id = user_role.role_id").
+		Joins("JOIN users ON user_role.user_id = users.id").
+		Where("users.username = ? AND permission.resource = ? AND permission.method = ? AND role_permission.status = 1 AND user_role.status = 1",
+			username, resource, method).
+		Count(&count)
+
+	if err.Error != nil {
+		return false
+	}
+
+	if count > 0 {
+		return true
+	}
+
+	// 检查用户是否通过用户组有对应资源和方法的权限
+	err = r.DB.Model(&models.Permission{}).
+		Select("COUNT(DISTINCT permission.id)").
+		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
+		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
+		Joins("JOIN user_group_relation ON role_group.group_id = user_group_relation.group_id").
+		Joins("JOIN users ON user_group_relation.user_id = users.id").
+		Where("users.username = ? AND permission.resource = ? AND permission.method = ? AND role_permission.status = 1 AND role_group.status = 1 AND user_group_relation.status = 1",
+			username, resource, method).
+		Count(&count)
+
+	if err.Error != nil {
+		return false
+	}
+
+	return count > 0
 }
 
 func (r *RepoImpl) GetRoleList(page uint32, pageSize uint32) ([]*models.Role, error) {
-	//TODO implement me
-	panic("implement me")
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	var roles []*models.Role
+	offset := (page - 1) * pageSize
+
+	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&roles).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get role list: ", err)
+	}
+	return roles, nil
 }
 
 func (r *RepoImpl) GetPermissionList(page uint32, pageSize uint32) ([]*models.Permission, error) {
-	//TODO implement me
-	panic("implement me")
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	var permissions []*models.Permission
+	offset := (page - 1) * pageSize
+
+	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&permissions).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get permission list: ", err)
+	}
+	return permissions, nil
 }
 
 func (r *RepoImpl) GetUserGroupList(page uint32, pageSize uint32) ([]*models.UserGroup, error) {
-	//TODO implement me
-	panic("implement me")
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	var userGroups []*models.UserGroup
+	offset := (page - 1) * pageSize
+
+	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&userGroups).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group list: ", err)
+	}
+	return userGroups, nil
 }
