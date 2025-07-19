@@ -5,9 +5,11 @@ import (
 	"github.com/123508/xservergo/apps/auth/repo"
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/config"
+	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"net/http"
 	"time"
@@ -42,12 +44,14 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 	accessToken, err := GenerateJWT(uid, perms, 0)
 
 	if err != nil {
+		logs.ErrorLogger.Error("生成accessToken错误:", zap.Error(err))
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 
 	refreshToken, err := GenerateRefreshToken()
 
 	if err != nil {
+		logs.ErrorLogger.Error("生成refreshToken错误:", zap.Error(err))
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 

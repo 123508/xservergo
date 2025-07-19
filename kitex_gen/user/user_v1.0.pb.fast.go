@@ -698,6 +698,11 @@ func (x *LoginSuccess) FastRead(buf []byte, _type int8, number int32) (offset in
 		if err != nil {
 			goto ReadFieldError
 		}
+	case 3:
+		offset, err = x.fastReadField3(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -712,11 +717,16 @@ ReadFieldError:
 }
 
 func (x *LoginSuccess) fastReadField1(buf []byte, _type int8) (offset int, err error) {
-	x.AccessToken, offset, err = fastpb.ReadString(buf, _type)
+	x.RefreshToken, offset, err = fastpb.ReadString(buf, _type)
 	return offset, err
 }
 
 func (x *LoginSuccess) fastReadField2(buf []byte, _type int8) (offset int, err error) {
+	x.AccessToken, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *LoginSuccess) fastReadField3(buf []byte, _type int8) (offset int, err error) {
 	var v UserInfo
 	offset, err = fastpb.ReadMessage(buf, _type, &v)
 	if err != nil {
@@ -3030,22 +3040,31 @@ func (x *LoginSuccess) FastWrite(buf []byte) (offset int) {
 	}
 	offset += x.fastWriteField1(buf[offset:])
 	offset += x.fastWriteField2(buf[offset:])
+	offset += x.fastWriteField3(buf[offset:])
 	return offset
 }
 
 func (x *LoginSuccess) fastWriteField1(buf []byte) (offset int) {
-	if x.AccessToken == "" {
+	if x.RefreshToken == "" {
 		return offset
 	}
-	offset += fastpb.WriteString(buf[offset:], 1, x.GetAccessToken())
+	offset += fastpb.WriteString(buf[offset:], 1, x.GetRefreshToken())
 	return offset
 }
 
 func (x *LoginSuccess) fastWriteField2(buf []byte) (offset int) {
+	if x.AccessToken == "" {
+		return offset
+	}
+	offset += fastpb.WriteString(buf[offset:], 2, x.GetAccessToken())
+	return offset
+}
+
+func (x *LoginSuccess) fastWriteField3(buf []byte) (offset int) {
 	if x.UserInfo == nil {
 		return offset
 	}
-	offset += fastpb.WriteMessage(buf[offset:], 2, x.GetUserInfo())
+	offset += fastpb.WriteMessage(buf[offset:], 3, x.GetUserInfo())
 	return offset
 }
 
@@ -4897,22 +4916,31 @@ func (x *LoginSuccess) Size() (n int) {
 	}
 	n += x.sizeField1()
 	n += x.sizeField2()
+	n += x.sizeField3()
 	return n
 }
 
 func (x *LoginSuccess) sizeField1() (n int) {
-	if x.AccessToken == "" {
+	if x.RefreshToken == "" {
 		return n
 	}
-	n += fastpb.SizeString(1, x.GetAccessToken())
+	n += fastpb.SizeString(1, x.GetRefreshToken())
 	return n
 }
 
 func (x *LoginSuccess) sizeField2() (n int) {
+	if x.AccessToken == "" {
+		return n
+	}
+	n += fastpb.SizeString(2, x.GetAccessToken())
+	return n
+}
+
+func (x *LoginSuccess) sizeField3() (n int) {
 	if x.UserInfo == nil {
 		return n
 	}
-	n += fastpb.SizeMessage(2, x.GetUserInfo())
+	n += fastpb.SizeMessage(3, x.GetUserInfo())
 	return n
 }
 
@@ -6339,8 +6367,9 @@ var fieldIDToName_CodeSentInfo = map[int32]string{
 }
 
 var fieldIDToName_LoginSuccess = map[int32]string{
-	1: "AccessToken",
-	2: "UserInfo",
+	1: "RefreshToken",
+	2: "AccessToken",
+	3: "UserInfo",
 }
 
 var fieldIDToName_QrCodeLoginReq = map[int32]string{

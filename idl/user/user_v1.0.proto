@@ -156,8 +156,9 @@ message CodeSentInfo {
 }
 
 message LoginSuccess {
-  string access_token = 1;
-  UserInfo user_info = 2;
+  string refresh_token=1;
+  string access_token = 2;
+  UserInfo user_info = 3;
 }
 
 message QrCodeLoginReq {

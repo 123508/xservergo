@@ -188,8 +188,51 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 
 // SmsLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (resp *user.SmsLoginResp, err error) {
-	// TODO: Your code here...
-	return
+	if req.Flow == user.LoginFlowType_FLOW_REQUEST_CODE {
+		requestId, err := s.userService.SmsSendCode(ctx, req.Phone)
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "发送验证码错误")
+		} else {
+			return &user.SmsLoginResp{
+				Result: &user.SmsLoginResp_CodeSent{
+					CodeSent: &user.CodeSentInfo{
+						RequestId:  requestId,
+						ExpireTime: uint64((10 * time.Minute).Milliseconds()),
+					},
+				},
+			}, nil
+		}
+	} else {
+
+		login, token, err := s.userService.SmsLogin(ctx, req.Phone, req.Code, req.RequestId)
+		if err != nil {
+			if com, ok := err.(*cerrors.CommonError); ok {
+				return nil, cerrors.NewGRPCError(com.Code, com.Message)
+			} else {
+				return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败")
+			}
+		}
+
+		marshal, err := login.ID.Marshal()
+
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化错误")
+		}
+
+		return &user.SmsLoginResp{
+			Result: &user.SmsLoginResp_Login{
+				Login: &user.LoginSuccess{
+					RefreshToken: token.RefreshToken,
+					AccessToken:  token.AccessToken,
+					UserInfo: &user.UserInfo{
+						UserId:   marshal,
+						Nickname: login.NickName,
+						Email:    login.Email,
+						Avatar:   login.Avatar,
+					},
+				}},
+		}, nil
+	}
 }
 
 // QrCodeLogin implements the UserServiceImpl interface.
