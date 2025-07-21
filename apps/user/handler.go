@@ -235,14 +235,25 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 	}
 }
 
-// QrCodeLogin implements the UserServiceImpl interface.
-func (s *UserServiceImpl) QrCodeLogin(ctx context.Context, req *user.QrCodeLoginReq) (resp *user.QrCodeLoginResp, err error) {
+// GenerateQrCode implements the UserServiceImpl interface.
+func (s *UserServiceImpl) GenerateQrCode(ctx context.Context, req *user.GenerateQrCodeReq) (resp *user.GenerateQrCodeResp, err error) {
 	// TODO: Your code here...
+	return
+}
+
+func (s *UserServiceImpl) QrCodeLoginStatus(req *user.QrCodeLoginStatusReq, stream user.UserService_QrCodeLoginStatusServer) (err error) {
+	println("QrCodeLoginStatus called")
 	return
 }
 
 // ConfirmQrLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQrLoginReq) (resp *user.LoginResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// CancelQrLogin implements the UserServiceImpl interface.
+func (s *UserServiceImpl) CancelQrLogin(ctx context.Context, req *user.CancelQrLoginReq) (resp *user.Empty, err error) {
 	// TODO: Your code here...
 	return
 }
@@ -295,14 +306,20 @@ func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.Compl
 	return
 }
 
-// StartUnbindEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) StartUnbindEmail(ctx context.Context, req *user.StartUnbindEmailReq) (resp *user.OperationResult, err error) {
+// StartChangeEmail implements the UserServiceImpl interface.
+func (s *UserServiceImpl) StartChangeEmail(ctx context.Context, req *user.StartChangeEmailReq) (resp *user.OperationResult, err error) {
 	// TODO: Your code here...
 	return
 }
 
-// CompleteUnbindEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteUnbindEmail(ctx context.Context, req *user.CompleteUnbindEmailReq) (resp *user.OperationResult, err error) {
+// VerifyNewEmail implements the UserServiceImpl interface.
+func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNewEmailReq) (resp *user.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// CompleteChangeEmail implements the UserServiceImpl interface.
+func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.CompleteChangeEmailReq) (resp *user.OperationResult, err error) {
 	// TODO: Your code here...
 	return
 }

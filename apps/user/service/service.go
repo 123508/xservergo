@@ -32,6 +32,7 @@ type UserService interface {
 	SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error)
 	SendPhoneCode(ctx context.Context, phone string) error
 	SendEmailCode(ctx context.Context, email string) error
+	GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64)
 }
 
 type ServiceImpl struct {
@@ -176,6 +177,11 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
 	return s.loginWithResp(ctx, usr, "", err, false)
+}
+
+func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {

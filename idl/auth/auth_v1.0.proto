@@ -2,9 +2,6 @@ syntax="proto3";
 
 package auth;
 
-import "google/protobuf/timestamp.proto";
-import "/user/user_v1.0.proto";
-
 option go_package="/auth";
 
 service AuthService {
@@ -246,8 +243,22 @@ message GetUserGroupMembersReq{
 }
 
 message GetUserGroupMembersResp{
-  repeated user.UserInfo users=1; // 用户组成员列表
+  repeated UserInfo users=1; // 用户组成员列表
   uint32 total_count=2;           // 成员总数
+}
+
+message UserInfo {
+  bytes user_id = 1;        // 二进制格式的UUID (16 bytes)
+  string username = 2;
+  string nickname=3;
+  string email = 4;
+  string phone = 5;
+  uint64 gender = 6;         // 0-未知 1-男 2-女
+  string avatar = 7;
+  uint64 status = 8;         // 0-正常 1-冻结
+  string created_at = 9;
+  string updated_at = 10;
+  bool is_deleted = 11;     // 是否已删除
 }
 
 message GetUserGroupPermissionsReq{

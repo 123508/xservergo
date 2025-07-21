@@ -7,6 +7,10 @@ import (
 	user "github.com/123508/xservergo/kitex_gen/user"
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
+	"github.com/cloudwego/kitex/client/callopt/streamcall"
+	"github.com/cloudwego/kitex/client/streamclient"
+	streaming "github.com/cloudwego/kitex/pkg/streaming"
+	transport "github.com/cloudwego/kitex/transport"
 )
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
@@ -16,8 +20,10 @@ type Client interface {
 	PhoneLogin(ctx context.Context, Req *user.PhoneLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	AccountLogin(ctx context.Context, Req *user.AccountLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	SmsLogin(ctx context.Context, Req *user.SmsLoginReq, callOptions ...callopt.Option) (r *user.SmsLoginResp, err error)
-	QrCodeLogin(ctx context.Context, Req *user.QrCodeLoginReq, callOptions ...callopt.Option) (r *user.QrCodeLoginResp, err error)
+	GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeReq, callOptions ...callopt.Option) (r *user.GenerateQrCodeResp, err error)
+	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error)
 	ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
+	CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq, callOptions ...callopt.Option) (r *user.Empty, err error)
 	OAuthLogin(ctx context.Context, Req *user.OAuthLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	Logout(ctx context.Context, Req *user.LogoutReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	SessionCheck(ctx context.Context, Req *user.SessionCheckReq, callOptions ...callopt.Option) (r *user.SessionStatusResp, err error)
@@ -26,8 +32,9 @@ type Client interface {
 	ResetPassword(ctx context.Context, Req *user.ResetPasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartBindEmail(ctx context.Context, Req *user.StartBindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	StartUnbindEmail(ctx context.Context, Req *user.StartUnbindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	CompleteUnbindEmail(ctx context.Context, Req *user.CompleteUnbindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	StartChangeEmail(ctx context.Context, Req *user.StartChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	VerifyNewEmail(ctx context.Context, Req *user.VerifyNewEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	CompleteChangeEmail(ctx context.Context, Req *user.CompleteChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartBindPhone(ctx context.Context, Req *user.StartBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartChangePhone(ctx context.Context, Req *user.StartChangePhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
@@ -46,10 +53,22 @@ type Client interface {
 	SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 }
 
+// StreamClient is designed to provide Interface for Streaming APIs.
+type StreamClient interface {
+	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...streamcall.Option) (stream UserService_QrCodeLoginStatusClient, err error)
+}
+
+type UserService_QrCodeLoginStatusClient interface {
+	streaming.Stream
+	Recv() (*user.QrCodeLoginStatusResp, error)
+}
+
 // NewClient creates a client for the service defined in IDL.
 func NewClient(destService string, opts ...client.Option) (Client, error) {
 	var options []client.Option
 	options = append(options, client.WithDestService(destService))
+
+	options = append(options, client.WithTransportProtocol(transport.GRPC))
 
 	options = append(options, opts...)
 
@@ -100,14 +119,24 @@ func (p *kUserServiceClient) SmsLogin(ctx context.Context, Req *user.SmsLoginReq
 	return p.kClient.SmsLogin(ctx, Req)
 }
 
-func (p *kUserServiceClient) QrCodeLogin(ctx context.Context, Req *user.QrCodeLoginReq, callOptions ...callopt.Option) (r *user.QrCodeLoginResp, err error) {
+func (p *kUserServiceClient) GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeReq, callOptions ...callopt.Option) (r *user.GenerateQrCodeResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.QrCodeLogin(ctx, Req)
+	return p.kClient.GenerateQrCode(ctx, Req)
+}
+
+func (p *kUserServiceClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.QrCodeLoginStatus(ctx, Req)
 }
 
 func (p *kUserServiceClient) ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.ConfirmQrLogin(ctx, Req)
+}
+
+func (p *kUserServiceClient) CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq, callOptions ...callopt.Option) (r *user.Empty, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CancelQrLogin(ctx, Req)
 }
 
 func (p *kUserServiceClient) OAuthLogin(ctx context.Context, Req *user.OAuthLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error) {
@@ -150,14 +179,19 @@ func (p *kUserServiceClient) CompleteBindEmail(ctx context.Context, Req *user.Co
 	return p.kClient.CompleteBindEmail(ctx, Req)
 }
 
-func (p *kUserServiceClient) StartUnbindEmail(ctx context.Context, Req *user.StartUnbindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+func (p *kUserServiceClient) StartChangeEmail(ctx context.Context, Req *user.StartChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.StartUnbindEmail(ctx, Req)
+	return p.kClient.StartChangeEmail(ctx, Req)
 }
 
-func (p *kUserServiceClient) CompleteUnbindEmail(ctx context.Context, Req *user.CompleteUnbindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+func (p *kUserServiceClient) VerifyNewEmail(ctx context.Context, Req *user.VerifyNewEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.CompleteUnbindEmail(ctx, Req)
+	return p.kClient.VerifyNewEmail(ctx, Req)
+}
+
+func (p *kUserServiceClient) CompleteChangeEmail(ctx context.Context, Req *user.CompleteChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CompleteChangeEmail(ctx, Req)
 }
 
 func (p *kUserServiceClient) StartBindPhone(ctx context.Context, Req *user.StartBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
@@ -238,4 +272,39 @@ func (p *kUserServiceClient) VerifySecurityCode(ctx context.Context, Req *user.V
 func (p *kUserServiceClient) SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SendVerification(ctx, Req)
+}
+
+// NewStreamClient creates a stream client for the service's streaming APIs defined in IDL.
+func NewStreamClient(destService string, opts ...streamclient.Option) (StreamClient, error) {
+	var options []client.Option
+	options = append(options, client.WithDestService(destService))
+	options = append(options, client.WithTransportProtocol(transport.GRPC))
+	options = append(options, streamclient.GetClientOptions(opts)...)
+
+	kc, err := client.NewClient(serviceInfoForStreamClient(), options...)
+	if err != nil {
+		return nil, err
+	}
+	return &kUserServiceStreamClient{
+		kClient: newServiceClient(kc),
+	}, nil
+}
+
+// MustNewStreamClient creates a stream client for the service's streaming APIs defined in IDL.
+// It panics if any error occurs.
+func MustNewStreamClient(destService string, opts ...streamclient.Option) StreamClient {
+	kc, err := NewStreamClient(destService, opts...)
+	if err != nil {
+		panic(err)
+	}
+	return kc
+}
+
+type kUserServiceStreamClient struct {
+	*kClient
+}
+
+func (p *kUserServiceStreamClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...streamcall.Option) (stream UserService_QrCodeLoginStatusClient, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, streamcall.GetCallOptions(callOptions))
+	return p.kClient.QrCodeLoginStatus(ctx, Req)
 }
