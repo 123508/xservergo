@@ -10,8 +10,10 @@ service UserService {
   rpc PhoneLogin(PhoneLoginReq) returns (LoginResp) {}                      // 手机密码登录
   rpc AccountLogin(AccountLoginReq) returns (LoginResp) {}                  // 账号登录
   rpc SmsLogin(SmsLoginReq) returns (SmsLoginResp) {}                       // 验证码登录
-  rpc QrCodeLogin(QrCodeLoginReq) returns (QrCodeLoginResp) {}              // 扫码登录
+  rpc GenerateQrCode(GenerateQrCodeReq) returns (GenerateQrCodeResp) {}              // 生成二维码
+  rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (stream QrCodeLoginStatusResp);  // 长轮询登录状态 (客户端调用)
   rpc ConfirmQrLogin(ConfirmQrLoginReq) returns (LoginResp) {}              // 确认扫码登录
+  rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                  // 取消登录 (移动端调用)
   rpc OAuthLogin(OAuthLoginReq) returns (LoginResp) {}                      // 第三方登录
   rpc Logout(LogoutReq) returns (OperationResult) {}                        // 登出
   rpc SessionCheck(SessionCheckReq) returns (SessionStatusResp) {}          // 会话检查
@@ -24,8 +26,9 @@ service UserService {
   // ---------- 绑定管理 ---------- //
   rpc StartBindEmail(StartBindEmailReq) returns (OperationResult) {}        // 预绑定邮箱
   rpc CompleteBindEmail(CompleteBindEmailReq) returns (OperationResult) {}  // 完成邮箱绑定
-  rpc StartUnbindEmail(StartUnbindEmailReq) returns (OperationResult) {}    // 预解绑邮箱
-  rpc CompleteUnbindEmail(CompleteUnbindEmailReq) returns (OperationResult) {} // 完成邮箱解绑
+  rpc StartChangeEmail(StartChangeEmailReq)returns(OperationResult){}       // 预换绑邮箱
+  rpc VerifyNewEmail(VerifyNewEmailReq)returns(OperationResult){}           // 验证新邮箱
+  rpc CompleteChangeEmail(CompleteChangeEmailReq)returns(OperationResult){} // 完成换绑邮箱
   rpc StartBindPhone(StartBindPhoneReq) returns (OperationResult) {}        // 预绑定手机
   rpc CompleteBindPhone(CompleteBindPhoneReq) returns (OperationResult) {}  // 完成手机绑定
   rpc StartChangePhone(StartChangePhoneReq)returns(OperationResult){}       // 预换绑手机
@@ -99,6 +102,8 @@ message SafeFilter {
   }
 }
 
+message Empty{}
+
 // ---------- 认证模块 ---------- //
 message RegisterReq {
   string username = 1;
@@ -161,19 +166,67 @@ message LoginSuccess {
   UserInfo user_info = 3;
 }
 
-message QrCodeLoginReq {
-  string session_id = 1;  // 扫码后提供
+message GenerateQrCodeReq {
+  string client_ip = 1;         // 客户端IP
+  string user_agent = 2;        // 浏览器UA
 }
 
-message QrCodeLoginResp {
+message GenerateQrCodeResp {
   string qr_code_url = 1;   // 二维码图片URL
-  string session_id = 2;     // 登录会话ID
-  uint64 expires_at = 3;      // 过期时间戳(毫秒)
+  string ticket = 2;        // 登录票据ID
+  uint64 expires_at = 3;    // 过期时间戳(毫秒)
+}
+
+// 长轮询状态请求
+message QrCodeLoginStatusReq {
+  string ticket = 1;             // 票据ID(即会话ID)
+  int64 timeout = 2;             // 长轮询超时时间 (毫秒, 0=使用默认)
+}
+
+// 长轮询状态响应 (流式)
+message QrCodeLoginStatusResp {
+  enum Status {
+    UNKNOWN = 0;
+    PENDING = 1;      // 等待扫码
+    SCANNED = 2;      // 已扫码未确认
+    CONFIRMED = 3;    // 已确认
+    EXPIRED = 4;      // 已过期
+    CANCELLED = 5;    // 已取消
+  }
+
+  Status status = 1;              // 当前状态
+  LoginResponse login_resp = 2;   // 登录响应 (仅当状态为CONFIRMED时有效)
+  int64 next_poll_in = 3;         // 下次轮询时间 (毫秒, 仅当状态未完成时)
+}
+
+// 登录响应
+message LoginResponse {
+  message Success {
+    string access_token = 1;
+    string refresh_token = 2;
+    int64 expires_in = 3;        // 有效期 (秒)
+  }
+
+  message Failure {
+    int32 code = 1;
+    string message = 2;
+  }
+
+  oneof result {
+    Success success = 1;
+    Failure failure = 2;
+  }
 }
 
 message ConfirmQrLoginReq {
-  string session_id = 1;
-  bytes user_id = 2;        // 确认登录的用户
+  string ticket = 1;
+  string phone = 2;        // 确认登录的用户手机号
+}
+
+// 取消登录请求 (移动端)
+message CancelQrLoginReq {
+  string ticket = 1;             // 票据ID
+  string reason = 2;             // 取消原因
 }
 
 message OAuthLoginReq {
@@ -239,14 +292,23 @@ message CompleteBindEmailReq {
   bytes request_user_id=5;
 }
 
-message StartUnbindEmailReq {
-  bytes target_user_id = 1;
-  bytes request_user_id=2;
+message StartChangeEmailReq{
+  bytes target_user_id=1;
+  string old_email=2;
+  bytes request_user_id=3;
 }
 
-message CompleteUnbindEmailReq {
-  bytes target_user_id = 1;
-  string verification_code = 2;
+message VerifyNewEmailReq{
+  bytes target_user_id=1;
+  string new_email=2;
+  string verification_code=3;
+  bytes request_user_id=4;
+  string request_id=5;
+}
+
+message CompleteChangeEmailReq{
+  bytes target_user_id=1;
+  string verification_code=2;
   string request_id=3;
   bytes request_user_id=4;
 }
@@ -281,10 +343,9 @@ message VerifyNewPhoneReq{
 
 message CompleteChangePhoneReq{
   bytes target_user_id=1;
-  string new_phone=2;
-  string verification_code=3;
-  string request_id=4;
-  bytes request_user_id=5;
+  string verification_code=2;
+  string request_id=3;
+  bytes request_user_id=4;
 }
 
 // ---------- 用户管理 ---------- //

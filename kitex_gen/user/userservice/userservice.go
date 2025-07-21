@@ -5,6 +5,7 @@ package userservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	user "github.com/123508/xservergo/kitex_gen/user"
 	client "github.com/cloudwego/kitex/client"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
@@ -50,17 +51,31 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"QrCodeLogin": kitex.NewMethodInfo(
-		qrCodeLoginHandler,
-		newQrCodeLoginArgs,
-		newQrCodeLoginResult,
+	"GenerateQrCode": kitex.NewMethodInfo(
+		generateQrCodeHandler,
+		newGenerateQrCodeArgs,
+		newGenerateQrCodeResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"QrCodeLoginStatus": kitex.NewMethodInfo(
+		qrCodeLoginStatusHandler,
+		newQrCodeLoginStatusArgs,
+		newQrCodeLoginStatusResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingServer),
 	),
 	"ConfirmQrLogin": kitex.NewMethodInfo(
 		confirmQrLoginHandler,
 		newConfirmQrLoginArgs,
 		newConfirmQrLoginResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"CancelQrLogin": kitex.NewMethodInfo(
+		cancelQrLoginHandler,
+		newCancelQrLoginArgs,
+		newCancelQrLoginResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -120,17 +135,24 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"StartUnbindEmail": kitex.NewMethodInfo(
-		startUnbindEmailHandler,
-		newStartUnbindEmailArgs,
-		newStartUnbindEmailResult,
+	"StartChangeEmail": kitex.NewMethodInfo(
+		startChangeEmailHandler,
+		newStartChangeEmailArgs,
+		newStartChangeEmailResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"CompleteUnbindEmail": kitex.NewMethodInfo(
-		completeUnbindEmailHandler,
-		newCompleteUnbindEmailArgs,
-		newCompleteUnbindEmailResult,
+	"VerifyNewEmail": kitex.NewMethodInfo(
+		verifyNewEmailHandler,
+		newVerifyNewEmailArgs,
+		newVerifyNewEmailResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"CompleteChangeEmail": kitex.NewMethodInfo(
+		completeChangeEmailHandler,
+		newCompleteChangeEmailArgs,
+		newCompleteChangeEmailResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -271,7 +293,7 @@ func serviceInfoForClient() *kitex.ServiceInfo {
 
 // NewServiceInfo creates a new ServiceInfo containing all methods
 func NewServiceInfo() *kitex.ServiceInfo {
-	return newServiceInfo(false, true, true)
+	return newServiceInfo(true, true, true)
 }
 
 // NewServiceInfo creates a new ServiceInfo containing non-streaming methods
@@ -1077,73 +1099,73 @@ func (p *SmsLoginResult) GetResult() interface{} {
 	return p.Success
 }
 
-func qrCodeLoginHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func generateQrCodeHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(user.QrCodeLoginReq)
+		req := new(user.GenerateQrCodeReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(user.UserService).QrCodeLogin(ctx, req)
+		resp, err := handler.(user.UserService).GenerateQrCode(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *QrCodeLoginArgs:
-		success, err := handler.(user.UserService).QrCodeLogin(ctx, s.Req)
+	case *GenerateQrCodeArgs:
+		success, err := handler.(user.UserService).GenerateQrCode(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*QrCodeLoginResult)
+		realResult := result.(*GenerateQrCodeResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newQrCodeLoginArgs() interface{} {
-	return &QrCodeLoginArgs{}
+func newGenerateQrCodeArgs() interface{} {
+	return &GenerateQrCodeArgs{}
 }
 
-func newQrCodeLoginResult() interface{} {
-	return &QrCodeLoginResult{}
+func newGenerateQrCodeResult() interface{} {
+	return &GenerateQrCodeResult{}
 }
 
-type QrCodeLoginArgs struct {
-	Req *user.QrCodeLoginReq
+type GenerateQrCodeArgs struct {
+	Req *user.GenerateQrCodeReq
 }
 
-func (p *QrCodeLoginArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *GenerateQrCodeArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetReq() {
-		p.Req = new(user.QrCodeLoginReq)
+		p.Req = new(user.GenerateQrCodeReq)
 	}
 	return p.Req.FastRead(buf, _type, number)
 }
 
-func (p *QrCodeLoginArgs) FastWrite(buf []byte) (n int) {
+func (p *GenerateQrCodeArgs) FastWrite(buf []byte) (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.FastWrite(buf)
 }
 
-func (p *QrCodeLoginArgs) Size() (n int) {
+func (p *GenerateQrCodeArgs) Size() (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.Size()
 }
 
-func (p *QrCodeLoginArgs) Marshal(out []byte) ([]byte, error) {
+func (p *GenerateQrCodeArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *QrCodeLoginArgs) Unmarshal(in []byte) error {
-	msg := new(user.QrCodeLoginReq)
+func (p *GenerateQrCodeArgs) Unmarshal(in []byte) error {
+	msg := new(user.GenerateQrCodeReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1151,59 +1173,59 @@ func (p *QrCodeLoginArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var QrCodeLoginArgs_Req_DEFAULT *user.QrCodeLoginReq
+var GenerateQrCodeArgs_Req_DEFAULT *user.GenerateQrCodeReq
 
-func (p *QrCodeLoginArgs) GetReq() *user.QrCodeLoginReq {
+func (p *GenerateQrCodeArgs) GetReq() *user.GenerateQrCodeReq {
 	if !p.IsSetReq() {
-		return QrCodeLoginArgs_Req_DEFAULT
+		return GenerateQrCodeArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *QrCodeLoginArgs) IsSetReq() bool {
+func (p *GenerateQrCodeArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *QrCodeLoginArgs) GetFirstArgument() interface{} {
+func (p *GenerateQrCodeArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type QrCodeLoginResult struct {
-	Success *user.QrCodeLoginResp
+type GenerateQrCodeResult struct {
+	Success *user.GenerateQrCodeResp
 }
 
-var QrCodeLoginResult_Success_DEFAULT *user.QrCodeLoginResp
+var GenerateQrCodeResult_Success_DEFAULT *user.GenerateQrCodeResp
 
-func (p *QrCodeLoginResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *GenerateQrCodeResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetSuccess() {
-		p.Success = new(user.QrCodeLoginResp)
+		p.Success = new(user.GenerateQrCodeResp)
 	}
 	return p.Success.FastRead(buf, _type, number)
 }
 
-func (p *QrCodeLoginResult) FastWrite(buf []byte) (n int) {
+func (p *GenerateQrCodeResult) FastWrite(buf []byte) (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.FastWrite(buf)
 }
 
-func (p *QrCodeLoginResult) Size() (n int) {
+func (p *GenerateQrCodeResult) Size() (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.Size()
 }
 
-func (p *QrCodeLoginResult) Marshal(out []byte) ([]byte, error) {
+func (p *GenerateQrCodeResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *QrCodeLoginResult) Unmarshal(in []byte) error {
-	msg := new(user.QrCodeLoginResp)
+func (p *GenerateQrCodeResult) Unmarshal(in []byte) error {
+	msg := new(user.GenerateQrCodeResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1211,22 +1233,188 @@ func (p *QrCodeLoginResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *QrCodeLoginResult) GetSuccess() *user.QrCodeLoginResp {
+func (p *GenerateQrCodeResult) GetSuccess() *user.GenerateQrCodeResp {
 	if !p.IsSetSuccess() {
-		return QrCodeLoginResult_Success_DEFAULT
+		return GenerateQrCodeResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *QrCodeLoginResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.QrCodeLoginResp)
+func (p *GenerateQrCodeResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.GenerateQrCodeResp)
 }
 
-func (p *QrCodeLoginResult) IsSetSuccess() bool {
+func (p *GenerateQrCodeResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *QrCodeLoginResult) GetResult() interface{} {
+func (p *GenerateQrCodeResult) GetResult() interface{} {
+	return p.Success
+}
+
+func qrCodeLoginStatusHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	streamingArgs, ok := arg.(*streaming.Args)
+	if !ok {
+		return errInvalidMessageType
+	}
+	st := streamingArgs.Stream
+	stream := &userServiceQrCodeLoginStatusServer{st}
+	req := new(user.QrCodeLoginStatusReq)
+	if err := st.RecvMsg(req); err != nil {
+		return err
+	}
+	return handler.(user.UserService).QrCodeLoginStatus(req, stream)
+}
+
+type userServiceQrCodeLoginStatusClient struct {
+	streaming.Stream
+}
+
+func (x *userServiceQrCodeLoginStatusClient) DoFinish(err error) {
+	if finisher, ok := x.Stream.(streaming.WithDoFinish); ok {
+		finisher.DoFinish(err)
+	} else {
+		panic(fmt.Sprintf("streaming.WithDoFinish is not implemented by %T", x.Stream))
+	}
+}
+func (x *userServiceQrCodeLoginStatusClient) Recv() (*user.QrCodeLoginStatusResp, error) {
+	m := new(user.QrCodeLoginStatusResp)
+	return m, x.Stream.RecvMsg(m)
+}
+
+type userServiceQrCodeLoginStatusServer struct {
+	streaming.Stream
+}
+
+func (x *userServiceQrCodeLoginStatusServer) Send(m *user.QrCodeLoginStatusResp) error {
+	return x.Stream.SendMsg(m)
+}
+
+func newQrCodeLoginStatusArgs() interface{} {
+	return &QrCodeLoginStatusArgs{}
+}
+
+func newQrCodeLoginStatusResult() interface{} {
+	return &QrCodeLoginStatusResult{}
+}
+
+type QrCodeLoginStatusArgs struct {
+	Req *user.QrCodeLoginStatusReq
+}
+
+func (p *QrCodeLoginStatusArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetReq() {
+		p.Req = new(user.QrCodeLoginStatusReq)
+	}
+	return p.Req.FastRead(buf, _type, number)
+}
+
+func (p *QrCodeLoginStatusArgs) FastWrite(buf []byte) (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.FastWrite(buf)
+}
+
+func (p *QrCodeLoginStatusArgs) Size() (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.Size()
+}
+
+func (p *QrCodeLoginStatusArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *QrCodeLoginStatusArgs) Unmarshal(in []byte) error {
+	msg := new(user.QrCodeLoginStatusReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var QrCodeLoginStatusArgs_Req_DEFAULT *user.QrCodeLoginStatusReq
+
+func (p *QrCodeLoginStatusArgs) GetReq() *user.QrCodeLoginStatusReq {
+	if !p.IsSetReq() {
+		return QrCodeLoginStatusArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *QrCodeLoginStatusArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *QrCodeLoginStatusArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type QrCodeLoginStatusResult struct {
+	Success *user.QrCodeLoginStatusResp
+}
+
+var QrCodeLoginStatusResult_Success_DEFAULT *user.QrCodeLoginStatusResp
+
+func (p *QrCodeLoginStatusResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetSuccess() {
+		p.Success = new(user.QrCodeLoginStatusResp)
+	}
+	return p.Success.FastRead(buf, _type, number)
+}
+
+func (p *QrCodeLoginStatusResult) FastWrite(buf []byte) (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.FastWrite(buf)
+}
+
+func (p *QrCodeLoginStatusResult) Size() (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.Size()
+}
+
+func (p *QrCodeLoginStatusResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *QrCodeLoginStatusResult) Unmarshal(in []byte) error {
+	msg := new(user.QrCodeLoginStatusResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *QrCodeLoginStatusResult) GetSuccess() *user.QrCodeLoginStatusResp {
+	if !p.IsSetSuccess() {
+		return QrCodeLoginStatusResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *QrCodeLoginStatusResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.QrCodeLoginStatusResp)
+}
+
+func (p *QrCodeLoginStatusResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *QrCodeLoginStatusResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -1380,6 +1568,159 @@ func (p *ConfirmQrLoginResult) IsSetSuccess() bool {
 }
 
 func (p *ConfirmQrLoginResult) GetResult() interface{} {
+	return p.Success
+}
+
+func cancelQrLoginHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.CancelQrLoginReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).CancelQrLogin(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *CancelQrLoginArgs:
+		success, err := handler.(user.UserService).CancelQrLogin(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*CancelQrLoginResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newCancelQrLoginArgs() interface{} {
+	return &CancelQrLoginArgs{}
+}
+
+func newCancelQrLoginResult() interface{} {
+	return &CancelQrLoginResult{}
+}
+
+type CancelQrLoginArgs struct {
+	Req *user.CancelQrLoginReq
+}
+
+func (p *CancelQrLoginArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetReq() {
+		p.Req = new(user.CancelQrLoginReq)
+	}
+	return p.Req.FastRead(buf, _type, number)
+}
+
+func (p *CancelQrLoginArgs) FastWrite(buf []byte) (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.FastWrite(buf)
+}
+
+func (p *CancelQrLoginArgs) Size() (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.Size()
+}
+
+func (p *CancelQrLoginArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *CancelQrLoginArgs) Unmarshal(in []byte) error {
+	msg := new(user.CancelQrLoginReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var CancelQrLoginArgs_Req_DEFAULT *user.CancelQrLoginReq
+
+func (p *CancelQrLoginArgs) GetReq() *user.CancelQrLoginReq {
+	if !p.IsSetReq() {
+		return CancelQrLoginArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *CancelQrLoginArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CancelQrLoginArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type CancelQrLoginResult struct {
+	Success *user.Empty
+}
+
+var CancelQrLoginResult_Success_DEFAULT *user.Empty
+
+func (p *CancelQrLoginResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetSuccess() {
+		p.Success = new(user.Empty)
+	}
+	return p.Success.FastRead(buf, _type, number)
+}
+
+func (p *CancelQrLoginResult) FastWrite(buf []byte) (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.FastWrite(buf)
+}
+
+func (p *CancelQrLoginResult) Size() (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.Size()
+}
+
+func (p *CancelQrLoginResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *CancelQrLoginResult) Unmarshal(in []byte) error {
+	msg := new(user.Empty)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *CancelQrLoginResult) GetSuccess() *user.Empty {
+	if !p.IsSetSuccess() {
+		return CancelQrLoginResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *CancelQrLoginResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.Empty)
+}
+
+func (p *CancelQrLoginResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CancelQrLoginResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2607,73 +2948,73 @@ func (p *CompleteBindEmailResult) GetResult() interface{} {
 	return p.Success
 }
 
-func startUnbindEmailHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func startChangeEmailHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(user.StartUnbindEmailReq)
+		req := new(user.StartChangeEmailReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(user.UserService).StartUnbindEmail(ctx, req)
+		resp, err := handler.(user.UserService).StartChangeEmail(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *StartUnbindEmailArgs:
-		success, err := handler.(user.UserService).StartUnbindEmail(ctx, s.Req)
+	case *StartChangeEmailArgs:
+		success, err := handler.(user.UserService).StartChangeEmail(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*StartUnbindEmailResult)
+		realResult := result.(*StartChangeEmailResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newStartUnbindEmailArgs() interface{} {
-	return &StartUnbindEmailArgs{}
+func newStartChangeEmailArgs() interface{} {
+	return &StartChangeEmailArgs{}
 }
 
-func newStartUnbindEmailResult() interface{} {
-	return &StartUnbindEmailResult{}
+func newStartChangeEmailResult() interface{} {
+	return &StartChangeEmailResult{}
 }
 
-type StartUnbindEmailArgs struct {
-	Req *user.StartUnbindEmailReq
+type StartChangeEmailArgs struct {
+	Req *user.StartChangeEmailReq
 }
 
-func (p *StartUnbindEmailArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *StartChangeEmailArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetReq() {
-		p.Req = new(user.StartUnbindEmailReq)
+		p.Req = new(user.StartChangeEmailReq)
 	}
 	return p.Req.FastRead(buf, _type, number)
 }
 
-func (p *StartUnbindEmailArgs) FastWrite(buf []byte) (n int) {
+func (p *StartChangeEmailArgs) FastWrite(buf []byte) (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.FastWrite(buf)
 }
 
-func (p *StartUnbindEmailArgs) Size() (n int) {
+func (p *StartChangeEmailArgs) Size() (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.Size()
 }
 
-func (p *StartUnbindEmailArgs) Marshal(out []byte) ([]byte, error) {
+func (p *StartChangeEmailArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *StartUnbindEmailArgs) Unmarshal(in []byte) error {
-	msg := new(user.StartUnbindEmailReq)
+func (p *StartChangeEmailArgs) Unmarshal(in []byte) error {
+	msg := new(user.StartChangeEmailReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2681,58 +3022,58 @@ func (p *StartUnbindEmailArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var StartUnbindEmailArgs_Req_DEFAULT *user.StartUnbindEmailReq
+var StartChangeEmailArgs_Req_DEFAULT *user.StartChangeEmailReq
 
-func (p *StartUnbindEmailArgs) GetReq() *user.StartUnbindEmailReq {
+func (p *StartChangeEmailArgs) GetReq() *user.StartChangeEmailReq {
 	if !p.IsSetReq() {
-		return StartUnbindEmailArgs_Req_DEFAULT
+		return StartChangeEmailArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *StartUnbindEmailArgs) IsSetReq() bool {
+func (p *StartChangeEmailArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *StartUnbindEmailArgs) GetFirstArgument() interface{} {
+func (p *StartChangeEmailArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type StartUnbindEmailResult struct {
+type StartChangeEmailResult struct {
 	Success *user.OperationResult
 }
 
-var StartUnbindEmailResult_Success_DEFAULT *user.OperationResult
+var StartChangeEmailResult_Success_DEFAULT *user.OperationResult
 
-func (p *StartUnbindEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *StartChangeEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetSuccess() {
 		p.Success = new(user.OperationResult)
 	}
 	return p.Success.FastRead(buf, _type, number)
 }
 
-func (p *StartUnbindEmailResult) FastWrite(buf []byte) (n int) {
+func (p *StartChangeEmailResult) FastWrite(buf []byte) (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.FastWrite(buf)
 }
 
-func (p *StartUnbindEmailResult) Size() (n int) {
+func (p *StartChangeEmailResult) Size() (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.Size()
 }
 
-func (p *StartUnbindEmailResult) Marshal(out []byte) ([]byte, error) {
+func (p *StartChangeEmailResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *StartUnbindEmailResult) Unmarshal(in []byte) error {
+func (p *StartChangeEmailResult) Unmarshal(in []byte) error {
 	msg := new(user.OperationResult)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -2741,92 +3082,92 @@ func (p *StartUnbindEmailResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *StartUnbindEmailResult) GetSuccess() *user.OperationResult {
+func (p *StartChangeEmailResult) GetSuccess() *user.OperationResult {
 	if !p.IsSetSuccess() {
-		return StartUnbindEmailResult_Success_DEFAULT
+		return StartChangeEmailResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *StartUnbindEmailResult) SetSuccess(x interface{}) {
+func (p *StartChangeEmailResult) SetSuccess(x interface{}) {
 	p.Success = x.(*user.OperationResult)
 }
 
-func (p *StartUnbindEmailResult) IsSetSuccess() bool {
+func (p *StartChangeEmailResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *StartUnbindEmailResult) GetResult() interface{} {
+func (p *StartChangeEmailResult) GetResult() interface{} {
 	return p.Success
 }
 
-func completeUnbindEmailHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func verifyNewEmailHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(user.CompleteUnbindEmailReq)
+		req := new(user.VerifyNewEmailReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(user.UserService).CompleteUnbindEmail(ctx, req)
+		resp, err := handler.(user.UserService).VerifyNewEmail(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *CompleteUnbindEmailArgs:
-		success, err := handler.(user.UserService).CompleteUnbindEmail(ctx, s.Req)
+	case *VerifyNewEmailArgs:
+		success, err := handler.(user.UserService).VerifyNewEmail(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*CompleteUnbindEmailResult)
+		realResult := result.(*VerifyNewEmailResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newCompleteUnbindEmailArgs() interface{} {
-	return &CompleteUnbindEmailArgs{}
+func newVerifyNewEmailArgs() interface{} {
+	return &VerifyNewEmailArgs{}
 }
 
-func newCompleteUnbindEmailResult() interface{} {
-	return &CompleteUnbindEmailResult{}
+func newVerifyNewEmailResult() interface{} {
+	return &VerifyNewEmailResult{}
 }
 
-type CompleteUnbindEmailArgs struct {
-	Req *user.CompleteUnbindEmailReq
+type VerifyNewEmailArgs struct {
+	Req *user.VerifyNewEmailReq
 }
 
-func (p *CompleteUnbindEmailArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *VerifyNewEmailArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetReq() {
-		p.Req = new(user.CompleteUnbindEmailReq)
+		p.Req = new(user.VerifyNewEmailReq)
 	}
 	return p.Req.FastRead(buf, _type, number)
 }
 
-func (p *CompleteUnbindEmailArgs) FastWrite(buf []byte) (n int) {
+func (p *VerifyNewEmailArgs) FastWrite(buf []byte) (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.FastWrite(buf)
 }
 
-func (p *CompleteUnbindEmailArgs) Size() (n int) {
+func (p *VerifyNewEmailArgs) Size() (n int) {
 	if !p.IsSetReq() {
 		return 0
 	}
 	return p.Req.Size()
 }
 
-func (p *CompleteUnbindEmailArgs) Marshal(out []byte) ([]byte, error) {
+func (p *VerifyNewEmailArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *CompleteUnbindEmailArgs) Unmarshal(in []byte) error {
-	msg := new(user.CompleteUnbindEmailReq)
+func (p *VerifyNewEmailArgs) Unmarshal(in []byte) error {
+	msg := new(user.VerifyNewEmailReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2834,58 +3175,58 @@ func (p *CompleteUnbindEmailArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var CompleteUnbindEmailArgs_Req_DEFAULT *user.CompleteUnbindEmailReq
+var VerifyNewEmailArgs_Req_DEFAULT *user.VerifyNewEmailReq
 
-func (p *CompleteUnbindEmailArgs) GetReq() *user.CompleteUnbindEmailReq {
+func (p *VerifyNewEmailArgs) GetReq() *user.VerifyNewEmailReq {
 	if !p.IsSetReq() {
-		return CompleteUnbindEmailArgs_Req_DEFAULT
+		return VerifyNewEmailArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *CompleteUnbindEmailArgs) IsSetReq() bool {
+func (p *VerifyNewEmailArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *CompleteUnbindEmailArgs) GetFirstArgument() interface{} {
+func (p *VerifyNewEmailArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type CompleteUnbindEmailResult struct {
+type VerifyNewEmailResult struct {
 	Success *user.OperationResult
 }
 
-var CompleteUnbindEmailResult_Success_DEFAULT *user.OperationResult
+var VerifyNewEmailResult_Success_DEFAULT *user.OperationResult
 
-func (p *CompleteUnbindEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+func (p *VerifyNewEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetSuccess() {
 		p.Success = new(user.OperationResult)
 	}
 	return p.Success.FastRead(buf, _type, number)
 }
 
-func (p *CompleteUnbindEmailResult) FastWrite(buf []byte) (n int) {
+func (p *VerifyNewEmailResult) FastWrite(buf []byte) (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.FastWrite(buf)
 }
 
-func (p *CompleteUnbindEmailResult) Size() (n int) {
+func (p *VerifyNewEmailResult) Size() (n int) {
 	if !p.IsSetSuccess() {
 		return 0
 	}
 	return p.Success.Size()
 }
 
-func (p *CompleteUnbindEmailResult) Marshal(out []byte) ([]byte, error) {
+func (p *VerifyNewEmailResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *CompleteUnbindEmailResult) Unmarshal(in []byte) error {
+func (p *VerifyNewEmailResult) Unmarshal(in []byte) error {
 	msg := new(user.OperationResult)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -2894,22 +3235,175 @@ func (p *CompleteUnbindEmailResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteUnbindEmailResult) GetSuccess() *user.OperationResult {
+func (p *VerifyNewEmailResult) GetSuccess() *user.OperationResult {
 	if !p.IsSetSuccess() {
-		return CompleteUnbindEmailResult_Success_DEFAULT
+		return VerifyNewEmailResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *CompleteUnbindEmailResult) SetSuccess(x interface{}) {
+func (p *VerifyNewEmailResult) SetSuccess(x interface{}) {
 	p.Success = x.(*user.OperationResult)
 }
 
-func (p *CompleteUnbindEmailResult) IsSetSuccess() bool {
+func (p *VerifyNewEmailResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *CompleteUnbindEmailResult) GetResult() interface{} {
+func (p *VerifyNewEmailResult) GetResult() interface{} {
+	return p.Success
+}
+
+func completeChangeEmailHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.CompleteChangeEmailReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).CompleteChangeEmail(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *CompleteChangeEmailArgs:
+		success, err := handler.(user.UserService).CompleteChangeEmail(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*CompleteChangeEmailResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newCompleteChangeEmailArgs() interface{} {
+	return &CompleteChangeEmailArgs{}
+}
+
+func newCompleteChangeEmailResult() interface{} {
+	return &CompleteChangeEmailResult{}
+}
+
+type CompleteChangeEmailArgs struct {
+	Req *user.CompleteChangeEmailReq
+}
+
+func (p *CompleteChangeEmailArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetReq() {
+		p.Req = new(user.CompleteChangeEmailReq)
+	}
+	return p.Req.FastRead(buf, _type, number)
+}
+
+func (p *CompleteChangeEmailArgs) FastWrite(buf []byte) (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.FastWrite(buf)
+}
+
+func (p *CompleteChangeEmailArgs) Size() (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.Size()
+}
+
+func (p *CompleteChangeEmailArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *CompleteChangeEmailArgs) Unmarshal(in []byte) error {
+	msg := new(user.CompleteChangeEmailReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var CompleteChangeEmailArgs_Req_DEFAULT *user.CompleteChangeEmailReq
+
+func (p *CompleteChangeEmailArgs) GetReq() *user.CompleteChangeEmailReq {
+	if !p.IsSetReq() {
+		return CompleteChangeEmailArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *CompleteChangeEmailArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CompleteChangeEmailArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type CompleteChangeEmailResult struct {
+	Success *user.OperationResult
+}
+
+var CompleteChangeEmailResult_Success_DEFAULT *user.OperationResult
+
+func (p *CompleteChangeEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetSuccess() {
+		p.Success = new(user.OperationResult)
+	}
+	return p.Success.FastRead(buf, _type, number)
+}
+
+func (p *CompleteChangeEmailResult) FastWrite(buf []byte) (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.FastWrite(buf)
+}
+
+func (p *CompleteChangeEmailResult) Size() (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.Size()
+}
+
+func (p *CompleteChangeEmailResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *CompleteChangeEmailResult) Unmarshal(in []byte) error {
+	msg := new(user.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *CompleteChangeEmailResult) GetSuccess() *user.OperationResult {
+	if !p.IsSetSuccess() {
+		return CompleteChangeEmailResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *CompleteChangeEmailResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.OperationResult)
+}
+
+func (p *CompleteChangeEmailResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CompleteChangeEmailResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -5421,14 +5915,35 @@ func (p *kClient) SmsLogin(ctx context.Context, Req *user.SmsLoginReq) (r *user.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) QrCodeLogin(ctx context.Context, Req *user.QrCodeLoginReq) (r *user.QrCodeLoginResp, err error) {
-	var _args QrCodeLoginArgs
+func (p *kClient) GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeReq) (r *user.GenerateQrCodeResp, err error) {
+	var _args GenerateQrCodeArgs
 	_args.Req = Req
-	var _result QrCodeLoginResult
-	if err = p.c.Call(ctx, "QrCodeLogin", &_args, &_result); err != nil {
+	var _result GenerateQrCodeResult
+	if err = p.c.Call(ctx, "GenerateQrCode", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginStatusReq) (UserService_QrCodeLoginStatusClient, error) {
+	streamClient, ok := p.c.(client.Streaming)
+	if !ok {
+		return nil, fmt.Errorf("client not support streaming")
+	}
+	res := new(streaming.Result)
+	err := streamClient.Stream(ctx, "QrCodeLoginStatus", nil, res)
+	if err != nil {
+		return nil, err
+	}
+	stream := &userServiceQrCodeLoginStatusClient{res.Stream}
+
+	if err := stream.Stream.SendMsg(req); err != nil {
+		return nil, err
+	}
+	if err := stream.Stream.Close(); err != nil {
+		return nil, err
+	}
+	return stream, nil
 }
 
 func (p *kClient) ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq) (r *user.LoginResp, err error) {
@@ -5436,6 +5951,16 @@ func (p *kClient) ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginRe
 	_args.Req = Req
 	var _result ConfirmQrLoginResult
 	if err = p.c.Call(ctx, "ConfirmQrLogin", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq) (r *user.Empty, err error) {
+	var _args CancelQrLoginArgs
+	_args.Req = Req
+	var _result CancelQrLoginResult
+	if err = p.c.Call(ctx, "CancelQrLogin", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
@@ -5521,21 +6046,31 @@ func (p *kClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindE
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) StartUnbindEmail(ctx context.Context, Req *user.StartUnbindEmailReq) (r *user.OperationResult, err error) {
-	var _args StartUnbindEmailArgs
+func (p *kClient) StartChangeEmail(ctx context.Context, Req *user.StartChangeEmailReq) (r *user.OperationResult, err error) {
+	var _args StartChangeEmailArgs
 	_args.Req = Req
-	var _result StartUnbindEmailResult
-	if err = p.c.Call(ctx, "StartUnbindEmail", &_args, &_result); err != nil {
+	var _result StartChangeEmailResult
+	if err = p.c.Call(ctx, "StartChangeEmail", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteUnbindEmail(ctx context.Context, Req *user.CompleteUnbindEmailReq) (r *user.OperationResult, err error) {
-	var _args CompleteUnbindEmailArgs
+func (p *kClient) VerifyNewEmail(ctx context.Context, Req *user.VerifyNewEmailReq) (r *user.OperationResult, err error) {
+	var _args VerifyNewEmailArgs
 	_args.Req = Req
-	var _result CompleteUnbindEmailResult
-	if err = p.c.Call(ctx, "CompleteUnbindEmail", &_args, &_result); err != nil {
+	var _result VerifyNewEmailResult
+	if err = p.c.Call(ctx, "VerifyNewEmail", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CompleteChangeEmail(ctx context.Context, Req *user.CompleteChangeEmailReq) (r *user.OperationResult, err error) {
+	var _args CompleteChangeEmailArgs
+	_args.Req = Req
+	var _result CompleteChangeEmailResult
+	if err = p.c.Call(ctx, "CompleteChangeEmail", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
