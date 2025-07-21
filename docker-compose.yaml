@@ -24,6 +24,16 @@ services:
       - ./deploy/docker/redis/redis.conf:/etc/redis/redis.conf
     command: redis-server /etc/redis/redis.conf
     privileged: true
+  qrredis: # 用于扫码登录消费队列做阻塞监听
+    image: redis:latest
+    restart: always
+    container_name: xservergo-qrredis
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./deploy/docker/qrredis/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+    privileged: true
   etcd:
     image: bitnami/etcd:3.5
     restart: always

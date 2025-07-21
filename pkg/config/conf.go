@@ -10,6 +10,7 @@ import (
 type AppConfig struct {
 	*MySQLConfig   `mapstructure:"mysql"`
 	*RedisConfig   `mapstructure:"redis"`
+	*QRRdisConfig  `mapstructure:"qrredis"`
 	*EtcdConfig    `mapstructure:"etcd"`
 	*Jwt           `mapstructure:"jwt"`
 	*ElasticSearch `mapstructure:"elasticsearch"`
@@ -30,6 +31,15 @@ type MySQLConfig struct {
 }
 
 type RedisConfig struct {
+	Host         string `mapstructure:"host"`
+	Password     string `mapstructure:"password"`
+	Port         int    `mapstructure:"port"`
+	DB           int    `mapstructure:"db"`
+	PoolSize     int    `mapstructure:"pool_size"`
+	MinIdleConns int    `mapstructure:"min_idle_conns"`
+}
+
+type QRRdisConfig struct {
 	Host         string `mapstructure:"host"`
 	Password     string `mapstructure:"password"`
 	Port         int    `mapstructure:"port"`
@@ -115,6 +125,14 @@ func setDefaultValues(v *viper.Viper) {
 	v.SetDefault("redis.db", 0)
 	v.SetDefault("redis.pool_size", 100)
 	v.SetDefault("redis.min_idle_conns", 10)
+
+	// QRRedis 默认配置
+	v.SetDefault("qrredis.host", "127.0.0.1")
+	v.SetDefault("qrredis.port", 6380)
+	v.SetDefault("qrredis.password", "")
+	v.SetDefault("qrredis.db", 0)
+	v.SetDefault("qrredis.pool_size", 100)
+	v.SetDefault("qrredis.min_idle_conns", 10)
 
 	// Etcd 默认配置
 	v.SetDefault("etcd.endpoints", []string{"127.0.0.1:2379"})

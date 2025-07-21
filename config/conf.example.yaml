@@ -18,6 +18,14 @@ redis:
   pool_size: 100
   min_idle_conns: 10
 
+qrredis:
+  host: 127.0.0.1
+  port: 6380
+  password: ""
+  db: 0
+  pool_size: 100
+  min_idle_conns: 10
+
 jwt:
   # 设置jwt签名加密时使用的前端秘钥
   admin_secret_key: "default_admin_secret_key_change_in_production"
