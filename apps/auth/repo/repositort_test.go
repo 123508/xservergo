@@ -9,22 +9,33 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 )
 
-func TestCreatePermission(t *testing.T) {
+var testRepo AuthRepository
+
+func setupTestDB(t *testing.T) AuthRepository {
+	if testRepo != nil {
+		return testRepo
+	}
+
 	d, err := db.InitMySQLDB()
 	if err != nil {
 		t.Fatalf("failed to initialize database: %v", err)
 	}
-	repo := NewAuthRepository(d)
+	testRepo = NewAuthRepository(d)
+	return testRepo
+}
+
+func TestCreatePermission(t *testing.T) {
+	repo := setupTestDB(t)
 	uid := util.NewUUID()
 	permission := &models.Permission{
 		ID:          util.NewUUID(),
-		Code:        "test_permission",
-		Name:        "Test Permission",
-		Description: "Permission for testing purposes",
+		Code:        "test_permission_create",
+		Name:        "Test Permission Create",
+		Description: "Permission for testing create purposes",
 		ParentID:    nil,
 		Type:        models.PermissionTypeAPI,
-		Resource:    "/test/resource",
-		Method:      "Test",
+		Resource:    "/test/resource/create",
+		Method:      "POST",
 		Status:      1,
 		AuditFields: models.AuditFields{
 			CreatedAt: time.Now(),
@@ -35,10 +46,493 @@ func TestCreatePermission(t *testing.T) {
 			UpdatedBy: nil,
 		},
 	}
-	err = repo.CreatePermission(permission)
+	err := repo.CreatePermission(permission)
 	if err != nil {
 		t.Errorf("failed to create permission: %v", err)
 	} else {
 		t.Logf("permission created successfully: %+v", permission)
+	}
+}
+
+func TestUpdatePermission(t *testing.T) {
+	repo := setupTestDB(t)
+	uid := util.NewUUID()
+
+	// 先创建一个权限
+	permission := &models.Permission{
+		ID:          util.NewUUID(),
+		Code:        "test_permission_update",
+		Name:        "Test Permission Update",
+		Description: "Permission for testing update purposes",
+		ParentID:    nil,
+		Type:        models.PermissionTypeAPI,
+		Resource:    "/test/resource/update",
+		Method:      "PUT",
+		Status:      1,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+			Version:   1,
+			CreatedBy: &uid,
+			UpdatedBy: nil,
+		},
+	}
+
+	err := repo.CreatePermission(permission)
+	if err != nil {
+		t.Fatalf("failed to create permission for update test: %v", err)
+	}
+
+	// 更新权限
+	permission.Name = "Updated Test Permission"
+	permission.Description = "Updated description"
+	permission.UpdatedAt = time.Now()
+	permission.Version = 2
+
+	err = repo.UpdatePermission(permission)
+	if err != nil {
+		t.Errorf("failed to update permission: %v", err)
+	} else {
+		t.Logf("permission updated successfully: %+v", permission)
+	}
+}
+
+func TestGetPermissionByCode(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 测试获取存在的权限
+	permission, err := repo.GetPermissionByCode("test_permission_create")
+	if err != nil {
+		t.Errorf("failed to get permission by code: %v", err)
+	} else if permission != nil {
+		t.Logf("permission found: %+v", permission)
+	} else {
+		t.Log("permission not found")
+	}
+
+	// 测试获取不存在的权限
+	permission, err = repo.GetPermissionByCode("non_existent_permission")
+	if err != nil {
+		t.Errorf("failed to get non-existent permission: %v", err)
+	} else if permission == nil {
+		t.Log("non-existent permission correctly returned nil")
+	} else {
+		t.Error("expected nil for non-existent permission")
+	}
+}
+
+func TestGetPermissionByID(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 先通过code获取权限，然后通过ID获取
+	permByCode, err := repo.GetPermissionByCode("test_permission_create")
+	if err != nil {
+		t.Fatalf("failed to get permission by code: %v", err)
+	}
+	if permByCode == nil {
+		t.Skip("no test permission found, skipping ID test")
+		return
+	}
+
+	permByID, err := repo.GetPermissionByID(permByCode.ID[:])
+	if err != nil {
+		t.Errorf("failed to get permission by ID: %v", err)
+	} else if permByID != nil {
+		t.Logf("permission found by ID: %+v", permByID)
+	} else {
+		t.Error("permission not found by ID")
+	}
+}
+
+func TestCreateRole(t *testing.T) {
+	repo := setupTestDB(t)
+	uid := util.NewUUID()
+
+	role := &models.Role{
+		ID:          util.NewUUID(),
+		Code:        "test_role_admin",
+		Name:        "Test Admin Role",
+		Description: "Role for testing admin purposes",
+		Status:      1,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+			Version:   1,
+			CreatedBy: &uid,
+			UpdatedBy: nil,
+		},
+	}
+
+	err := repo.CreateRole(role)
+	if err != nil {
+		t.Errorf("failed to create role: %v", err)
+	} else {
+		t.Logf("role created successfully: %+v", role)
+	}
+}
+
+func TestUpdateRole(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 获取测试角色
+	role, err := repo.GetRoleByCode("test_role_admin")
+	if err != nil {
+		t.Fatalf("failed to get role for update test: %v", err)
+	}
+	if role == nil {
+		t.Skip("test role not found, skipping update test")
+		return
+	}
+
+	// 更新角色
+	role.Name = "Updated Test Admin Role"
+	role.Description = "Updated description"
+	role.UpdatedAt = time.Now()
+	role.Version = 2
+
+	err = repo.UpdateRole(role)
+	if err != nil {
+		t.Errorf("failed to update role: %v", err)
+	} else {
+		t.Logf("role updated successfully: %+v", role)
+	}
+}
+
+func TestGetRoleByCode(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 测试获取存在的角色
+	role, err := repo.GetRoleByCode("test_role_admin")
+	if err != nil {
+		t.Errorf("failed to get role by code: %v", err)
+	} else if role != nil {
+		t.Logf("role found: %+v", role)
+	} else {
+		t.Log("role not found")
+	}
+
+	// 测试获取不存在的角色
+	role, err = repo.GetRoleByCode("non_existent_role")
+	if err != nil {
+		t.Errorf("failed to get non-existent role: %v", err)
+	} else if role == nil {
+		t.Log("non-existent role correctly returned nil")
+	} else {
+		t.Error("expected nil for non-existent role")
+	}
+}
+
+func TestGrantPermissionToRole(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.GrantPermissionToRole("test_permission_create", "test_role_admin")
+	if err != nil {
+		t.Errorf("failed to grant permission to role: %v", err)
+	} else {
+		t.Log("permission granted to role successfully")
+	}
+}
+
+func TestGetRolePermission(t *testing.T) {
+	repo := setupTestDB(t)
+
+	permissions, err := repo.GetRolePermission("test_role_admin")
+	if err != nil {
+		t.Errorf("failed to get role permissions: %v", err)
+	} else {
+		t.Logf("role permissions: %v", permissions)
+	}
+}
+
+func TestCreateUserGroup(t *testing.T) {
+	repo := setupTestDB(t)
+	uid := util.NewUUID()
+
+	userGroup := &models.UserGroup{
+		ID:     util.NewUUID(),
+		Name:   "test_admin_group",
+		Code:   "test_admin_group_code",
+		Status: 1,
+		Path:   "/admin",
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+			Version:   1,
+			CreatedBy: &uid,
+			UpdatedBy: nil,
+		},
+	}
+
+	err := repo.CreateUserGroup(userGroup)
+	if err != nil {
+		t.Errorf("failed to create user group: %v", err)
+	} else {
+		t.Logf("user group created successfully: %+v", userGroup)
+	}
+}
+
+func TestGetUserGroupByName(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 测试获取存在的用户组
+	userGroup, err := repo.GetUserGroupByName("test_admin_group")
+	if err != nil {
+		t.Errorf("failed to get user group by name: %v", err)
+	} else if userGroup != nil {
+		t.Logf("user group found: %+v", userGroup)
+	} else {
+		t.Log("user group not found")
+	}
+}
+
+func TestCreateTestUser(t *testing.T) {
+	repo := setupTestDB(t)
+	uid := util.NewUUID()
+
+	// 创建测试用户
+	user := &models.User{
+		ID:       util.NewUUID(),
+		NickName: "Test User",
+		UserName: "testuser",
+		Email:    "test@example.com",
+		Phone:    "1234567890",
+		Gender:   1,
+		Avatar:   "",
+		Status:   0,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+			Version:   1,
+			CreatedBy: &uid,
+			UpdatedBy: nil,
+		},
+	}
+
+	err := repo.GetDB().Create(user).Error
+	if err != nil {
+		t.Errorf("failed to create test user: %v", err)
+	} else {
+		t.Logf("test user created successfully: %+v", user)
+	}
+}
+
+func TestAssignRoleToUser(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.AssignRoleToUser("test_role_admin", "testuser")
+	if err != nil {
+		t.Errorf("failed to assign role to user: %v", err)
+	} else {
+		t.Log("role assigned to user successfully")
+	}
+}
+
+func TestGetUserRoles(t *testing.T) {
+	repo := setupTestDB(t)
+
+	roles, err := repo.GetUserRoles("testuser")
+	if err != nil {
+		t.Errorf("failed to get user roles: %v", err)
+	} else {
+		t.Logf("user roles: %v", roles)
+	}
+}
+
+func TestAssignUserToGroup(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.AssignUserToGroup("testuser", "test_admin_group")
+	if err != nil {
+		t.Errorf("failed to assign user to group: %v", err)
+	} else {
+		t.Log("user assigned to group successfully")
+	}
+}
+
+func TestGetUserGroups(t *testing.T) {
+	repo := setupTestDB(t)
+
+	groups, err := repo.GetUserGroups("testuser")
+	if err != nil {
+		t.Errorf("failed to get user groups: %v", err)
+	} else {
+		t.Logf("user groups: %v", groups)
+	}
+}
+
+func TestGetUserGroupMembers(t *testing.T) {
+	repo := setupTestDB(t)
+
+	members, err := repo.GetUserGroupMembers("test_admin_group")
+	if err != nil {
+		t.Errorf("failed to get user group members: %v", err)
+	} else {
+		t.Logf("user group members: %v", members)
+	}
+}
+
+func TestGetUserPermissions(t *testing.T) {
+	repo := setupTestDB(t)
+
+	permissions, err := repo.GetUserPermissions("testuser")
+	if err != nil {
+		t.Errorf("failed to get user permissions: %v", err)
+	} else {
+		t.Logf("user permissions: %v", permissions)
+	}
+}
+
+func TestHasPermission(t *testing.T) {
+	repo := setupTestDB(t)
+
+	hasPermission := repo.HasPermission("testuser", "test_permission_create")
+	t.Logf("user has permission 'test_permission_create': %v", hasPermission)
+
+	hasPermission = repo.HasPermission("testuser", "non_existent_permission")
+	t.Logf("user has permission 'non_existent_permission': %v", hasPermission)
+}
+
+func TestCanAccess(t *testing.T) {
+	repo := setupTestDB(t)
+
+	canAccess := repo.CanAccess("testuser", "/test/resource/create", "POST")
+	t.Logf("user can access '/test/resource/create' with 'POST': %v", canAccess)
+
+	canAccess = repo.CanAccess("testuser", "/forbidden/resource", "DELETE")
+	t.Logf("user can access '/forbidden/resource' with 'DELETE': %v", canAccess)
+}
+
+func TestGetRoleList(t *testing.T) {
+	repo := setupTestDB(t)
+
+	roles, err := repo.GetRoleList(1, 10)
+	if err != nil {
+		t.Errorf("failed to get role list: %v", err)
+	} else {
+		t.Logf("role list (page 1, size 10): %d roles found", len(roles))
+		for _, role := range roles {
+			t.Logf("  - %s: %s", role.Code, role.Name)
+		}
+	}
+}
+
+func TestGetPermissionList(t *testing.T) {
+	repo := setupTestDB(t)
+
+	permissions, err := repo.GetPermissionList(1, 10)
+	if err != nil {
+		t.Errorf("failed to get permission list: %v", err)
+	} else {
+		t.Logf("permission list (page 1, size 10): %d permissions found", len(permissions))
+		for _, perm := range permissions {
+			t.Logf("  - %s: %s", perm.Code, perm.Name)
+		}
+	}
+}
+
+func TestGetUserGroupList(t *testing.T) {
+	repo := setupTestDB(t)
+
+	groups, err := repo.GetUserGroupList(1, 10)
+	if err != nil {
+		t.Errorf("failed to get user group list: %v", err)
+	} else {
+		t.Logf("user group list (page 1, size 10): %d groups found", len(groups))
+		for _, group := range groups {
+			t.Logf("  - %s: %s", group.Code, group.Name)
+		}
+	}
+}
+
+func TestRevokePermissionFromRole(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.RevokePermissionFromRole("test_permission_create", "test_role_admin")
+	if err != nil {
+		t.Errorf("failed to revoke permission from role: %v", err)
+	} else {
+		t.Log("permission revoked from role successfully")
+	}
+}
+
+func TestRevokeRoleFromUser(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.RevokeRoleFromUser("test_role_admin", "testuser")
+	if err != nil {
+		t.Errorf("failed to revoke role from user: %v", err)
+	} else {
+		t.Log("role revoked from user successfully")
+	}
+}
+
+func TestRevokeUserFromGroup(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.RevokeUserFromGroup("testuser", "test_admin_group")
+	if err != nil {
+		t.Errorf("failed to revoke user from group: %v", err)
+	} else {
+		t.Log("user revoked from group successfully")
+	}
+}
+
+func TestDeletePermission(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.DeletePermission("test_permission_create")
+	if err != nil {
+		t.Errorf("failed to delete permission: %v", err)
+	} else {
+		t.Log("permission deleted successfully")
+	}
+}
+
+func TestDeleteRole(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.DeleteRole("test_role_admin")
+	if err != nil {
+		t.Errorf("failed to delete role: %v", err)
+	} else {
+		t.Log("role deleted successfully")
+	}
+}
+
+func TestDeleteUserGroup(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 先获取用户组ID
+	userGroup, err := repo.GetUserGroupByName("test_admin_group")
+	if err != nil {
+		t.Errorf("failed to get user group for deletion: %v", err)
+		return
+	}
+	if userGroup == nil {
+		t.Log("user group not found, skipping deletion test")
+		return
+	}
+
+	err = repo.DeleteUserGroup(string(userGroup.ID[:]))
+	if err != nil {
+		t.Errorf("failed to delete user group: %v", err)
+	} else {
+		t.Log("user group deleted successfully")
+	}
+}
+
+func TestCleanupTestUser(t *testing.T) {
+	repo := setupTestDB(t)
+
+	// 清理测试用户
+	err := repo.GetDB().Where("username = ?", "testuser").Delete(&models.User{}).Error
+	if err != nil {
+		t.Errorf("failed to cleanup test user: %v", err)
+	} else {
+		t.Log("test user cleaned up successfully")
 	}
 }
