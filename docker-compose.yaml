@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  mysql:
+    image: 'mysql:latest'
+    restart: always
+    container_name: xservergo-mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./deploy/docker/mysql:/docker-entrypoint-initdb.d
+    environment:
+      - MYSQL_DATABASE=xservergo
+      - MYSQL_USER=xservergo
+      - MYSQL_PASSWORD=xservergo
+      - MYSQL_RANDOM_ROOT_PASSWORD="yes"
+  redis:
+    image: redis:latest
+    restart: always
+    container_name: xservergo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./deploy/docker/redis/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+    privileged: true
+  etcd:
+    image: bitnami/etcd:3.5
+    restart: always
+    container_name: xservergo-etcd
+    ports:
+      - 2379:2379
+      - 2380:2380
+    volumes:
+      - ./deploy/docker/etcd/data:/bitnami/etcd-data
+    environment:
+      - TZ=Asia/Shanghai
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+      - ETCD_ROOT_PASSWORD=xservergo

@@ -2,51 +2,54 @@
 ip_to_register: "127.0.0.1"
 
 mysql:
-  host: localhost
+  host: 127.0.0.1
   port: 3306
-  user: "root"
-  password: "your_pwd"
-  dbname: "database_name"
+  user: "xservergo"
+  password: "xservergo"
+  dbname: "xservergo"
   max_open_conns: 20
   max_idle_conns: 20
 
 redis:
-  host: localhost
+  host: 127.0.0.1
   port: 6379
-  password: "your_pwd"
+  password: ""
   db: 0
   pool_size: 100
+  min_idle_conns: 10
 
 jwt:
   # 设置jwt签名加密时使用的前端秘钥
-  admin_secret_key: "your_admin_secret_key"
-  # 设置jwt过期时间为7天
-  admin_ttl: 0
-  admin_suv: 0
+  admin_secret_key: "default_admin_secret_key_change_in_production"
+  # 设置jwt过期时间为7天（秒）
+  admin_ttl: 604800
+  # 设置jwt刷新时间为1小时（秒）
+  admin_suv: 3600
 
 elasticsearch:
   hosts:
-    - "http(s)://address:port"
-  username: "your_username"
-  password: "your_pwd"
+    - "http://127.0.0.1:9200"
+  username: ""
+  password: ""
 
 etcd:
-  endpoints: localhost:2379
-  username: "your_username"
-  password: "your_pwd"
+  endpoints: 
+    - "127.0.0.1:2379"
+  username: "root"
+  password: "xservergo"
 
 hertz:
   host: 127.0.0.1
-  port: 0
+  port: 8080
 
 user:
   host: 127.0.0.1
-  port: 0
-  service_name: "your_service_name"
+  port: 8900
+  service_name: "user_service"
 
 auth:
   host: 127.0.0.1
-  port: 0
+  port: 8901
   service_name: "auth_service"
 
 logger:
