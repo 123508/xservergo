@@ -246,6 +246,12 @@ func (s *UserServiceImpl) QrCodeLoginStatus(req *user.QrCodeLoginStatusReq, stre
 	return
 }
 
+// QrPreLogin implements the UserServiceImpl interface.
+func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginReq) (resp *user.QrPreLoginResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
 // ConfirmQrLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQrLoginReq) (resp *user.LoginResp, err error) {
 	// TODO: Your code here...

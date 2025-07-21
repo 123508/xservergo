@@ -860,7 +860,7 @@ func (x *QrCodeLoginStatusReq) fastReadField1(buf []byte, _type int8) (offset in
 }
 
 func (x *QrCodeLoginStatusReq) fastReadField2(buf []byte, _type int8) (offset int, err error) {
-	x.Timeout, offset, err = fastpb.ReadInt64(buf, _type)
+	x.Timeout, offset, err = fastpb.ReadUint64(buf, _type)
 	return offset, err
 }
 
@@ -968,6 +968,76 @@ func (x *LoginResponse) fastReadField2(buf []byte, _type int8) (offset int, err 
 	return offset, nil
 }
 
+func (x *QrPreLoginReq) FastRead(buf []byte, _type int8, number int32) (offset int, err error) {
+	switch number {
+	case 1:
+		offset, err = x.fastReadField1(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
+	case 2:
+		offset, err = x.fastReadField2(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
+	default:
+		offset, err = fastpb.Skip(buf, _type, number)
+		if err != nil {
+			goto SkipFieldError
+		}
+	}
+	return offset, nil
+SkipFieldError:
+	return offset, fmt.Errorf("%T cannot parse invalid wire-format data, error: %s", x, err)
+ReadFieldError:
+	return offset, fmt.Errorf("%T read field %d '%s' error: %s", x, number, fieldIDToName_QrPreLoginReq[number], err)
+}
+
+func (x *QrPreLoginReq) fastReadField1(buf []byte, _type int8) (offset int, err error) {
+	x.Ticket, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *QrPreLoginReq) fastReadField2(buf []byte, _type int8) (offset int, err error) {
+	x.Phone, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *QrPreLoginResp) FastRead(buf []byte, _type int8, number int32) (offset int, err error) {
+	switch number {
+	case 1:
+		offset, err = x.fastReadField1(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
+	case 2:
+		offset, err = x.fastReadField2(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
+	default:
+		offset, err = fastpb.Skip(buf, _type, number)
+		if err != nil {
+			goto SkipFieldError
+		}
+	}
+	return offset, nil
+SkipFieldError:
+	return offset, fmt.Errorf("%T cannot parse invalid wire-format data, error: %s", x, err)
+ReadFieldError:
+	return offset, fmt.Errorf("%T read field %d '%s' error: %s", x, number, fieldIDToName_QrPreLoginResp[number], err)
+}
+
+func (x *QrPreLoginResp) fastReadField1(buf []byte, _type int8) (offset int, err error) {
+	x.UserExist, offset, err = fastpb.ReadBool(buf, _type)
+	return offset, err
+}
+
+func (x *QrPreLoginResp) fastReadField2(buf []byte, _type int8) (offset int, err error) {
+	x.UserId, offset, err = fastpb.ReadBytes(buf, _type)
+	return offset, err
+}
+
 func (x *ConfirmQrLoginReq) FastRead(buf []byte, _type int8, number int32) (offset int, err error) {
 	switch number {
 	case 1:
@@ -999,7 +1069,7 @@ func (x *ConfirmQrLoginReq) fastReadField1(buf []byte, _type int8) (offset int, 
 }
 
 func (x *ConfirmQrLoginReq) fastReadField2(buf []byte, _type int8) (offset int, err error) {
-	x.Phone, offset, err = fastpb.ReadString(buf, _type)
+	x.Uid, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
 
@@ -1034,7 +1104,7 @@ func (x *CancelQrLoginReq) fastReadField1(buf []byte, _type int8) (offset int, e
 }
 
 func (x *CancelQrLoginReq) fastReadField2(buf []byte, _type int8) (offset int, err error) {
-	x.Reason, offset, err = fastpb.ReadString(buf, _type)
+	x.Uid, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
 
@@ -2808,11 +2878,6 @@ func (x *LoginResponse_Success) FastRead(buf []byte, _type int8, number int32) (
 		if err != nil {
 			goto ReadFieldError
 		}
-	case 3:
-		offset, err = x.fastReadField3(buf, _type)
-		if err != nil {
-			goto ReadFieldError
-		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -2833,11 +2898,6 @@ func (x *LoginResponse_Success) fastReadField1(buf []byte, _type int8) (offset i
 
 func (x *LoginResponse_Success) fastReadField2(buf []byte, _type int8) (offset int, err error) {
 	x.RefreshToken, offset, err = fastpb.ReadString(buf, _type)
-	return offset, err
-}
-
-func (x *LoginResponse_Success) fastReadField3(buf []byte, _type int8) (offset int, err error) {
-	x.ExpiresIn, offset, err = fastpb.ReadInt64(buf, _type)
 	return offset, err
 }
 
@@ -2867,7 +2927,7 @@ ReadFieldError:
 }
 
 func (x *LoginResponse_Failure) fastReadField1(buf []byte, _type int8) (offset int, err error) {
-	x.Code, offset, err = fastpb.ReadInt32(buf, _type)
+	x.Code, offset, err = fastpb.ReadUint64(buf, _type)
 	return offset, err
 }
 
@@ -3497,7 +3557,7 @@ func (x *QrCodeLoginStatusReq) fastWriteField2(buf []byte) (offset int) {
 	if x.Timeout == 0 {
 		return offset
 	}
-	offset += fastpb.WriteInt64(buf[offset:], 2, x.GetTimeout())
+	offset += fastpb.WriteUint64(buf[offset:], 2, x.GetTimeout())
 	return offset
 }
 
@@ -3560,6 +3620,56 @@ func (x *LoginResponse) fastWriteField2(buf []byte) (offset int) {
 	return offset
 }
 
+func (x *QrPreLoginReq) FastWrite(buf []byte) (offset int) {
+	if x == nil {
+		return offset
+	}
+	offset += x.fastWriteField1(buf[offset:])
+	offset += x.fastWriteField2(buf[offset:])
+	return offset
+}
+
+func (x *QrPreLoginReq) fastWriteField1(buf []byte) (offset int) {
+	if x.Ticket == "" {
+		return offset
+	}
+	offset += fastpb.WriteString(buf[offset:], 1, x.GetTicket())
+	return offset
+}
+
+func (x *QrPreLoginReq) fastWriteField2(buf []byte) (offset int) {
+	if x.Phone == "" {
+		return offset
+	}
+	offset += fastpb.WriteString(buf[offset:], 2, x.GetPhone())
+	return offset
+}
+
+func (x *QrPreLoginResp) FastWrite(buf []byte) (offset int) {
+	if x == nil {
+		return offset
+	}
+	offset += x.fastWriteField1(buf[offset:])
+	offset += x.fastWriteField2(buf[offset:])
+	return offset
+}
+
+func (x *QrPreLoginResp) fastWriteField1(buf []byte) (offset int) {
+	if !x.UserExist {
+		return offset
+	}
+	offset += fastpb.WriteBool(buf[offset:], 1, x.GetUserExist())
+	return offset
+}
+
+func (x *QrPreLoginResp) fastWriteField2(buf []byte) (offset int) {
+	if len(x.UserId) == 0 {
+		return offset
+	}
+	offset += fastpb.WriteBytes(buf[offset:], 2, x.GetUserId())
+	return offset
+}
+
 func (x *ConfirmQrLoginReq) FastWrite(buf []byte) (offset int) {
 	if x == nil {
 		return offset
@@ -3578,10 +3688,10 @@ func (x *ConfirmQrLoginReq) fastWriteField1(buf []byte) (offset int) {
 }
 
 func (x *ConfirmQrLoginReq) fastWriteField2(buf []byte) (offset int) {
-	if x.Phone == "" {
+	if len(x.Uid) == 0 {
 		return offset
 	}
-	offset += fastpb.WriteString(buf[offset:], 2, x.GetPhone())
+	offset += fastpb.WriteBytes(buf[offset:], 2, x.GetUid())
 	return offset
 }
 
@@ -3603,10 +3713,10 @@ func (x *CancelQrLoginReq) fastWriteField1(buf []byte) (offset int) {
 }
 
 func (x *CancelQrLoginReq) fastWriteField2(buf []byte) (offset int) {
-	if x.Reason == "" {
+	if len(x.Uid) == 0 {
 		return offset
 	}
-	offset += fastpb.WriteString(buf[offset:], 2, x.GetReason())
+	offset += fastpb.WriteBytes(buf[offset:], 2, x.GetUid())
 	return offset
 }
 
@@ -4935,7 +5045,6 @@ func (x *LoginResponse_Success) FastWrite(buf []byte) (offset int) {
 	}
 	offset += x.fastWriteField1(buf[offset:])
 	offset += x.fastWriteField2(buf[offset:])
-	offset += x.fastWriteField3(buf[offset:])
 	return offset
 }
 
@@ -4955,14 +5064,6 @@ func (x *LoginResponse_Success) fastWriteField2(buf []byte) (offset int) {
 	return offset
 }
 
-func (x *LoginResponse_Success) fastWriteField3(buf []byte) (offset int) {
-	if x.ExpiresIn == 0 {
-		return offset
-	}
-	offset += fastpb.WriteInt64(buf[offset:], 3, x.GetExpiresIn())
-	return offset
-}
-
 func (x *LoginResponse_Failure) FastWrite(buf []byte) (offset int) {
 	if x == nil {
 		return offset
@@ -4976,7 +5077,7 @@ func (x *LoginResponse_Failure) fastWriteField1(buf []byte) (offset int) {
 	if x.Code == 0 {
 		return offset
 	}
-	offset += fastpb.WriteInt32(buf[offset:], 1, x.GetCode())
+	offset += fastpb.WriteUint64(buf[offset:], 1, x.GetCode())
 	return offset
 }
 
@@ -5609,7 +5710,7 @@ func (x *QrCodeLoginStatusReq) sizeField2() (n int) {
 	if x.Timeout == 0 {
 		return n
 	}
-	n += fastpb.SizeInt64(2, x.GetTimeout())
+	n += fastpb.SizeUint64(2, x.GetTimeout())
 	return n
 }
 
@@ -5672,6 +5773,56 @@ func (x *LoginResponse) sizeField2() (n int) {
 	return n
 }
 
+func (x *QrPreLoginReq) Size() (n int) {
+	if x == nil {
+		return n
+	}
+	n += x.sizeField1()
+	n += x.sizeField2()
+	return n
+}
+
+func (x *QrPreLoginReq) sizeField1() (n int) {
+	if x.Ticket == "" {
+		return n
+	}
+	n += fastpb.SizeString(1, x.GetTicket())
+	return n
+}
+
+func (x *QrPreLoginReq) sizeField2() (n int) {
+	if x.Phone == "" {
+		return n
+	}
+	n += fastpb.SizeString(2, x.GetPhone())
+	return n
+}
+
+func (x *QrPreLoginResp) Size() (n int) {
+	if x == nil {
+		return n
+	}
+	n += x.sizeField1()
+	n += x.sizeField2()
+	return n
+}
+
+func (x *QrPreLoginResp) sizeField1() (n int) {
+	if !x.UserExist {
+		return n
+	}
+	n += fastpb.SizeBool(1, x.GetUserExist())
+	return n
+}
+
+func (x *QrPreLoginResp) sizeField2() (n int) {
+	if len(x.UserId) == 0 {
+		return n
+	}
+	n += fastpb.SizeBytes(2, x.GetUserId())
+	return n
+}
+
 func (x *ConfirmQrLoginReq) Size() (n int) {
 	if x == nil {
 		return n
@@ -5690,10 +5841,10 @@ func (x *ConfirmQrLoginReq) sizeField1() (n int) {
 }
 
 func (x *ConfirmQrLoginReq) sizeField2() (n int) {
-	if x.Phone == "" {
+	if len(x.Uid) == 0 {
 		return n
 	}
-	n += fastpb.SizeString(2, x.GetPhone())
+	n += fastpb.SizeBytes(2, x.GetUid())
 	return n
 }
 
@@ -5715,10 +5866,10 @@ func (x *CancelQrLoginReq) sizeField1() (n int) {
 }
 
 func (x *CancelQrLoginReq) sizeField2() (n int) {
-	if x.Reason == "" {
+	if len(x.Uid) == 0 {
 		return n
 	}
-	n += fastpb.SizeString(2, x.GetReason())
+	n += fastpb.SizeBytes(2, x.GetUid())
 	return n
 }
 
@@ -7047,7 +7198,6 @@ func (x *LoginResponse_Success) Size() (n int) {
 	}
 	n += x.sizeField1()
 	n += x.sizeField2()
-	n += x.sizeField3()
 	return n
 }
 
@@ -7067,14 +7217,6 @@ func (x *LoginResponse_Success) sizeField2() (n int) {
 	return n
 }
 
-func (x *LoginResponse_Success) sizeField3() (n int) {
-	if x.ExpiresIn == 0 {
-		return n
-	}
-	n += fastpb.SizeInt64(3, x.GetExpiresIn())
-	return n
-}
-
 func (x *LoginResponse_Failure) Size() (n int) {
 	if x == nil {
 		return n
@@ -7088,7 +7230,7 @@ func (x *LoginResponse_Failure) sizeField1() (n int) {
 	if x.Code == 0 {
 		return n
 	}
-	n += fastpb.SizeInt32(1, x.GetCode())
+	n += fastpb.SizeUint64(1, x.GetCode())
 	return n
 }
 
@@ -7215,14 +7357,24 @@ var fieldIDToName_LoginResponse = map[int32]string{
 	2: "Failure",
 }
 
-var fieldIDToName_ConfirmQrLoginReq = map[int32]string{
+var fieldIDToName_QrPreLoginReq = map[int32]string{
 	1: "Ticket",
 	2: "Phone",
 }
 
+var fieldIDToName_QrPreLoginResp = map[int32]string{
+	1: "UserExist",
+	2: "UserId",
+}
+
+var fieldIDToName_ConfirmQrLoginReq = map[int32]string{
+	1: "Ticket",
+	2: "Uid",
+}
+
 var fieldIDToName_CancelQrLoginReq = map[int32]string{
 	1: "Ticket",
-	2: "Reason",
+	2: "Uid",
 }
 
 var fieldIDToName_OAuthLoginReq = map[int32]string{
@@ -7447,7 +7599,6 @@ var fieldIDToName_SendVerificationReq = map[int32]string{
 var fieldIDToName_LoginResponse_Success = map[int32]string{
 	1: "AccessToken",
 	2: "RefreshToken",
-	3: "ExpiresIn",
 }
 
 var fieldIDToName_LoginResponse_Failure = map[int32]string{

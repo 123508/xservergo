@@ -22,6 +22,7 @@ type Client interface {
 	SmsLogin(ctx context.Context, Req *user.SmsLoginReq, callOptions ...callopt.Option) (r *user.SmsLoginResp, err error)
 	GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeReq, callOptions ...callopt.Option) (r *user.GenerateQrCodeResp, err error)
 	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error)
+	QrPreLogin(ctx context.Context, Req *user.QrPreLoginReq, callOptions ...callopt.Option) (r *user.QrPreLoginResp, err error)
 	ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq, callOptions ...callopt.Option) (r *user.Empty, err error)
 	OAuthLogin(ctx context.Context, Req *user.OAuthLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
@@ -127,6 +128,11 @@ func (p *kUserServiceClient) GenerateQrCode(ctx context.Context, Req *user.Gener
 func (p *kUserServiceClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.QrCodeLoginStatus(ctx, Req)
+}
+
+func (p *kUserServiceClient) QrPreLogin(ctx context.Context, Req *user.QrPreLoginReq, callOptions ...callopt.Option) (r *user.QrPreLoginResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.QrPreLogin(ctx, Req)
 }
 
 func (p *kUserServiceClient) ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error) {

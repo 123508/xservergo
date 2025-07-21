@@ -65,6 +65,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingServer),
 	),
+	"QrPreLogin": kitex.NewMethodInfo(
+		qrPreLoginHandler,
+		newQrPreLoginArgs,
+		newQrPreLoginResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 	"ConfirmQrLogin": kitex.NewMethodInfo(
 		confirmQrLoginHandler,
 		newConfirmQrLoginArgs,
@@ -1415,6 +1422,159 @@ func (p *QrCodeLoginStatusResult) IsSetSuccess() bool {
 }
 
 func (p *QrCodeLoginStatusResult) GetResult() interface{} {
+	return p.Success
+}
+
+func qrPreLoginHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.QrPreLoginReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).QrPreLogin(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *QrPreLoginArgs:
+		success, err := handler.(user.UserService).QrPreLogin(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*QrPreLoginResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newQrPreLoginArgs() interface{} {
+	return &QrPreLoginArgs{}
+}
+
+func newQrPreLoginResult() interface{} {
+	return &QrPreLoginResult{}
+}
+
+type QrPreLoginArgs struct {
+	Req *user.QrPreLoginReq
+}
+
+func (p *QrPreLoginArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetReq() {
+		p.Req = new(user.QrPreLoginReq)
+	}
+	return p.Req.FastRead(buf, _type, number)
+}
+
+func (p *QrPreLoginArgs) FastWrite(buf []byte) (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.FastWrite(buf)
+}
+
+func (p *QrPreLoginArgs) Size() (n int) {
+	if !p.IsSetReq() {
+		return 0
+	}
+	return p.Req.Size()
+}
+
+func (p *QrPreLoginArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *QrPreLoginArgs) Unmarshal(in []byte) error {
+	msg := new(user.QrPreLoginReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var QrPreLoginArgs_Req_DEFAULT *user.QrPreLoginReq
+
+func (p *QrPreLoginArgs) GetReq() *user.QrPreLoginReq {
+	if !p.IsSetReq() {
+		return QrPreLoginArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *QrPreLoginArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *QrPreLoginArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type QrPreLoginResult struct {
+	Success *user.QrPreLoginResp
+}
+
+var QrPreLoginResult_Success_DEFAULT *user.QrPreLoginResp
+
+func (p *QrPreLoginResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
+	if !p.IsSetSuccess() {
+		p.Success = new(user.QrPreLoginResp)
+	}
+	return p.Success.FastRead(buf, _type, number)
+}
+
+func (p *QrPreLoginResult) FastWrite(buf []byte) (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.FastWrite(buf)
+}
+
+func (p *QrPreLoginResult) Size() (n int) {
+	if !p.IsSetSuccess() {
+		return 0
+	}
+	return p.Success.Size()
+}
+
+func (p *QrPreLoginResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *QrPreLoginResult) Unmarshal(in []byte) error {
+	msg := new(user.QrPreLoginResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *QrPreLoginResult) GetSuccess() *user.QrPreLoginResp {
+	if !p.IsSetSuccess() {
+		return QrPreLoginResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *QrPreLoginResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.QrPreLoginResp)
+}
+
+func (p *QrPreLoginResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *QrPreLoginResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -5944,6 +6104,16 @@ func (p *kClient) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginSt
 		return nil, err
 	}
 	return stream, nil
+}
+
+func (p *kClient) QrPreLogin(ctx context.Context, Req *user.QrPreLoginReq) (r *user.QrPreLoginResp, err error) {
+	var _args QrPreLoginArgs
+	_args.Req = Req
+	var _result QrPreLoginResult
+	if err = p.c.Call(ctx, "QrPreLogin", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
 }
 
 func (p *kClient) ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq) (r *user.LoginResp, err error) {

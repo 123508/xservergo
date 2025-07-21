@@ -12,6 +12,7 @@ service UserService {
   rpc SmsLogin(SmsLoginReq) returns (SmsLoginResp) {}                       // 验证码登录
   rpc GenerateQrCode(GenerateQrCodeReq) returns (GenerateQrCodeResp) {}              // 生成二维码
   rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (stream QrCodeLoginStatusResp);  // 长轮询登录状态 (客户端调用)
+  rpc QrPreLogin(QrPreLoginReq)returns(QrPreLoginResp){}
   rpc ConfirmQrLogin(ConfirmQrLoginReq) returns (LoginResp) {}              // 确认扫码登录
   rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                  // 取消登录 (移动端调用)
   rpc OAuthLogin(OAuthLoginReq) returns (LoginResp) {}                      // 第三方登录
@@ -180,7 +181,7 @@ message GenerateQrCodeResp {
 // 长轮询状态请求
 message QrCodeLoginStatusReq {
   string ticket = 1;             // 票据ID(即会话ID)
-  int64 timeout = 2;             // 长轮询超时时间 (毫秒, 0=使用默认)
+  uint64 timeout = 2;            // 长轮询超时时间 (毫秒, 0=使用默认)
 }
 
 // 长轮询状态响应 (流式)
@@ -204,11 +205,10 @@ message LoginResponse {
   message Success {
     string access_token = 1;
     string refresh_token = 2;
-    int64 expires_in = 3;        // 有效期 (秒)
   }
 
   message Failure {
-    int32 code = 1;
+    uint64 code = 1;
     string message = 2;
   }
 
@@ -218,15 +218,25 @@ message LoginResponse {
   }
 }
 
+message QrPreLoginReq{
+  string ticket = 1;
+  string phone = 2;
+}
+
+message QrPreLoginResp{
+  bool user_exist=1;
+  bytes user_id=2;
+}
+
 message ConfirmQrLoginReq {
   string ticket = 1;
-  string phone = 2;        // 确认登录的用户手机号
+  bytes uid = 2;        // 确认登录的用户id
 }
 
 // 取消登录请求 (移动端)
 message CancelQrLoginReq {
   string ticket = 1;             // 票据ID
-  string reason = 2;             // 取消原因
+  bytes uid = 2;
 }
 
 message OAuthLoginReq {

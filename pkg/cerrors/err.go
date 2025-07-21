@@ -1,6 +1,7 @@
 package cerrors
 
 import (
+	"net/http"
 	"reflect"
 	"strconv"
 )
@@ -183,5 +184,38 @@ func (e *GRPCError) Is(target error) bool {
 }
 
 func (e *GRPCError) Unwrap() error {
+	return nil
+}
+
+//----------------- gateway层错误 -----------------//
+
+type PermissionError struct {
+	Code    uint64
+	Message string
+}
+
+func NewPermError() error {
+	return &PermissionError{
+		Code:    http.StatusForbidden,
+		Message: "无权访问",
+	}
+}
+
+func (e *PermissionError) Error() string {
+	return "code:" + strconv.FormatUint(http.StatusForbidden, 10) + ",message:无权访问"
+}
+
+func (e *PermissionError) Is(target error) bool {
+	if e == nil {
+		return false
+	}
+	if _, ok := target.(*PermissionError); ok {
+		return true
+	}
+
+	return reflect.TypeOf(e) == reflect.TypeOf(target)
+}
+
+func (e *PermissionError) Unwrap() error {
 	return nil
 }
