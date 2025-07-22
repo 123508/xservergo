@@ -7,10 +7,6 @@ import (
 	user "github.com/123508/xservergo/kitex_gen/user"
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
-	"github.com/cloudwego/kitex/client/callopt/streamcall"
-	"github.com/cloudwego/kitex/client/streamclient"
-	streaming "github.com/cloudwego/kitex/pkg/streaming"
-	transport "github.com/cloudwego/kitex/transport"
 )
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
@@ -21,7 +17,7 @@ type Client interface {
 	AccountLogin(ctx context.Context, Req *user.AccountLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	SmsLogin(ctx context.Context, Req *user.SmsLoginReq, callOptions ...callopt.Option) (r *user.SmsLoginResp, err error)
 	GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeReq, callOptions ...callopt.Option) (r *user.GenerateQrCodeResp, err error)
-	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error)
+	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (r *user.QrCodeLoginStatusResp, err error)
 	QrPreLogin(ctx context.Context, Req *user.QrPreLoginReq, callOptions ...callopt.Option) (r *user.QrPreLoginResp, err error)
 	ConfirmQrLogin(ctx context.Context, Req *user.ConfirmQrLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq, callOptions ...callopt.Option) (r *user.Empty, err error)
@@ -54,22 +50,10 @@ type Client interface {
 	SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 }
 
-// StreamClient is designed to provide Interface for Streaming APIs.
-type StreamClient interface {
-	QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...streamcall.Option) (stream UserService_QrCodeLoginStatusClient, err error)
-}
-
-type UserService_QrCodeLoginStatusClient interface {
-	streaming.Stream
-	Recv() (*user.QrCodeLoginStatusResp, error)
-}
-
 // NewClient creates a client for the service defined in IDL.
 func NewClient(destService string, opts ...client.Option) (Client, error) {
 	var options []client.Option
 	options = append(options, client.WithDestService(destService))
-
-	options = append(options, client.WithTransportProtocol(transport.GRPC))
 
 	options = append(options, opts...)
 
@@ -125,7 +109,7 @@ func (p *kUserServiceClient) GenerateQrCode(ctx context.Context, Req *user.Gener
 	return p.kClient.GenerateQrCode(ctx, Req)
 }
 
-func (p *kUserServiceClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (stream UserService_QrCodeLoginStatusClient, err error) {
+func (p *kUserServiceClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...callopt.Option) (r *user.QrCodeLoginStatusResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.QrCodeLoginStatus(ctx, Req)
 }
@@ -278,39 +262,4 @@ func (p *kUserServiceClient) VerifySecurityCode(ctx context.Context, Req *user.V
 func (p *kUserServiceClient) SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SendVerification(ctx, Req)
-}
-
-// NewStreamClient creates a stream client for the service's streaming APIs defined in IDL.
-func NewStreamClient(destService string, opts ...streamclient.Option) (StreamClient, error) {
-	var options []client.Option
-	options = append(options, client.WithDestService(destService))
-	options = append(options, client.WithTransportProtocol(transport.GRPC))
-	options = append(options, streamclient.GetClientOptions(opts)...)
-
-	kc, err := client.NewClient(serviceInfoForStreamClient(), options...)
-	if err != nil {
-		return nil, err
-	}
-	return &kUserServiceStreamClient{
-		kClient: newServiceClient(kc),
-	}, nil
-}
-
-// MustNewStreamClient creates a stream client for the service's streaming APIs defined in IDL.
-// It panics if any error occurs.
-func MustNewStreamClient(destService string, opts ...streamclient.Option) StreamClient {
-	kc, err := NewStreamClient(destService, opts...)
-	if err != nil {
-		panic(err)
-	}
-	return kc
-}
-
-type kUserServiceStreamClient struct {
-	*kClient
-}
-
-func (p *kUserServiceStreamClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq, callOptions ...streamcall.Option) (stream UserService_QrCodeLoginStatusClient, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, streamcall.GetCallOptions(callOptions))
-	return p.kClient.QrCodeLoginStatus(ctx, Req)
 }

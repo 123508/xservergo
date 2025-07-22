@@ -5,7 +5,6 @@ package userservice
 import (
 	"context"
 	"errors"
-	"fmt"
 	user "github.com/123508/xservergo/kitex_gen/user"
 	client "github.com/cloudwego/kitex/client"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
@@ -63,7 +62,7 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		newQrCodeLoginStatusArgs,
 		newQrCodeLoginStatusResult,
 		false,
-		kitex.WithStreamingMode(kitex.StreamingServer),
+		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
 	"QrPreLogin": kitex.NewMethodInfo(
 		qrPreLoginHandler,
@@ -300,7 +299,7 @@ func serviceInfoForClient() *kitex.ServiceInfo {
 
 // NewServiceInfo creates a new ServiceInfo containing all methods
 func NewServiceInfo() *kitex.ServiceInfo {
-	return newServiceInfo(true, true, true)
+	return newServiceInfo(false, true, true)
 }
 
 // NewServiceInfo creates a new ServiceInfo containing non-streaming methods
@@ -1260,43 +1259,30 @@ func (p *GenerateQrCodeResult) GetResult() interface{} {
 }
 
 func qrCodeLoginStatusHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	streamingArgs, ok := arg.(*streaming.Args)
-	if !ok {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.QrCodeLoginStatusReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).QrCodeLoginStatus(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *QrCodeLoginStatusArgs:
+		success, err := handler.(user.UserService).QrCodeLoginStatus(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*QrCodeLoginStatusResult)
+		realResult.Success = success
+		return nil
+	default:
 		return errInvalidMessageType
 	}
-	st := streamingArgs.Stream
-	stream := &userServiceQrCodeLoginStatusServer{st}
-	req := new(user.QrCodeLoginStatusReq)
-	if err := st.RecvMsg(req); err != nil {
-		return err
-	}
-	return handler.(user.UserService).QrCodeLoginStatus(req, stream)
 }
-
-type userServiceQrCodeLoginStatusClient struct {
-	streaming.Stream
-}
-
-func (x *userServiceQrCodeLoginStatusClient) DoFinish(err error) {
-	if finisher, ok := x.Stream.(streaming.WithDoFinish); ok {
-		finisher.DoFinish(err)
-	} else {
-		panic(fmt.Sprintf("streaming.WithDoFinish is not implemented by %T", x.Stream))
-	}
-}
-func (x *userServiceQrCodeLoginStatusClient) Recv() (*user.QrCodeLoginStatusResp, error) {
-	m := new(user.QrCodeLoginStatusResp)
-	return m, x.Stream.RecvMsg(m)
-}
-
-type userServiceQrCodeLoginStatusServer struct {
-	streaming.Stream
-}
-
-func (x *userServiceQrCodeLoginStatusServer) Send(m *user.QrCodeLoginStatusResp) error {
-	return x.Stream.SendMsg(m)
-}
-
 func newQrCodeLoginStatusArgs() interface{} {
 	return &QrCodeLoginStatusArgs{}
 }
@@ -6085,25 +6071,14 @@ func (p *kClient) GenerateQrCode(ctx context.Context, Req *user.GenerateQrCodeRe
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginStatusReq) (UserService_QrCodeLoginStatusClient, error) {
-	streamClient, ok := p.c.(client.Streaming)
-	if !ok {
-		return nil, fmt.Errorf("client not support streaming")
+func (p *kClient) QrCodeLoginStatus(ctx context.Context, Req *user.QrCodeLoginStatusReq) (r *user.QrCodeLoginStatusResp, err error) {
+	var _args QrCodeLoginStatusArgs
+	_args.Req = Req
+	var _result QrCodeLoginStatusResult
+	if err = p.c.Call(ctx, "QrCodeLoginStatus", &_args, &_result); err != nil {
+		return
 	}
-	res := new(streaming.Result)
-	err := streamClient.Stream(ctx, "QrCodeLoginStatus", nil, res)
-	if err != nil {
-		return nil, err
-	}
-	stream := &userServiceQrCodeLoginStatusClient{res.Stream}
-
-	if err := stream.Stream.SendMsg(req); err != nil {
-		return nil, err
-	}
-	if err := stream.Stream.Close(); err != nil {
-		return nil, err
-	}
-	return stream, nil
+	return _result.GetSuccess(), nil
 }
 
 func (p *kClient) QrPreLogin(ctx context.Context, Req *user.QrPreLoginReq) (r *user.QrPreLoginResp, err error) {

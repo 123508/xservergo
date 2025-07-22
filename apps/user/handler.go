@@ -265,8 +265,9 @@ func (s *UserServiceImpl) GenerateQrCode(ctx context.Context, req *user.Generate
 
 }
 
-func (s *UserServiceImpl) QrCodeLoginStatus(req *user.QrCodeLoginStatusReq, stream user.UserService_QrCodeLoginStatusServer) (err error) {
-	println("QrCodeLoginStatus called")
+// QrCodeLoginStatus implements the UserServiceImpl interface.
+func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginStatusReq) (resp *user.QrCodeLoginStatusResp, err error) {
+	// TODO: Your code here...
 	return
 }
 

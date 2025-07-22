@@ -11,7 +11,7 @@ service UserService {
   rpc AccountLogin(AccountLoginReq) returns (LoginResp) {}                  // 账号登录
   rpc SmsLogin(SmsLoginReq) returns (SmsLoginResp) {}                       // 验证码登录
   rpc GenerateQrCode(GenerateQrCodeReq) returns (GenerateQrCodeResp) {}              // 生成二维码
-  rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (stream QrCodeLoginStatusResp);  // 长轮询登录状态 (客户端调用)
+  rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (QrCodeLoginStatusResp);  // 长轮询登录状态 (客户端调用)
   rpc QrPreLogin(QrPreLoginReq)returns(QrPreLoginResp){}
   rpc ConfirmQrLogin(ConfirmQrLoginReq) returns (LoginResp) {}              // 确认扫码登录
   rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                  // 取消登录 (移动端调用)
