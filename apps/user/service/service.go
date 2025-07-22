@@ -32,7 +32,7 @@ type UserService interface {
 	SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error)
 	SendPhoneCode(ctx context.Context, phone string) error
 	SendEmailCode(ctx context.Context, email string) error
-	GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64)
+	GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64, error)
 }
 
 type ServiceImpl struct {
@@ -179,9 +179,22 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 	return s.loginWithResp(ctx, usr, "", err, false)
 }
 
-func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64) {
-	//TODO implement me
-	panic("implement me")
+func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64, error) {
+	session := util.NewQRLoginSession(ip, userAgent, 5*time.Second)
+	_, qrCode, err := session.GenerateQR(50, "H")
+	if err != nil {
+		return "", "", 0, cerrors.NewCommonError(http.StatusInternalServerError, "生成二维码错误", "", err)
+	}
+
+	if err = s.Rds.Set(ctx,
+		util.TakeKey("userservice", "user", "qrLogin", session.ClientIP, session.UniqueSig),
+		1,
+		5*time.Minute,
+	).Err(); err != nil {
+		return "", "", 0, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", "", err)
+	}
+
+	return qrCode, uuid.New().String(), uint64(time.Now().Add(5 * time.Second).Unix()), nil
 }
 
 func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {

@@ -94,6 +94,8 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 
 		if ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
+		} else {
+			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
 		}
 
 	} else {
@@ -130,6 +132,8 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 
 		if ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
+		} else {
+			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
 		}
 
 	} else {
@@ -164,6 +168,8 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 
 		if ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
+		} else {
+			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
 		}
 
 	} else {
@@ -237,8 +243,26 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 
 // GenerateQrCode implements the UserServiceImpl interface.
 func (s *UserServiceImpl) GenerateQrCode(ctx context.Context, req *user.GenerateQrCodeReq) (resp *user.GenerateQrCodeResp, err error) {
-	// TODO: Your code here...
-	return
+	qrCode, requestId, expiresAt, err := s.userService.GenerateQrCode(ctx, req.ClientIp, req.UserAgent)
+
+	resp = &user.GenerateQrCodeResp{}
+
+	if err != nil {
+
+		com, ok := err.(*cerrors.CommonError)
+
+		if ok {
+			err = cerrors.NewGRPCError(com.Code, com.Message)
+		} else {
+			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
+		}
+	} else {
+		resp.QrCodeUrl = qrCode
+		resp.ExpiresAt = expiresAt
+		resp.RequestId = requestId
+	}
+	return resp, err
+
 }
 
 func (s *UserServiceImpl) QrCodeLoginStatus(req *user.QrCodeLoginStatusReq, stream user.UserService_QrCodeLoginStatusServer) (err error) {

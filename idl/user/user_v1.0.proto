@@ -174,7 +174,7 @@ message GenerateQrCodeReq {
 
 message GenerateQrCodeResp {
   string qr_code_url = 1;   // 二维码图片URL
-  string ticket = 2;        // 登录票据ID
+  string request_id = 2;
   uint64 expires_at = 3;    // 过期时间戳(毫秒)
 }
 
@@ -182,6 +182,7 @@ message GenerateQrCodeResp {
 message QrCodeLoginStatusReq {
   string ticket = 1;             // 票据ID(即会话ID)
   uint64 timeout = 2;            // 长轮询超时时间 (毫秒, 0=使用默认)
+  string request_id = 3;
 }
 
 // 长轮询状态响应 (流式)
@@ -221,22 +222,26 @@ message LoginResponse {
 message QrPreLoginReq{
   string ticket = 1;
   string phone = 2;
+  string request_id = 3;
 }
 
 message QrPreLoginResp{
   bool user_exist=1;
   bytes user_id=2;
+  string request_id = 3;
 }
 
 message ConfirmQrLoginReq {
   string ticket = 1;
   bytes uid = 2;        // 确认登录的用户id
+  string request_id = 3;
 }
 
 // 取消登录请求 (移动端)
 message CancelQrLoginReq {
   string ticket = 1;             // 票据ID
   bytes uid = 2;
+  string request_id = 3;
 }
 
 message OAuthLoginReq {

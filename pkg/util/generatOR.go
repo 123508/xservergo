@@ -12,7 +12,7 @@ import (
 )
 
 type QRLoginSession struct {
-	UUID       string    // 唯一标识
+	UniqueSig  string    // 唯一标识
 	CreatedAt  time.Time // 创建时间
 	ClientIP   string    // 请求IP (IPv4/IPv6)
 	BrowserSig string    // 浏览器指纹哈希
@@ -21,7 +21,7 @@ type QRLoginSession struct {
 
 func NewQRLoginSession(clientIp, browserSig string, ttl time.Duration) *QRLoginSession {
 	return &QRLoginSession{
-		UUID:       "QRLogin-" + uuid.New().String(),
+		UniqueSig:  "QRLogin-" + uuid.New().String(),
 		CreatedAt:  time.Now(),
 		ClientIP:   clientIp,
 		BrowserSig: browserSig,
@@ -30,8 +30,8 @@ func NewQRLoginSession(clientIp, browserSig string, ttl time.Duration) *QRLoginS
 }
 
 func (q *QRLoginSession) checkAndRepair() {
-	if q.UUID == "" {
-		q.UUID = "QRLogin-" + uuid.New().String()
+	if q.UniqueSig == "" {
+		q.UniqueSig = "QRLogin-" + uuid.New().String()
 	}
 
 	if q.CreatedAt.IsZero() {
