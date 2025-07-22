@@ -227,7 +227,7 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 
 		return &user.SmsLoginResp{
 			Result: &user.SmsLoginResp_Login{
-				Login: &user.LoginSuccess{
+				Login: &user.LoginResp{
 					RefreshToken: token.RefreshToken,
 					AccessToken:  token.AccessToken,
 					UserInfo: &user.UserInfo{

@@ -152,19 +152,13 @@ enum LoginFlowType {
 message SmsLoginResp {
   oneof result {
     CodeSentInfo code_sent = 1;  // 验证码发送成功
-    LoginSuccess login = 2;      // 登录成功
+    LoginResp login = 2;      // 登录成功
   }
 }
 
 message CodeSentInfo {
   string request_id = 1;
   uint64 expire_time = 2;  // 过期时间戳(毫秒)
-}
-
-message LoginSuccess {
-  string refresh_token=1;
-  string access_token = 2;
-  UserInfo user_info = 3;
 }
 
 message GenerateQrCodeReq {
@@ -203,20 +197,16 @@ message QrCodeLoginStatusResp {
 
 // 登录响应
 message LoginResponse {
-  message Success {
-    string access_token = 1;
-    string refresh_token = 2;
-  }
-
-  message Failure {
-    uint64 code = 1;
-    string message = 2;
-  }
 
   oneof result {
-    Success success = 1;
-    Failure failure = 2;
+    LoginResp success = 1;
+    LoginFailure failure = 2;
   }
+}
+
+message LoginFailure {
+  uint64 code = 1;
+  string message = 2;
 }
 
 message QrPreLoginReq{
