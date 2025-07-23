@@ -10,6 +10,7 @@ import (
 )
 
 var testRepo AuthRepository
+var testUserId, _ = util.FromString("01983738-ba08-73f7-97a4-9c9972075337")
 
 func setupTestDB(t *testing.T) AuthRepository {
 	if testRepo != nil {
@@ -288,42 +289,10 @@ func TestGetUserGroupByName(t *testing.T) {
 	}
 }
 
-func TestCreateTestUser(t *testing.T) {
-	repo := setupTestDB(t)
-	uid := util.NewUUID()
-
-	// 创建测试用户
-	user := &models.User{
-		ID:       util.NewUUID(),
-		NickName: "Test User",
-		UserName: "testuser",
-		Email:    "test@example.com",
-		Phone:    "1234567890",
-		Gender:   1,
-		Avatar:   "",
-		Status:   0,
-		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-			DeletedAt: nil,
-			Version:   1,
-			CreatedBy: &uid,
-			UpdatedBy: nil,
-		},
-	}
-
-	err := repo.GetDB().Create(user).Error
-	if err != nil {
-		t.Errorf("failed to create test user: %v", err)
-	} else {
-		t.Logf("test user created successfully: %+v", user)
-	}
-}
-
 func TestAssignRoleToUser(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignRoleToUser("test_role_admin", "testuser")
+	err := repo.AssignRoleToUser("test_role_admin", testUserId)
 	if err != nil {
 		t.Errorf("failed to assign role to user: %v", err)
 	} else {
@@ -334,7 +303,7 @@ func TestAssignRoleToUser(t *testing.T) {
 func TestGetUserRoles(t *testing.T) {
 	repo := setupTestDB(t)
 
-	roles, err := repo.GetUserRoles("testuser")
+	roles, err := repo.GetUserRoles(testUserId)
 	if err != nil {
 		t.Errorf("failed to get user roles: %v", err)
 	} else {
@@ -345,7 +314,7 @@ func TestGetUserRoles(t *testing.T) {
 func TestAssignUserToGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignUserToGroup("testuser", "test_admin_group")
+	err := repo.AssignUserToGroup(testUserId, "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to assign user to group: %v", err)
 	} else {
@@ -356,7 +325,7 @@ func TestAssignUserToGroup(t *testing.T) {
 func TestGetUserGroups(t *testing.T) {
 	repo := setupTestDB(t)
 
-	groups, err := repo.GetUserGroups("testuser")
+	groups, err := repo.GetUserGroups(testUserId)
 	if err != nil {
 		t.Errorf("failed to get user groups: %v", err)
 	} else {
@@ -378,7 +347,7 @@ func TestGetUserGroupMembers(t *testing.T) {
 func TestGetUserPermissions(t *testing.T) {
 	repo := setupTestDB(t)
 
-	permissions, err := repo.GetUserPermissions("testuser")
+	permissions, err := repo.GetUserPermissions(testUserId)
 	if err != nil {
 		t.Errorf("failed to get user permissions: %v", err)
 	} else {
@@ -389,20 +358,20 @@ func TestGetUserPermissions(t *testing.T) {
 func TestHasPermission(t *testing.T) {
 	repo := setupTestDB(t)
 
-	hasPermission := repo.HasPermission("testuser", "test_permission_create")
+	hasPermission := repo.HasPermission(testUserId, "test_permission_create")
 	t.Logf("user has permission 'test_permission_create': %v", hasPermission)
 
-	hasPermission = repo.HasPermission("testuser", "non_existent_permission")
+	hasPermission = repo.HasPermission(testUserId, "non_existent_permission")
 	t.Logf("user has permission 'non_existent_permission': %v", hasPermission)
 }
 
 func TestCanAccess(t *testing.T) {
 	repo := setupTestDB(t)
 
-	canAccess := repo.CanAccess("testuser", "/test/resource/create", "POST")
+	canAccess := repo.CanAccess(testUserId, "/test/resource/create", "POST")
 	t.Logf("user can access '/test/resource/create' with 'POST': %v", canAccess)
 
-	canAccess = repo.CanAccess("testuser", "/forbidden/resource", "DELETE")
+	canAccess = repo.CanAccess(testUserId, "/forbidden/resource", "DELETE")
 	t.Logf("user can access '/forbidden/resource' with 'DELETE': %v", canAccess)
 }
 
@@ -462,7 +431,7 @@ func TestRevokePermissionFromRole(t *testing.T) {
 func TestRevokeRoleFromUser(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokeRoleFromUser("test_role_admin", "testuser")
+	err := repo.RevokeRoleFromUser("test_role_admin", testUserId)
 	if err != nil {
 		t.Errorf("failed to revoke role from user: %v", err)
 	} else {
@@ -473,7 +442,7 @@ func TestRevokeRoleFromUser(t *testing.T) {
 func TestRevokeUserFromGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokeUserFromGroup("testuser", "test_admin_group")
+	err := repo.RevokeUserFromGroup(testUserId, "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to revoke user from group: %v", err)
 	} else {
@@ -522,17 +491,5 @@ func TestDeleteUserGroup(t *testing.T) {
 		t.Errorf("failed to delete user group: %v", err)
 	} else {
 		t.Log("user group deleted successfully")
-	}
-}
-
-func TestCleanupTestUser(t *testing.T) {
-	repo := setupTestDB(t)
-
-	// 清理测试用户
-	err := repo.GetDB().Where("username = ?", "testuser").Delete(&models.User{}).Error
-	if err != nil {
-		t.Errorf("failed to cleanup test user: %v", err)
-	} else {
-		t.Log("test user cleaned up successfully")
 	}
 }
