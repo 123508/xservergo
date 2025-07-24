@@ -28,8 +28,9 @@ func setupTestDB(t *testing.T) AuthRepository {
 func TestCreatePermission(t *testing.T) {
 	repo := setupTestDB(t)
 	uid := util.NewUUID()
+	parentId := util.NewUUID()
 	permission := &models.Permission{
-		ID:          util.NewUUID(),
+		ID:          parentId,
 		Code:        "test_permission_create",
 		Name:        "Test Permission Create",
 		Description: "Permission for testing create purposes",
@@ -52,6 +53,32 @@ func TestCreatePermission(t *testing.T) {
 		t.Errorf("failed to create permission: %v", err)
 	} else {
 		t.Logf("permission created successfully: %+v", permission)
+	}
+
+	childPermission := &models.Permission{
+		ID:          util.NewUUID(),
+		Code:        "test_permission_create_child",
+		Name:        "Test Permission Create Child",
+		Description: "Permission for testing create child purposes",
+		ParentID:    &parentId,
+		Type:        models.PermissionTypeAPI,
+		Resource:    "/test/resource/create/child",
+		Method:      "POST",
+		Status:      1,
+		AuditFields: models.AuditFields{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+			Version:   1,
+			CreatedBy: &uid,
+			UpdatedBy: nil,
+		},
+	}
+	err = repo.CreatePermission(childPermission)
+	if err != nil {
+		t.Errorf("failed to create child permission: %v", err)
+	} else {
+		t.Logf("child permission created successfully: %+v", permission)
 	}
 }
 
@@ -228,7 +255,7 @@ func TestGetRoleByCode(t *testing.T) {
 func TestGrantPermissionToRole(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.GrantPermissionToRole("test_permission_create", "test_role_admin")
+	err := repo.GrantPermissionToRole("test_permission_create_child", "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to grant permission to role: %v", err)
 	} else {
@@ -341,6 +368,17 @@ func TestGetUserGroupMembers(t *testing.T) {
 		t.Errorf("failed to get user group members: %v", err)
 	} else {
 		t.Logf("user group members: %v", members)
+	}
+}
+
+func TestAssignRoleToUserGroup(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.AssignRoleToUserGroup("test_role_admin", "test_admin_group")
+	if err != nil {
+		t.Errorf("failed to assign role to user group: %v", err)
+	} else {
+		t.Log("role assigned to user group successfully")
 	}
 }
 

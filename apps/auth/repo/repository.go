@@ -63,6 +63,8 @@ type AuthRepository interface {
 	// GetUserGroupMembers 获取用户组成员
 	// 返回成员用户名列表
 	GetUserGroupMembers(groupName string) ([]util.UUID, error)
+	// AssignRoleToUserGroup 分配角色到用户组
+	AssignRoleToUserGroup(roleCode string, groupName string) error
 	// GetUserGroupPermissions 获取用户组的权限
 	GetUserGroupPermissions(groupName string) ([]string, error)
 
@@ -315,16 +317,48 @@ func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
 		return nil, cerrors.NewParamError("role code cannot be empty")
 	}
 
-	var permissionCodes []string
+	// 查询角色的所有权限（包括递归父权限）
+	var permissionIDs []interface{}
 	if err := r.DB.Model(&models.Permission{}).
-		Select("permission.code").
+		Select("permission.id").
 		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
 		Joins("JOIN roles ON role_permission.role_id = roles.id").
 		Where("roles.code = ? AND role_permission.status = 1", roleCode).
-		Pluck("permission.code", &permissionCodes).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get role permissions: ", err)
+		Pluck("permission.id", &permissionIDs).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get role permission ids: ", err)
 	}
-	return permissionCodes, nil
+
+	// 递归查找所有父权限
+	visited := make(map[string]bool)
+	var allPermissionCodes []string
+
+	var findParents func(ids []interface{}) error
+	findParents = func(ids []interface{}) error {
+		if len(ids) == 0 {
+			return nil
+		}
+		var perms []models.Permission
+		if err := r.DB.Where("id IN ?", ids).Find(&perms).Error; err != nil {
+			return cerrors.NewSQLError("failed to get permissions for recursion: ", err)
+		}
+		var parentIDs []interface{}
+		for _, perm := range perms {
+			code := perm.Code
+			if !visited[code] {
+				visited[code] = true
+				allPermissionCodes = append(allPermissionCodes, code)
+				if len(perm.ParentID) > 0 {
+					parentIDs = append(parentIDs, perm.ParentID)
+				}
+			}
+		}
+		return findParents(parentIDs)
+	}
+
+	if err := findParents(permissionIDs); err != nil {
+		return nil, err
+	}
+	return allPermissionCodes, nil
 }
 
 func (r *RepoImpl) AssignRoleToUser(roleCode string, userID util.UUID) error {
@@ -488,6 +522,56 @@ func (r *RepoImpl) GetUserGroupMembers(groupName string) ([]util.UUID, error) {
 	return userIDList, nil
 }
 
+func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) error {
+	if roleCode == "" || groupName == "" {
+		return cerrors.NewParamError("role code and group name cannot be empty")
+	}
+
+	// 获取角色
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 获取用户组
+	userGroup, err := r.GetUserGroupByName(groupName)
+	if err != nil {
+		return err
+	}
+	if userGroup == nil {
+		return cerrors.NewParamError("user group not found")
+	}
+
+	// 检查是否已存在关联
+	var existing models.RoleGroup
+	err = r.DB.Where("role_id = ? AND group_id = ?", role.ID, userGroup.ID).First(&existing).Error
+	if err == nil {
+		// 如果已存在，更新状态为启用
+		existing.Status = 1
+		if err := r.DB.Save(&existing).Error; err != nil {
+			return cerrors.NewSQLError("failed to update role group: ", err)
+		}
+		return nil
+	} else if err != gorm.ErrRecordNotFound {
+		return cerrors.NewSQLError("failed to check existing role group: ", err)
+	}
+
+	// 创建新的角色用户组关联
+	roleGroup := &models.RoleGroup{
+		RoleID:  role.ID,
+		GroupID: userGroup.ID,
+		Status:  1,
+	}
+
+	if err := r.DB.Create(roleGroup).Error; err != nil {
+		return cerrors.NewSQLError("failed to assign role to user group: ", err)
+	}
+	return nil
+}
+
 func (r *RepoImpl) GetUserGroupPermissions(groupName string) ([]string, error) {
 	if groupName == "" {
 		return nil, cerrors.NewParamError("group name cannot be empty")
@@ -622,31 +706,105 @@ func (r *RepoImpl) GetUserPermissions(userID util.UUID) ([]string, error) {
 
 // getUserDirectPermissions 获取用户通过直接角色分配获得的权限
 func (r *RepoImpl) getUserDirectPermissions(userID util.UUID) ([]string, error) {
-	var permissionCodes []string
-	if err := r.DB.Model(&models.Permission{}).
-		Select("DISTINCT permission.code").
-		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
-		Joins("JOIN user_role ON role_permission.role_id = user_role.role_id").
-		Where("user_role.user_id = ? AND role_permission.status = 1 AND user_role.status = 1", userID).
-		Pluck("permission.code", &permissionCodes).Error; err != nil {
+	relos := make([]string, 0)
+	if err := r.DB.Model(&models.Role{}).
+		Select("roles.code").
+		Joins("JOIN user_role ON roles.id = user_role.role_id").
+		Where("user_role.user_id = ? AND user_role.status = 1", userID).
+		Pluck("roles.code", &relos).Error; err != nil {
 		return nil, cerrors.NewSQLError("failed to get user direct permissions: ", err)
 	}
-	return permissionCodes, nil
+	permissions := make([]string, 0)
+	for _, role := range relos {
+		perms, err := r.GetRolePermission(role)
+		if err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perms...)
+	}
+	// 去重
+	seen := make(map[string]bool)
+	for _, perm := range permissions {
+		seen[perm] = true
+	}
+	var uniquePermissions []string
+	for perm := range seen {
+		uniquePermissions = append(uniquePermissions, perm)
+	}
+	return uniquePermissions, nil
 }
 
 // getUserGroupPermissions 获取用户通过用户组获得的权限
 func (r *RepoImpl) getUserGroupPermissions(userID util.UUID) ([]string, error) {
-	var permissionCodes []string
-	if err := r.DB.Model(&models.Permission{}).
-		Select("DISTINCT permission.code").
-		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
-		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
-		Joins("JOIN user_group_relation ON role_group.group_id = user_group_relation.group_id").
-		Where("user_group_relation.user_id = ? AND role_permission.status = 1 AND role_group.status = 1 AND user_group_relation.status = 1", userID).
-		Pluck("permission.code", &permissionCodes).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group permissions: ", err)
+	// 递归查询用户组和父用户组
+	var groupIDs []interface{}
+	if err := r.DB.Model(&models.UserGroup{}).
+		Select("user_group.id").
+		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
+		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
+		Pluck("user_group.id", &groupIDs).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group ids: ", err)
 	}
-	return permissionCodes, nil
+
+	visited := make(map[string]bool)
+	var allGroupIDs []interface{}
+
+	var findParentGroups func(ids []interface{}) error
+	findParentGroups = func(ids []interface{}) error {
+		if len(ids) == 0 {
+			return nil
+		}
+		var groups []models.UserGroup
+		if err := r.DB.Where("id IN ?", ids).Find(&groups).Error; err != nil {
+			return cerrors.NewSQLError("failed to get user groups for recursion: ", err)
+		}
+		var parentIDs []interface{}
+		for _, group := range groups {
+			idStr := group.ID.String()
+			if !visited[idStr] {
+				visited[idStr] = true
+				allGroupIDs = append(allGroupIDs, group.ID)
+				if len(group.ParentID) > 0 {
+					parentIDs = append(parentIDs, group.ParentID)
+				}
+			}
+		}
+		return findParentGroups(parentIDs)
+	}
+
+	if err := findParentGroups(groupIDs); err != nil {
+		return nil, err
+	}
+
+	// 查询所有这些用户组的角色代码
+	var roleCodes []string
+	if err := r.DB.Model(&models.Role{}).
+		Select("roles.code").
+		Joins("JOIN role_group ON roles.id = role_group.role_id").
+		Where("role_group.group_id IN ? AND role_group.status = 1", allGroupIDs).
+		Pluck("roles.code", &roleCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError("failed to get user group role codes: ", err)
+	}
+
+	// 获取所有角色的权限代码
+	var permissions []string
+	for _, roleCode := range roleCodes {
+		perms, err := r.GetRolePermission(roleCode)
+		if err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perms...)
+	}
+	// 去重
+	seen := make(map[string]bool)
+	for _, perm := range permissions {
+		seen[perm] = true
+	}
+	var uniquePermissions []string
+	for perm := range seen {
+		uniquePermissions = append(uniquePermissions, perm)
+	}
+	return uniquePermissions, nil
 }
 
 func (r *RepoImpl) HasPermission(userID util.UUID, permissionCode string) bool {
