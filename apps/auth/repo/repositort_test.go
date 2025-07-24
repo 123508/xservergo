@@ -382,6 +382,17 @@ func TestAssignRoleToUserGroup(t *testing.T) {
 	}
 }
 
+func TestRemoveRoleFromUserGroup(t *testing.T) {
+	repo := setupTestDB(t)
+
+	err := repo.RemoveRoleFromUserGroup("test_role_admin", "test_admin_group")
+	if err != nil {
+		t.Errorf("failed to remove role from user group: %v", err)
+	} else {
+		t.Log("role removed from user group successfully")
+	}
+}
+
 func TestGetUserPermissions(t *testing.T) {
 	repo := setupTestDB(t)
 

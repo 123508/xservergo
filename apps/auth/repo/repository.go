@@ -65,6 +65,8 @@ type AuthRepository interface {
 	GetUserGroupMembers(groupName string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
 	AssignRoleToUserGroup(roleCode string, groupName string) error
+	// RemoveRoleFromUserGroup 从用户组中移除角色
+	RemoveRoleFromUserGroup(roleCode string, groupName string) error
 	// GetUserGroupPermissions 获取用户组的权限
 	GetUserGroupPermissions(groupName string) ([]string, error)
 
@@ -568,6 +570,38 @@ func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) erro
 
 	if err := r.DB.Create(roleGroup).Error; err != nil {
 		return cerrors.NewSQLError("failed to assign role to user group: ", err)
+	}
+	return nil
+}
+
+func (r *RepoImpl) RemoveRoleFromUserGroup(roleCode string, groupName string) error {
+	if roleCode == "" || groupName == "" {
+		return cerrors.NewParamError("role code and group name cannot be empty")
+	}
+
+	// 获取角色
+	role, err := r.GetRoleByCode(roleCode)
+	if err != nil {
+		return err
+	}
+	if role == nil {
+		return cerrors.NewParamError("role not found")
+	}
+
+	// 获取用户组
+	userGroup, err := r.GetUserGroupByName(groupName)
+	if err != nil {
+		return err
+	}
+	if userGroup == nil {
+		return cerrors.NewParamError("user group not found")
+	}
+
+	// 软删除：将状态设置为0
+	if err := r.DB.Model(&models.RoleGroup{}).
+		Where("role_id = ? AND group_id = ?", role.ID, userGroup.ID).
+		Update("status", 0).Error; err != nil {
+		return cerrors.NewSQLError("failed to revoke role from user group: ", err)
 	}
 	return nil
 }
