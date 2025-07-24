@@ -140,6 +140,44 @@ func (x VerificationType) String() string {
 	return strconv.Itoa(int(x))
 }
 
+type QrCodeLoginStatusResp_Status int32
+
+const (
+	QrCodeLoginStatusResp_UNKNOWN   QrCodeLoginStatusResp_Status = 0
+	QrCodeLoginStatusResp_PENDING   QrCodeLoginStatusResp_Status = 1 // 等待扫码
+	QrCodeLoginStatusResp_SCANNED   QrCodeLoginStatusResp_Status = 2 // 已扫码未确认
+	QrCodeLoginStatusResp_CONFIRMED QrCodeLoginStatusResp_Status = 3 // 已确认
+	QrCodeLoginStatusResp_EXPIRED   QrCodeLoginStatusResp_Status = 4 // 已过期
+	QrCodeLoginStatusResp_CANCELLED QrCodeLoginStatusResp_Status = 5 // 已取消
+)
+
+// Enum value maps for QrCodeLoginStatusResp_Status.
+var QrCodeLoginStatusResp_Status_name = map[int32]string{
+	0: "UNKNOWN",
+	1: "PENDING",
+	2: "SCANNED",
+	3: "CONFIRMED",
+	4: "EXPIRED",
+	5: "CANCELLED",
+}
+
+var QrCodeLoginStatusResp_Status_value = map[string]int32{
+	"UNKNOWN":   0,
+	"PENDING":   1,
+	"SCANNED":   2,
+	"CONFIRMED": 3,
+	"EXPIRED":   4,
+	"CANCELLED": 5,
+}
+
+func (x QrCodeLoginStatusResp_Status) String() string {
+	s, ok := QrCodeLoginStatusResp_Status_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+
 // ---------- 通用结构 ---------- //
 type OperationResult struct {
 	Success   bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
@@ -406,6 +444,15 @@ type SafeFilter_Timestamp struct {
 
 func (*SafeFilter_Timestamp) isSafeFilter_Value() {}
 
+type Empty struct {
+}
+
+func (x *Empty) Reset() { *x = Empty{} }
+
+func (x *Empty) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *Empty) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
 // ---------- 认证模块 ---------- //
 type RegisterReq struct {
 	Username        string `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
@@ -648,7 +695,7 @@ func (x *SmsLoginResp) GetCodeSent() *CodeSentInfo {
 	return nil
 }
 
-func (x *SmsLoginResp) GetLogin() *LoginSuccess {
+func (x *SmsLoginResp) GetLogin() *LoginResp {
 	if p, ok := x.GetResult().(*SmsLoginResp_Login); ok {
 		return p.Login
 	}
@@ -674,7 +721,7 @@ type SmsLoginResp_CodeSent struct {
 func (*SmsLoginResp_CodeSent) isSmsLoginResp_Result() {}
 
 type SmsLoginResp_Login struct {
-	Login *LoginSuccess `protobuf:"bytes,2,opt,name=login" json:"login,omitempty"` // 登录成功
+	Login *LoginResp `protobuf:"bytes,2,opt,name=login" json:"login,omitempty"` // 登录成功
 }
 
 func (*SmsLoginResp_Login) isSmsLoginResp_Result() {}
@@ -704,84 +751,288 @@ func (x *CodeSentInfo) GetExpireTime() uint64 {
 	return 0
 }
 
-type LoginSuccess struct {
-	AccessToken string    `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
-	UserInfo    *UserInfo `protobuf:"bytes,2,opt,name=user_info" json:"user_info,omitempty"`
+type GenerateQrCodeReq struct {
+	ClientIp  string `protobuf:"bytes,1,opt,name=client_ip" json:"client_ip,omitempty"`   // 客户端IP
+	UserAgent string `protobuf:"bytes,2,opt,name=user_agent" json:"user_agent,omitempty"` // 浏览器UA
 }
 
-func (x *LoginSuccess) Reset() { *x = LoginSuccess{} }
+func (x *GenerateQrCodeReq) Reset() { *x = GenerateQrCodeReq{} }
 
-func (x *LoginSuccess) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *GenerateQrCodeReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *LoginSuccess) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *GenerateQrCodeReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *LoginSuccess) GetAccessToken() string {
+func (x *GenerateQrCodeReq) GetClientIp() string {
 	if x != nil {
-		return x.AccessToken
+		return x.ClientIp
 	}
 	return ""
 }
 
-func (x *LoginSuccess) GetUserInfo() *UserInfo {
+func (x *GenerateQrCodeReq) GetUserAgent() string {
 	if x != nil {
-		return x.UserInfo
-	}
-	return nil
-}
-
-type QrCodeLoginReq struct {
-	SessionId string `protobuf:"bytes,1,opt,name=session_id" json:"session_id,omitempty"` // 扫码后提供
-}
-
-func (x *QrCodeLoginReq) Reset() { *x = QrCodeLoginReq{} }
-
-func (x *QrCodeLoginReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *QrCodeLoginReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *QrCodeLoginReq) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
+		return x.UserAgent
 	}
 	return ""
 }
 
-type QrCodeLoginResp struct {
+type GenerateQrCodeResp struct {
 	QrCodeUrl string `protobuf:"bytes,1,opt,name=qr_code_url" json:"qr_code_url,omitempty"` // 二维码图片URL
-	SessionId string `protobuf:"bytes,2,opt,name=session_id" json:"session_id,omitempty"`   // 登录会话ID
-	ExpiresAt uint64 `protobuf:"varint,3,opt,name=expires_at" json:"expires_at,omitempty"`  // 过期时间戳(毫秒)
+	RequestId string `protobuf:"bytes,2,opt,name=request_id" json:"request_id,omitempty"`
+	ExpiresAt uint64 `protobuf:"varint,3,opt,name=expires_at" json:"expires_at,omitempty"` // 过期时间戳(毫秒)
 }
 
-func (x *QrCodeLoginResp) Reset() { *x = QrCodeLoginResp{} }
+func (x *GenerateQrCodeResp) Reset() { *x = GenerateQrCodeResp{} }
 
-func (x *QrCodeLoginResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *GenerateQrCodeResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *QrCodeLoginResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *GenerateQrCodeResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *QrCodeLoginResp) GetQrCodeUrl() string {
+func (x *GenerateQrCodeResp) GetQrCodeUrl() string {
 	if x != nil {
 		return x.QrCodeUrl
 	}
 	return ""
 }
 
-func (x *QrCodeLoginResp) GetSessionId() string {
+func (x *GenerateQrCodeResp) GetRequestId() string {
 	if x != nil {
-		return x.SessionId
+		return x.RequestId
 	}
 	return ""
 }
 
-func (x *QrCodeLoginResp) GetExpiresAt() uint64 {
+func (x *GenerateQrCodeResp) GetExpiresAt() uint64 {
 	if x != nil {
 		return x.ExpiresAt
 	}
 	return 0
 }
 
+// 长轮询状态请求
+type QrCodeLoginStatusReq struct {
+	Ticket    string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`    // 票据ID(即会话ID)
+	Timeout   uint64 `protobuf:"varint,2,opt,name=timeout" json:"timeout,omitempty"` // 长轮询超时时间 (毫秒, 0=使用默认)
+	RequestId string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+}
+
+func (x *QrCodeLoginStatusReq) Reset() { *x = QrCodeLoginStatusReq{} }
+
+func (x *QrCodeLoginStatusReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *QrCodeLoginStatusReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *QrCodeLoginStatusReq) GetTicket() string {
+	if x != nil {
+		return x.Ticket
+	}
+	return ""
+}
+
+func (x *QrCodeLoginStatusReq) GetTimeout() uint64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+func (x *QrCodeLoginStatusReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+// 长轮询状态响应 (流式)
+type QrCodeLoginStatusResp struct {
+	Status     QrCodeLoginStatusResp_Status `protobuf:"varint,1,opt,name=status" json:"status,omitempty"`             // 当前状态
+	LoginResp  *LoginResponse               `protobuf:"bytes,2,opt,name=login_resp" json:"login_resp,omitempty"`      // 登录响应 (仅当状态为CONFIRMED时有效)
+	NextPollIn int64                        `protobuf:"varint,3,opt,name=next_poll_in" json:"next_poll_in,omitempty"` // 下次轮询时间 (毫秒, 仅当状态未完成时)
+}
+
+func (x *QrCodeLoginStatusResp) Reset() { *x = QrCodeLoginStatusResp{} }
+
+func (x *QrCodeLoginStatusResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *QrCodeLoginStatusResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *QrCodeLoginStatusResp) GetStatus() QrCodeLoginStatusResp_Status {
+	if x != nil {
+		return x.Status
+	}
+	return QrCodeLoginStatusResp_UNKNOWN
+}
+
+func (x *QrCodeLoginStatusResp) GetLoginResp() *LoginResponse {
+	if x != nil {
+		return x.LoginResp
+	}
+	return nil
+}
+
+func (x *QrCodeLoginStatusResp) GetNextPollIn() int64 {
+	if x != nil {
+		return x.NextPollIn
+	}
+	return 0
+}
+
+// 登录响应
+type LoginResponse struct {
+	// Types that are assignable to Result:
+	//
+	//	*LoginResponse_Success
+	//	*LoginResponse_Failure
+	Result isLoginResponse_Result `protobuf_oneof:"result"`
+}
+
+func (x *LoginResponse) Reset() { *x = LoginResponse{} }
+
+func (x *LoginResponse) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *LoginResponse) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *LoginResponse) GetResult() isLoginResponse_Result {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+func (x *LoginResponse) GetSuccess() *LoginResp {
+	if p, ok := x.GetResult().(*LoginResponse_Success); ok {
+		return p.Success
+	}
+	return nil
+}
+
+func (x *LoginResponse) GetFailure() *LoginFailure {
+	if p, ok := x.GetResult().(*LoginResponse_Failure); ok {
+		return p.Failure
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the prutal package.
+func (*LoginResponse) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*LoginResponse_Success)(nil),
+		(*LoginResponse_Failure)(nil),
+	}
+}
+
+type isLoginResponse_Result interface {
+	isLoginResponse_Result()
+}
+
+type LoginResponse_Success struct {
+	Success *LoginResp `protobuf:"bytes,1,opt,name=success" json:"success,omitempty"`
+}
+
+func (*LoginResponse_Success) isLoginResponse_Result() {}
+
+type LoginResponse_Failure struct {
+	Failure *LoginFailure `protobuf:"bytes,2,opt,name=failure" json:"failure,omitempty"`
+}
+
+func (*LoginResponse_Failure) isLoginResponse_Result() {}
+
+type LoginFailure struct {
+	Code    uint64 `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
+	Message string `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+}
+
+func (x *LoginFailure) Reset() { *x = LoginFailure{} }
+
+func (x *LoginFailure) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *LoginFailure) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *LoginFailure) GetCode() uint64 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *LoginFailure) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type QrPreLoginReq struct {
+	Ticket    string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	Phone     string `protobuf:"bytes,2,opt,name=phone" json:"phone,omitempty"`
+	RequestId string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+}
+
+func (x *QrPreLoginReq) Reset() { *x = QrPreLoginReq{} }
+
+func (x *QrPreLoginReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *QrPreLoginReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *QrPreLoginReq) GetTicket() string {
+	if x != nil {
+		return x.Ticket
+	}
+	return ""
+}
+
+func (x *QrPreLoginReq) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *QrPreLoginReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type QrPreLoginResp struct {
+	UserExist bool   `protobuf:"varint,1,opt,name=user_exist" json:"user_exist,omitempty"`
+	UserId    []byte `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+	RequestId string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+}
+
+func (x *QrPreLoginResp) Reset() { *x = QrPreLoginResp{} }
+
+func (x *QrPreLoginResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *QrPreLoginResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *QrPreLoginResp) GetUserExist() bool {
+	if x != nil {
+		return x.UserExist
+	}
+	return false
+}
+
+func (x *QrPreLoginResp) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
+func (x *QrPreLoginResp) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 type ConfirmQrLoginReq struct {
-	SessionId string `protobuf:"bytes,1,opt,name=session_id" json:"session_id,omitempty"`
-	UserId    []byte `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"` // 确认登录的用户
+	Ticket    string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"`
+	Uid       []byte `protobuf:"bytes,2,opt,name=uid" json:"uid,omitempty"` // 确认登录的用户id
+	RequestId string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *ConfirmQrLoginReq) Reset() { *x = ConfirmQrLoginReq{} }
@@ -790,18 +1041,59 @@ func (x *ConfirmQrLoginReq) Marshal(in []byte) ([]byte, error) { return prutal.M
 
 func (x *ConfirmQrLoginReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *ConfirmQrLoginReq) GetSessionId() string {
+func (x *ConfirmQrLoginReq) GetTicket() string {
 	if x != nil {
-		return x.SessionId
+		return x.Ticket
 	}
 	return ""
 }
 
-func (x *ConfirmQrLoginReq) GetUserId() []byte {
+func (x *ConfirmQrLoginReq) GetUid() []byte {
 	if x != nil {
-		return x.UserId
+		return x.Uid
 	}
 	return nil
+}
+
+func (x *ConfirmQrLoginReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+// 取消登录请求 (移动端)
+type CancelQrLoginReq struct {
+	Ticket    string `protobuf:"bytes,1,opt,name=ticket" json:"ticket,omitempty"` // 票据ID
+	Uid       []byte `protobuf:"bytes,2,opt,name=uid" json:"uid,omitempty"`
+	RequestId string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+}
+
+func (x *CancelQrLoginReq) Reset() { *x = CancelQrLoginReq{} }
+
+func (x *CancelQrLoginReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CancelQrLoginReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CancelQrLoginReq) GetTicket() string {
+	if x != nil {
+		return x.Ticket
+	}
+	return ""
+}
+
+func (x *CancelQrLoginReq) GetUid() []byte {
+	if x != nil {
+		return x.Uid
+	}
+	return nil
+}
+
+func (x *CancelQrLoginReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
 }
 
 type OAuthLoginReq struct {
@@ -1183,68 +1475,125 @@ func (x *CompleteBindEmailReq) GetRequestUserId() []byte {
 	return nil
 }
 
-type StartUnbindEmailReq struct {
+type StartChangeEmailReq struct {
 	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	RequestUserId []byte `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	OldEmail      string `protobuf:"bytes,2,opt,name=old_email" json:"old_email,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
-func (x *StartUnbindEmailReq) Reset() { *x = StartUnbindEmailReq{} }
+func (x *StartChangeEmailReq) Reset() { *x = StartChangeEmailReq{} }
 
-func (x *StartUnbindEmailReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *StartChangeEmailReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *StartUnbindEmailReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *StartChangeEmailReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *StartUnbindEmailReq) GetTargetUserId() []byte {
+func (x *StartChangeEmailReq) GetTargetUserId() []byte {
 	if x != nil {
 		return x.TargetUserId
 	}
 	return nil
 }
 
-func (x *StartUnbindEmailReq) GetRequestUserId() []byte {
+func (x *StartChangeEmailReq) GetOldEmail() string {
+	if x != nil {
+		return x.OldEmail
+	}
+	return ""
+}
+
+func (x *StartChangeEmailReq) GetRequestUserId() []byte {
 	if x != nil {
 		return x.RequestUserId
 	}
 	return nil
 }
 
-type CompleteUnbindEmailReq struct {
+type VerifyNewEmailReq struct {
 	TargetUserId     []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	VerificationCode string `protobuf:"bytes,2,opt,name=verification_code" json:"verification_code,omitempty"`
-	RequestId        string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+	NewEmail         string `protobuf:"bytes,2,opt,name=new_email" json:"new_email,omitempty"`
+	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"`
 	RequestUserId    []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RequestId        string `protobuf:"bytes,5,opt,name=request_id" json:"request_id,omitempty"`
 }
 
-func (x *CompleteUnbindEmailReq) Reset() { *x = CompleteUnbindEmailReq{} }
+func (x *VerifyNewEmailReq) Reset() { *x = VerifyNewEmailReq{} }
 
-func (x *CompleteUnbindEmailReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
+func (x *VerifyNewEmailReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *CompleteUnbindEmailReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *VerifyNewEmailReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *CompleteUnbindEmailReq) GetTargetUserId() []byte {
+func (x *VerifyNewEmailReq) GetTargetUserId() []byte {
 	if x != nil {
 		return x.TargetUserId
 	}
 	return nil
 }
 
-func (x *CompleteUnbindEmailReq) GetVerificationCode() string {
+func (x *VerifyNewEmailReq) GetNewEmail() string {
+	if x != nil {
+		return x.NewEmail
+	}
+	return ""
+}
+
+func (x *VerifyNewEmailReq) GetVerificationCode() string {
 	if x != nil {
 		return x.VerificationCode
 	}
 	return ""
 }
 
-func (x *CompleteUnbindEmailReq) GetRequestId() string {
+func (x *VerifyNewEmailReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+func (x *VerifyNewEmailReq) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
 	}
 	return ""
 }
 
-func (x *CompleteUnbindEmailReq) GetRequestUserId() []byte {
+type CompleteChangeEmailReq struct {
+	TargetUserId     []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	VerificationCode string `protobuf:"bytes,2,opt,name=verification_code" json:"verification_code,omitempty"`
+	RequestId        string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+	RequestUserId    []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *CompleteChangeEmailReq) Reset() { *x = CompleteChangeEmailReq{} }
+
+func (x *CompleteChangeEmailReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *CompleteChangeEmailReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CompleteChangeEmailReq) GetTargetUserId() []byte {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return nil
+}
+
+func (x *CompleteChangeEmailReq) GetVerificationCode() string {
+	if x != nil {
+		return x.VerificationCode
+	}
+	return ""
+}
+
+func (x *CompleteChangeEmailReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *CompleteChangeEmailReq) GetRequestUserId() []byte {
 	if x != nil {
 		return x.RequestUserId
 	}
@@ -1417,10 +1766,9 @@ func (x *VerifyNewPhoneReq) GetRequestId() string {
 
 type CompleteChangePhoneReq struct {
 	TargetUserId     []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	NewPhone         string `protobuf:"bytes,2,opt,name=new_phone" json:"new_phone,omitempty"`
-	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"`
-	RequestId        string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
-	RequestUserId    []byte `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	VerificationCode string `protobuf:"bytes,2,opt,name=verification_code" json:"verification_code,omitempty"`
+	RequestId        string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
+	RequestUserId    []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
 func (x *CompleteChangePhoneReq) Reset() { *x = CompleteChangePhoneReq{} }
@@ -1436,13 +1784,6 @@ func (x *CompleteChangePhoneReq) GetTargetUserId() []byte {
 		return x.TargetUserId
 	}
 	return nil
-}
-
-func (x *CompleteChangePhoneReq) GetNewPhone() string {
-	if x != nil {
-		return x.NewPhone
-	}
-	return ""
 }
 
 func (x *CompleteChangePhoneReq) GetVerificationCode() string {
@@ -2118,8 +2459,11 @@ type UserService interface {
 	PhoneLogin(ctx context.Context, req *PhoneLoginReq) (res *LoginResp, err error)
 	AccountLogin(ctx context.Context, req *AccountLoginReq) (res *LoginResp, err error)
 	SmsLogin(ctx context.Context, req *SmsLoginReq) (res *SmsLoginResp, err error)
-	QrCodeLogin(ctx context.Context, req *QrCodeLoginReq) (res *QrCodeLoginResp, err error)
+	GenerateQrCode(ctx context.Context, req *GenerateQrCodeReq) (res *GenerateQrCodeResp, err error)
+	QrCodeLoginStatus(ctx context.Context, req *QrCodeLoginStatusReq) (res *QrCodeLoginStatusResp, err error)
+	QrPreLogin(ctx context.Context, req *QrPreLoginReq) (res *QrPreLoginResp, err error)
 	ConfirmQrLogin(ctx context.Context, req *ConfirmQrLoginReq) (res *LoginResp, err error)
+	CancelQrLogin(ctx context.Context, req *CancelQrLoginReq) (res *Empty, err error)
 	OAuthLogin(ctx context.Context, req *OAuthLoginReq) (res *LoginResp, err error)
 	Logout(ctx context.Context, req *LogoutReq) (res *OperationResult, err error)
 	SessionCheck(ctx context.Context, req *SessionCheckReq) (res *SessionStatusResp, err error)
@@ -2128,8 +2472,9 @@ type UserService interface {
 	ResetPassword(ctx context.Context, req *ResetPasswordReq) (res *OperationResult, err error)
 	StartBindEmail(ctx context.Context, req *StartBindEmailReq) (res *OperationResult, err error)
 	CompleteBindEmail(ctx context.Context, req *CompleteBindEmailReq) (res *OperationResult, err error)
-	StartUnbindEmail(ctx context.Context, req *StartUnbindEmailReq) (res *OperationResult, err error)
-	CompleteUnbindEmail(ctx context.Context, req *CompleteUnbindEmailReq) (res *OperationResult, err error)
+	StartChangeEmail(ctx context.Context, req *StartChangeEmailReq) (res *OperationResult, err error)
+	VerifyNewEmail(ctx context.Context, req *VerifyNewEmailReq) (res *OperationResult, err error)
+	CompleteChangeEmail(ctx context.Context, req *CompleteChangeEmailReq) (res *OperationResult, err error)
 	StartBindPhone(ctx context.Context, req *StartBindPhoneReq) (res *OperationResult, err error)
 	CompleteBindPhone(ctx context.Context, req *CompleteBindPhoneReq) (res *OperationResult, err error)
 	StartChangePhone(ctx context.Context, req *StartChangePhoneReq) (res *OperationResult, err error)

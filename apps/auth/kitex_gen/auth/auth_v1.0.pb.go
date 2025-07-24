@@ -4,8 +4,6 @@ package auth
 
 import (
 	"context"
-	"github.com/123508/xservergo/kitex_gen/user"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"strconv"
 
 	"github.com/cloudwego/prutal"
@@ -56,11 +54,11 @@ func (x Permission_Type) String() string {
 }
 
 type OperationResult struct {
-	Success   bool                   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`      // 操作是否成功
-	Code      string                 `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`             // 业务状态码
-	Message   string                 `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`       // 用户提示信息
-	RequestId string                 `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"` // 请求追踪ID
-	Timestamp *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`   // 服务器时间戳(毫秒)
+	Success   bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`      // 操作是否成功
+	Code      string `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`             // 业务状态码
+	Message   string `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`       // 用户提示信息
+	RequestId string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"` // 请求追踪ID
+	Timestamp string `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`   // 服务器时间戳(毫秒)
 }
 
 func (x *OperationResult) Reset() { *x = OperationResult{} }
@@ -97,11 +95,11 @@ func (x *OperationResult) GetRequestId() string {
 	return ""
 }
 
-func (x *OperationResult) GetTimestamp() *timestamppb.Timestamp {
+func (x *OperationResult) GetTimestamp() string {
 	if x != nil {
 		return x.Timestamp
 	}
-	return nil
+	return ""
 }
 
 type Role struct {
@@ -988,9 +986,95 @@ func (x *GetUserGroupMembersReq) GetUserId() []byte {
 	return nil
 }
 
+type AssignRoleToUserGroupReq struct {
+	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	UserId        []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
+}
+
+func (x *AssignRoleToUserGroupReq) Reset() { *x = AssignRoleToUserGroupReq{} }
+
+func (x *AssignRoleToUserGroupReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *AssignRoleToUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *AssignRoleToUserGroupReq) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserGroupReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserGroupReq) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
+type RemoveRoleFromUserGroupReq struct {
+	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	UserId        []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
+}
+
+func (x *RemoveRoleFromUserGroupReq) Reset() { *x = RemoveRoleFromUserGroupReq{} }
+
+func (x *RemoveRoleFromUserGroupReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *RemoveRoleFromUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *RemoveRoleFromUserGroupReq) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserGroupReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserGroupReq) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
 type GetUserGroupMembersResp struct {
-	Users      []*user.UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`              // 用户组成员列表
-	TotalCount uint32           `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"` // 成员总数
+	Users      []*UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`              // 用户组成员列表
+	TotalCount uint32      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"` // 成员总数
 }
 
 func (x *GetUserGroupMembersResp) Reset() { *x = GetUserGroupMembersResp{} }
@@ -1001,7 +1085,7 @@ func (x *GetUserGroupMembersResp) Marshal(in []byte) ([]byte, error) {
 
 func (x *GetUserGroupMembersResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetUserGroupMembersResp) GetUsers() []*user.UserInfo {
+func (x *GetUserGroupMembersResp) GetUsers() []*UserInfo {
 	if x != nil {
 		return x.Users
 	}
@@ -1013,6 +1097,103 @@ func (x *GetUserGroupMembersResp) GetTotalCount() uint32 {
 		return x.TotalCount
 	}
 	return 0
+}
+
+type UserInfo struct {
+	UserId    []byte `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"` // 二进制格式的UUID (16 bytes)
+	Username  string `protobuf:"bytes,2,opt,name=username" json:"username,omitempty"`
+	Nickname  string `protobuf:"bytes,3,opt,name=nickname" json:"nickname,omitempty"`
+	Email     string `protobuf:"bytes,4,opt,name=email" json:"email,omitempty"`
+	Phone     string `protobuf:"bytes,5,opt,name=phone" json:"phone,omitempty"`
+	Gender    uint64 `protobuf:"varint,6,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
+	Avatar    string `protobuf:"bytes,7,opt,name=avatar" json:"avatar,omitempty"`
+	Status    uint64 `protobuf:"varint,8,opt,name=status" json:"status,omitempty"` // 0-正常 1-冻结
+	CreatedAt string `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
+	UpdatedAt string `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
+	IsDeleted bool   `protobuf:"varint,11,opt,name=is_deleted" json:"is_deleted,omitempty"` // 是否已删除
+}
+
+func (x *UserInfo) Reset() { *x = UserInfo{} }
+
+func (x *UserInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UserInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UserInfo) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
+func (x *UserInfo) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *UserInfo) GetNickname() string {
+	if x != nil {
+		return x.Nickname
+	}
+	return ""
+}
+
+func (x *UserInfo) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *UserInfo) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *UserInfo) GetGender() uint64 {
+	if x != nil {
+		return x.Gender
+	}
+	return 0
+}
+
+func (x *UserInfo) GetAvatar() string {
+	if x != nil {
+		return x.Avatar
+	}
+	return ""
+}
+
+func (x *UserInfo) GetStatus() uint64 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *UserInfo) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *UserInfo) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *UserInfo) GetIsDeleted() bool {
+	if x != nil {
+		return x.IsDeleted
+	}
+	return false
 }
 
 type GetUserGroupPermissionsReq struct {
@@ -1598,7 +1779,9 @@ func (x *IssueTokenResp) GetRefreshToken() string {
 }
 
 type RefreshTokenReq struct {
-	RefreshToken string `protobuf:"bytes,1,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	UserId       []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`
 }
 
 func (x *RefreshTokenReq) Reset() { *x = RefreshTokenReq{} }
@@ -1607,6 +1790,13 @@ func (x *RefreshTokenReq) Marshal(in []byte) ([]byte, error) { return prutal.Mar
 
 func (x *RefreshTokenReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
+func (x *RefreshTokenReq) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
 func (x *RefreshTokenReq) GetRefreshToken() string {
 	if x != nil {
 		return x.RefreshToken
@@ -1614,8 +1804,16 @@ func (x *RefreshTokenReq) GetRefreshToken() string {
 	return ""
 }
 
+func (x *RefreshTokenReq) GetUserId() []byte {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
 type RefreshTokenResp struct {
-	AccessToken string `protobuf:"bytes,2,opt,name=access_token" json:"access_token,omitempty"`
+	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
 }
 
 func (x *RefreshTokenResp) Reset() { *x = RefreshTokenResp{} }
@@ -1627,6 +1825,13 @@ func (x *RefreshTokenResp) Unmarshal(in []byte) error { return prutal.Unmarshal(
 func (x *RefreshTokenResp) GetAccessToken() string {
 	if x != nil {
 		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *RefreshTokenResp) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
 	}
 	return ""
 }
@@ -1701,6 +1906,8 @@ type AuthService interface {
 	DeleteUserGroup(ctx context.Context, req *DeleteUserGroupReq) (res *OperationResult, err error)
 	GetUserGroup(ctx context.Context, req *GetUserGroupReq) (res *UserGroup, err error)
 	GetUserGroupMembers(ctx context.Context, req *GetUserGroupMembersReq) (res *GetUserGroupMembersResp, err error)
+	AssignRoleToUserGroup(ctx context.Context, req *AssignRoleToUserGroupReq) (res *OperationResult, err error)
+	RemoveRoleFromUserGroup(ctx context.Context, req *RemoveRoleFromUserGroupReq) (res *OperationResult, err error)
 	GetUserGroupPermissions(ctx context.Context, req *GetUserGroupPermissionsReq) (res *GetUserGroupPermissionsResp, err error)
 	AssignUserToGroup(ctx context.Context, req *AssignUserToGroupReq) (res *OperationResult, err error)
 	RemoveUserFromGroup(ctx context.Context, req *RemoveUserFromGroupReq) (res *OperationResult, err error)

@@ -263,3 +263,15 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 		Version:     ver,
 	}, nil
 }
+
+// AssignRoleToUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) AssignRoleToUserGroup(ctx context.Context, req *auth.AssignRoleToUserGroupReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RemoveRoleFromUserGroup implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, req *auth.RemoveRoleFromUserGroupReq) (resp *auth.OperationResult, err error) {
+	// TODO: Your code here...
+	return
+}
