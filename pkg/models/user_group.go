@@ -11,7 +11,7 @@ type UserGroup struct {
 	Code     string     `gorm:"column:code;comment '用户组唯一标识符'"`
 	Status   int8       `gorm:"column:status;comment '权限是否启用:0不启用 1启用'"`
 	ParentID *util.UUID `gorm:"column:parent_id;comment '父级ID,没有就置空'"`
-	Path     string     `gorm:"column:path;comment '用户组路径'"`
+	Path     string     `gorm:"column:path;->;comment '用户组路径'"`
 	AuditFields
 }
 

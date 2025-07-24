@@ -24,6 +24,6 @@ create table if not exists user_group_relation(
 
     primary key (user_id,group_id),
     index user_group_idx_group_status(group_id,status),
-    constraint user_group_chk_status check ( status in (0,1) )
+    constraint user_group_relation_chk_status check ( status in (0,1) )
 )engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci
 COMMENT='用户-用户组表';
