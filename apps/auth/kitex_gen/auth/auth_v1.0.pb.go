@@ -281,824 +281,6 @@ func (x *UserGroup) GetParentId() []byte {
 	return nil
 }
 
-type CreatePermissionReq struct {
-	AccessToken string      `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 创建者AccessToken
-	Permission  *Permission `protobuf:"bytes,2,opt,name=permission" json:"permission,omitempty"`     // 权限信息
-	UserId      []byte      `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 创建者用户ID(16字节UUID)
-}
-
-func (x *CreatePermissionReq) Reset() { *x = CreatePermissionReq{} }
-
-func (x *CreatePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *CreatePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CreatePermissionReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CreatePermissionReq) GetPermission() *Permission {
-	if x != nil {
-		return x.Permission
-	}
-	return nil
-}
-
-func (x *CreatePermissionReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type UpdatePermissionReq struct {
-	AccessToken string      `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 更新者AccessToken
-	Permission  *Permission `protobuf:"bytes,2,opt,name=permission" json:"permission,omitempty"`     // 权限信息
-	UserId      []byte      `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 更新者用户ID(16字节UUID)
-}
-
-func (x *UpdatePermissionReq) Reset() { *x = UpdatePermissionReq{} }
-
-func (x *UpdatePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *UpdatePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UpdatePermissionReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UpdatePermissionReq) GetPermission() *Permission {
-	if x != nil {
-		return x.Permission
-	}
-	return nil
-}
-
-func (x *UpdatePermissionReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type DeletePermissionReq struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`   // 删除者AccessToken
-	PermissionId []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"` // 权限ID(16字节UUID)
-	UserId       []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`             // 删除者用户ID(16字节UUID)
-}
-
-func (x *DeletePermissionReq) Reset() { *x = DeletePermissionReq{} }
-
-func (x *DeletePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *DeletePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *DeletePermissionReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *DeletePermissionReq) GetPermissionId() []byte {
-	if x != nil {
-		return x.PermissionId
-	}
-	return nil
-}
-
-func (x *DeletePermissionReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetPermissionReq struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`   // 查询者AccessToken
-	PermissionId []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"` // 权限ID(16字节UUID)
-	UserId       []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`             // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetPermissionReq) Reset() { *x = GetPermissionReq{} }
-
-func (x *GetPermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetPermissionReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetPermissionReq) GetPermissionId() []byte {
-	if x != nil {
-		return x.PermissionId
-	}
-	return nil
-}
-
-func (x *GetPermissionReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type CreateRoleReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 创建者AccessToken
-	Role        *Role  `protobuf:"bytes,2,opt,name=role" json:"role,omitempty"`                 // 角色信息
-	UserId      []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 创建者用户ID(16字节UUID)
-}
-
-func (x *CreateRoleReq) Reset() { *x = CreateRoleReq{} }
-
-func (x *CreateRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *CreateRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CreateRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CreateRoleReq) GetRole() *Role {
-	if x != nil {
-		return x.Role
-	}
-	return nil
-}
-
-func (x *CreateRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type UpdateRoleReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 更新者AccessToken
-	Role        *Role  `protobuf:"bytes,2,opt,name=role" json:"role,omitempty"`                 // 角色信息
-	UserId      []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 更新者用户ID(16字节UUID)
-}
-
-func (x *UpdateRoleReq) Reset() { *x = UpdateRoleReq{} }
-
-func (x *UpdateRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *UpdateRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UpdateRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UpdateRoleReq) GetRole() *Role {
-	if x != nil {
-		return x.Role
-	}
-	return nil
-}
-
-func (x *UpdateRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type DeleteRoleReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 删除者AccessToken
-	RoleId      []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`           // 角色ID(16字节UUID)
-	UserId      []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 删除者用户ID(16字节UUID)
-}
-
-func (x *DeleteRoleReq) Reset() { *x = DeleteRoleReq{} }
-
-func (x *DeleteRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *DeleteRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *DeleteRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *DeleteRoleReq) GetRoleId() []byte {
-	if x != nil {
-		return x.RoleId
-	}
-	return nil
-}
-
-func (x *DeleteRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetRoleReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 查询者AccessToken
-	RoleId      []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`           // 角色ID(16字节UUID)
-	UserId      []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetRoleReq) Reset() { *x = GetRoleReq{} }
-
-func (x *GetRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetRoleReq) GetRoleId() []byte {
-	if x != nil {
-		return x.RoleId
-	}
-	return nil
-}
-
-func (x *GetRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GrantPermissionToRoleReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
-	RoleCode       string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
-	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
-}
-
-func (x *GrantPermissionToRoleReq) Reset() { *x = GrantPermissionToRoleReq{} }
-
-func (x *GrantPermissionToRoleReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *GrantPermissionToRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GrantPermissionToRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GrantPermissionToRoleReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *GrantPermissionToRoleReq) GetPermissionCode() string {
-	if x != nil {
-		return x.PermissionCode
-	}
-	return ""
-}
-
-func (x *GrantPermissionToRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type RevokePermissionFromRoleReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
-	RoleCode       string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
-	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
-}
-
-func (x *RevokePermissionFromRoleReq) Reset() { *x = RevokePermissionFromRoleReq{} }
-
-func (x *RevokePermissionFromRoleReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *RevokePermissionFromRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *RevokePermissionFromRoleReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *RevokePermissionFromRoleReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *RevokePermissionFromRoleReq) GetPermissionCode() string {
-	if x != nil {
-		return x.PermissionCode
-	}
-	return ""
-}
-
-func (x *RevokePermissionFromRoleReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetRolePermissionsReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 查询者AccessToken
-	RoleCode    string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`       // 角色唯一标识符
-	UserId      []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetRolePermissionsReq) Reset() { *x = GetRolePermissionsReq{} }
-
-func (x *GetRolePermissionsReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *GetRolePermissionsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetRolePermissionsReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetRolePermissionsReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *GetRolePermissionsReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetRolePermissionsResp struct {
-	Permissions []*Permission `protobuf:"bytes,1,rep,name=permissions" json:"permissions,omitempty"`
-}
-
-func (x *GetRolePermissionsResp) Reset() { *x = GetRolePermissionsResp{} }
-
-func (x *GetRolePermissionsResp) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *GetRolePermissionsResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetRolePermissionsResp) GetPermissions() []*Permission {
-	if x != nil {
-		return x.Permissions
-	}
-	return nil
-}
-
-type AssignRoleToUserReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 操作者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	RoleCode       string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`               // 角色唯一标识符
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                   // 操作者用户ID(16字节UUID)
-}
-
-func (x *AssignRoleToUserReq) Reset() { *x = AssignRoleToUserReq{} }
-
-func (x *AssignRoleToUserReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *AssignRoleToUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *AssignRoleToUserReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type RemoveRoleFromUserReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 操作者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	RoleCode       string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`               // 角色唯一标识符
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                   // 操作者用户ID(16字节UUID)
-}
-
-func (x *RemoveRoleFromUserReq) Reset() { *x = RemoveRoleFromUserReq{} }
-
-func (x *RemoveRoleFromUserReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *RemoveRoleFromUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *RemoveRoleFromUserReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetUserRolesReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 查询者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	UserId         []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                   // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetUserRolesReq) Reset() { *x = GetUserRolesReq{} }
-
-func (x *GetUserRolesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetUserRolesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetUserRolesReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetUserRolesReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
-}
-
-func (x *GetUserRolesReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetUserRolesResp struct {
-	Roles []*Role `protobuf:"bytes,1,rep,name=roles" json:"roles,omitempty"`
-}
-
-func (x *GetUserRolesResp) Reset() { *x = GetUserRolesResp{} }
-
-func (x *GetUserRolesResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetUserRolesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetUserRolesResp) GetRoles() []*Role {
-	if x != nil {
-		return x.Roles
-	}
-	return nil
-}
-
-type CreateUserGroupReq struct {
-	AccessToken string     `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 创建者AccessToken
-	UserGroup   *UserGroup `protobuf:"bytes,2,opt,name=user_group" json:"user_group,omitempty"`     // 用户组信息
-	UserId      []byte     `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 创建者用户ID(16字节UUID)
-}
-
-func (x *CreateUserGroupReq) Reset() { *x = CreateUserGroupReq{} }
-
-func (x *CreateUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *CreateUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CreateUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CreateUserGroupReq) GetUserGroup() *UserGroup {
-	if x != nil {
-		return x.UserGroup
-	}
-	return nil
-}
-
-func (x *CreateUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type UpdateUserGroupReq struct {
-	AccessToken string     `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 更新者AccessToken
-	UserGroup   *UserGroup `protobuf:"bytes,2,opt,name=user_group" json:"user_group,omitempty"`     // 用户组信息
-	UserId      []byte     `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`           // 更新者用户ID(16字节UUID)
-}
-
-func (x *UpdateUserGroupReq) Reset() { *x = UpdateUserGroupReq{} }
-
-func (x *UpdateUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *UpdateUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UpdateUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UpdateUserGroupReq) GetUserGroup() *UserGroup {
-	if x != nil {
-		return x.UserGroup
-	}
-	return nil
-}
-
-func (x *UpdateUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type DeleteUserGroupReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 删除者AccessToken
-	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	UserId        []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                 // 删除者用户ID(16字节UUID)
-}
-
-func (x *DeleteUserGroupReq) Reset() { *x = DeleteUserGroupReq{} }
-
-func (x *DeleteUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *DeleteUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *DeleteUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *DeleteUserGroupReq) GetUserGroupName() string {
-	if x != nil {
-		return x.UserGroupName
-	}
-	return ""
-}
-
-func (x *DeleteUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetUserGroupReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 查询者AccessToken
-	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	UserId        []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                 // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetUserGroupReq) Reset() { *x = GetUserGroupReq{} }
-
-func (x *GetUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *GetUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetUserGroupReq) GetUserGroupName() string {
-	if x != nil {
-		return x.UserGroupName
-	}
-	return ""
-}
-
-func (x *GetUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetUserGroupMembersReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 查询者AccessToken
-	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	UserId        []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                 // 查询者用户ID(16字节UUID)
-}
-
-func (x *GetUserGroupMembersReq) Reset() { *x = GetUserGroupMembersReq{} }
-
-func (x *GetUserGroupMembersReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *GetUserGroupMembersReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetUserGroupMembersReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetUserGroupMembersReq) GetUserGroupName() string {
-	if x != nil {
-		return x.UserGroupName
-	}
-	return ""
-}
-
-func (x *GetUserGroupMembersReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type AssignRoleToUserGroupReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
-	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
-	UserId        []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
-}
-
-func (x *AssignRoleToUserGroupReq) Reset() { *x = AssignRoleToUserGroupReq{} }
-
-func (x *AssignRoleToUserGroupReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *AssignRoleToUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *AssignRoleToUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserGroupReq) GetUserGroupName() string {
-	if x != nil {
-		return x.UserGroupName
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserGroupReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *AssignRoleToUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type RemoveRoleFromUserGroupReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 操作者AccessToken
-	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
-	UserId        []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                 // 操作者用户ID(16字节UUID)
-}
-
-func (x *RemoveRoleFromUserGroupReq) Reset() { *x = RemoveRoleFromUserGroupReq{} }
-
-func (x *RemoveRoleFromUserGroupReq) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *RemoveRoleFromUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *RemoveRoleFromUserGroupReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserGroupReq) GetUserGroupName() string {
-	if x != nil {
-		return x.UserGroupName
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserGroupReq) GetRoleCode() string {
-	if x != nil {
-		return x.RoleCode
-	}
-	return ""
-}
-
-func (x *RemoveRoleFromUserGroupReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
-	}
-	return nil
-}
-
-type GetUserGroupMembersResp struct {
-	Users      []*UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`              // 用户组成员列表
-	TotalCount uint32      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"` // 成员总数
-}
-
-func (x *GetUserGroupMembersResp) Reset() { *x = GetUserGroupMembersResp{} }
-
-func (x *GetUserGroupMembersResp) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *GetUserGroupMembersResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *GetUserGroupMembersResp) GetUsers() []*UserInfo {
-	if x != nil {
-		return x.Users
-	}
-	return nil
-}
-
-func (x *GetUserGroupMembersResp) GetTotalCount() uint32 {
-	if x != nil {
-		return x.TotalCount
-	}
-	return 0
-}
-
 type UserInfo struct {
 	UserId    []byte `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"` // 二进制格式的UUID (16 bytes)
 	Username  string `protobuf:"bytes,2,opt,name=username" json:"username,omitempty"`
@@ -1196,10 +378,659 @@ func (x *UserInfo) GetIsDeleted() bool {
 	return false
 }
 
-type GetUserGroupPermissionsReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`       // 查询者AccessToken
+type CreatePermissionReq struct {
+	Permission    *Permission `protobuf:"bytes,2,opt,name=permission" json:"permission,omitempty"`           // 权限信息
+	RequestUserId []byte      `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 创建者用户ID(16字节UUID)
+}
+
+func (x *CreatePermissionReq) Reset() { *x = CreatePermissionReq{} }
+
+func (x *CreatePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreatePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreatePermissionReq) GetPermission() *Permission {
+	if x != nil {
+		return x.Permission
+	}
+	return nil
+}
+
+func (x *CreatePermissionReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type UpdatePermissionReq struct {
+	Permission    *Permission `protobuf:"bytes,2,opt,name=permission" json:"permission,omitempty"`           // 权限信息
+	RequestUserId []byte      `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 更新者用户ID(16字节UUID)
+}
+
+func (x *UpdatePermissionReq) Reset() { *x = UpdatePermissionReq{} }
+
+func (x *UpdatePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UpdatePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UpdatePermissionReq) GetPermission() *Permission {
+	if x != nil {
+		return x.Permission
+	}
+	return nil
+}
+
+func (x *UpdatePermissionReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type DeletePermissionReq struct {
+	PermissionId  []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"`     // 权限ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
+}
+
+func (x *DeletePermissionReq) Reset() { *x = DeletePermissionReq{} }
+
+func (x *DeletePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DeletePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DeletePermissionReq) GetPermissionId() []byte {
+	if x != nil {
+		return x.PermissionId
+	}
+	return nil
+}
+
+func (x *DeletePermissionReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetPermissionReq struct {
+	PermissionId  []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"`     // 权限ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetPermissionReq) Reset() { *x = GetPermissionReq{} }
+
+func (x *GetPermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPermissionReq) GetPermissionId() []byte {
+	if x != nil {
+		return x.PermissionId
+	}
+	return nil
+}
+
+func (x *GetPermissionReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type CreateRoleReq struct {
+	Role          *Role  `protobuf:"bytes,2,opt,name=role" json:"role,omitempty"`                       // 角色信息
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 创建者用户ID(16字节UUID)
+}
+
+func (x *CreateRoleReq) Reset() { *x = CreateRoleReq{} }
+
+func (x *CreateRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreateRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreateRoleReq) GetRole() *Role {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+func (x *CreateRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type UpdateRoleReq struct {
+	Role          *Role  `protobuf:"bytes,2,opt,name=role" json:"role,omitempty"`                       // 角色信息
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 更新者用户ID(16字节UUID)
+}
+
+func (x *UpdateRoleReq) Reset() { *x = UpdateRoleReq{} }
+
+func (x *UpdateRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UpdateRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UpdateRoleReq) GetRole() *Role {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+func (x *UpdateRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type DeleteRoleReq struct {
+	RoleId        []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`                 // 角色ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
+}
+
+func (x *DeleteRoleReq) Reset() { *x = DeleteRoleReq{} }
+
+func (x *DeleteRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DeleteRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DeleteRoleReq) GetRoleId() []byte {
+	if x != nil {
+		return x.RoleId
+	}
+	return nil
+}
+
+func (x *DeleteRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetRoleReq struct {
+	RoleId        []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`                 // 角色ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetRoleReq) Reset() { *x = GetRoleReq{} }
+
+func (x *GetRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetRoleReq) GetRoleId() []byte {
+	if x != nil {
+		return x.RoleId
+	}
+	return nil
+}
+
+func (x *GetRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GrantPermissionToRoleReq struct {
+	RoleCode       string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
+	RequestUserId  []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *GrantPermissionToRoleReq) Reset() { *x = GrantPermissionToRoleReq{} }
+
+func (x *GrantPermissionToRoleReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GrantPermissionToRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GrantPermissionToRoleReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *GrantPermissionToRoleReq) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *GrantPermissionToRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type RevokePermissionFromRoleReq struct {
+	RoleCode       string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
+	RequestUserId  []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *RevokePermissionFromRoleReq) Reset() { *x = RevokePermissionFromRoleReq{} }
+
+func (x *RevokePermissionFromRoleReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *RevokePermissionFromRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *RevokePermissionFromRoleReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *RevokePermissionFromRoleReq) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *RevokePermissionFromRoleReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetRolePermissionsReq struct {
+	RoleCode      string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetRolePermissionsReq) Reset() { *x = GetRolePermissionsReq{} }
+
+func (x *GetRolePermissionsReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetRolePermissionsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetRolePermissionsReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *GetRolePermissionsReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetRolePermissionsResp struct {
+	Permissions []*Permission `protobuf:"bytes,1,rep,name=permissions" json:"permissions,omitempty"`
+}
+
+func (x *GetRolePermissionsResp) Reset() { *x = GetRolePermissionsResp{} }
+
+func (x *GetRolePermissionsResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetRolePermissionsResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetRolePermissionsResp) GetPermissions() []*Permission {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+type AssignRoleToUserReq struct {
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *AssignRoleToUserReq) Reset() { *x = AssignRoleToUserReq{} }
+
+func (x *AssignRoleToUserReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *AssignRoleToUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *AssignRoleToUserReq) GetTargetUserId() []byte {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return nil
+}
+
+func (x *AssignRoleToUserReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type RemoveRoleFromUserReq struct {
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *RemoveRoleFromUserReq) Reset() { *x = RemoveRoleFromUserReq{} }
+
+func (x *RemoveRoleFromUserReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *RemoveRoleFromUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *RemoveRoleFromUserReq) GetTargetUserId() []byte {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return nil
+}
+
+func (x *RemoveRoleFromUserReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetUserRolesReq struct {
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetUserRolesReq) Reset() { *x = GetUserRolesReq{} }
+
+func (x *GetUserRolesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetUserRolesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserRolesReq) GetTargetUserId() []byte {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return nil
+}
+
+func (x *GetUserRolesReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetUserRolesResp struct {
+	Roles []*Role `protobuf:"bytes,1,rep,name=roles" json:"roles,omitempty"`
+}
+
+func (x *GetUserRolesResp) Reset() { *x = GetUserRolesResp{} }
+
+func (x *GetUserRolesResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetUserRolesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserRolesResp) GetRoles() []*Role {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
+type CreateUserGroupReq struct {
+	UserGroup     *UserGroup `protobuf:"bytes,2,opt,name=user_group" json:"user_group,omitempty"`           // 用户组信息
+	RequestUserId []byte     `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 创建者用户ID(16字节UUID)
+}
+
+func (x *CreateUserGroupReq) Reset() { *x = CreateUserGroupReq{} }
+
+func (x *CreateUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreateUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreateUserGroupReq) GetUserGroup() *UserGroup {
+	if x != nil {
+		return x.UserGroup
+	}
+	return nil
+}
+
+func (x *CreateUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type UpdateUserGroupReq struct {
+	UserGroup     *UserGroup `protobuf:"bytes,2,opt,name=user_group" json:"user_group,omitempty"`           // 用户组信息
+	RequestUserId []byte     `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 更新者用户ID(16字节UUID)
+}
+
+func (x *UpdateUserGroupReq) Reset() { *x = UpdateUserGroupReq{} }
+
+func (x *UpdateUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UpdateUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UpdateUserGroupReq) GetUserGroup() *UserGroup {
+	if x != nil {
+		return x.UserGroup
+	}
+	return nil
+}
+
+func (x *UpdateUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type DeleteUserGroupReq struct {
 	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
-	UserId        []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                 // 查询者用户ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
+}
+
+func (x *DeleteUserGroupReq) Reset() { *x = DeleteUserGroupReq{} }
+
+func (x *DeleteUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DeleteUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DeleteUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *DeleteUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetUserGroupReq struct {
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetUserGroupReq) Reset() { *x = GetUserGroupReq{} }
+
+func (x *GetUserGroupReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *GetUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetUserGroupMembersReq struct {
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetUserGroupMembersReq) Reset() { *x = GetUserGroupMembersReq{} }
+
+func (x *GetUserGroupMembersReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetUserGroupMembersReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserGroupMembersReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *GetUserGroupMembersReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type AssignRoleToUserGroupReq struct {
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *AssignRoleToUserGroupReq) Reset() { *x = AssignRoleToUserGroupReq{} }
+
+func (x *AssignRoleToUserGroupReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *AssignRoleToUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *AssignRoleToUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserGroupReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *AssignRoleToUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type RemoveRoleFromUserGroupReq struct {
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
+}
+
+func (x *RemoveRoleFromUserGroupReq) Reset() { *x = RemoveRoleFromUserGroupReq{} }
+
+func (x *RemoveRoleFromUserGroupReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *RemoveRoleFromUserGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *RemoveRoleFromUserGroupReq) GetUserGroupName() string {
+	if x != nil {
+		return x.UserGroupName
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserGroupReq) GetRoleCode() string {
+	if x != nil {
+		return x.RoleCode
+	}
+	return ""
+}
+
+func (x *RemoveRoleFromUserGroupReq) GetRequestUserId() []byte {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return nil
+}
+
+type GetUserGroupMembersResp struct {
+	Users      []*UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`              // 用户组成员列表
+	TotalCount uint32      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"` // 成员总数
+}
+
+func (x *GetUserGroupMembersResp) Reset() { *x = GetUserGroupMembersResp{} }
+
+func (x *GetUserGroupMembersResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetUserGroupMembersResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserGroupMembersResp) GetUsers() []*UserInfo {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
+func (x *GetUserGroupMembersResp) GetTotalCount() uint32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
+}
+
+type GetUserGroupPermissionsReq struct {
+	UserGroupName string `protobuf:"bytes,2,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *GetUserGroupPermissionsReq) Reset() { *x = GetUserGroupPermissionsReq{} }
@@ -1210,13 +1041,6 @@ func (x *GetUserGroupPermissionsReq) Marshal(in []byte) ([]byte, error) {
 
 func (x *GetUserGroupPermissionsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetUserGroupPermissionsReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
 func (x *GetUserGroupPermissionsReq) GetUserGroupName() string {
 	if x != nil {
 		return x.UserGroupName
@@ -1224,9 +1048,9 @@ func (x *GetUserGroupPermissionsReq) GetUserGroupName() string {
 	return ""
 }
 
-func (x *GetUserGroupPermissionsReq) GetUserId() []byte {
+func (x *GetUserGroupPermissionsReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1251,10 +1075,9 @@ func (x *GetUserGroupPermissionsResp) GetPermissions() []*Permission {
 }
 
 type AssignUserToGroupReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 操作者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	UserGroupName  string `protobuf:"bytes,3,opt,name=user_group_name" json:"user_group_name,omitempty"`   // 用户组名称
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                   // 操作者用户ID(16字节UUID)
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	UserGroupName string `protobuf:"bytes,3,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
 }
 
 func (x *AssignUserToGroupReq) Reset() { *x = AssignUserToGroupReq{} }
@@ -1263,18 +1086,11 @@ func (x *AssignUserToGroupReq) Marshal(in []byte) ([]byte, error) { return pruta
 
 func (x *AssignUserToGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *AssignUserToGroupReq) GetAccessToken() string {
+func (x *AssignUserToGroupReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
-}
-
-func (x *AssignUserToGroupReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
+	return nil
 }
 
 func (x *AssignUserToGroupReq) GetUserGroupName() string {
@@ -1284,18 +1100,17 @@ func (x *AssignUserToGroupReq) GetUserGroupName() string {
 	return ""
 }
 
-func (x *AssignUserToGroupReq) GetUserId() []byte {
+func (x *AssignUserToGroupReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
 
 type RemoveUserFromGroupReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 操作者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	UserGroupName  string `protobuf:"bytes,3,opt,name=user_group_name" json:"user_group_name,omitempty"`   // 用户组名称
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                   // 操作者用户ID(16字节UUID)
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	UserGroupName string `protobuf:"bytes,3,opt,name=user_group_name" json:"user_group_name,omitempty"` // 用户组名称
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者用户ID(16字节UUID)
 }
 
 func (x *RemoveUserFromGroupReq) Reset() { *x = RemoveUserFromGroupReq{} }
@@ -1306,18 +1121,11 @@ func (x *RemoveUserFromGroupReq) Marshal(in []byte) ([]byte, error) {
 
 func (x *RemoveUserFromGroupReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *RemoveUserFromGroupReq) GetAccessToken() string {
+func (x *RemoveUserFromGroupReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
-}
-
-func (x *RemoveUserFromGroupReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
+	return nil
 }
 
 func (x *RemoveUserFromGroupReq) GetUserGroupName() string {
@@ -1327,17 +1135,16 @@ func (x *RemoveUserFromGroupReq) GetUserGroupName() string {
 	return ""
 }
 
-func (x *RemoveUserFromGroupReq) GetUserId() []byte {
+func (x *RemoveUserFromGroupReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
 
 type GetUserGroupsReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 查询者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	UserId         []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                   // 查询者用户ID(16字节UUID)
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *GetUserGroupsReq) Reset() { *x = GetUserGroupsReq{} }
@@ -1346,23 +1153,16 @@ func (x *GetUserGroupsReq) Marshal(in []byte) ([]byte, error) { return prutal.Ma
 
 func (x *GetUserGroupsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetUserGroupsReq) GetAccessToken() string {
+func (x *GetUserGroupsReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
+	return nil
 }
 
-func (x *GetUserGroupsReq) GetTargetUserName() string {
+func (x *GetUserGroupsReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
-}
-
-func (x *GetUserGroupsReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1385,9 +1185,8 @@ func (x *GetUserGroupsResp) GetUserGroups() []*UserGroup {
 }
 
 type GetUserPermissionsReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 查询者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	UserId         []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`                   // 查询者用户ID(16字节UUID)
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *GetUserPermissionsReq) Reset() { *x = GetUserPermissionsReq{} }
@@ -1398,23 +1197,16 @@ func (x *GetUserPermissionsReq) Marshal(in []byte) ([]byte, error) {
 
 func (x *GetUserPermissionsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetUserPermissionsReq) GetAccessToken() string {
+func (x *GetUserPermissionsReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
+	return nil
 }
 
-func (x *GetUserPermissionsReq) GetTargetUserName() string {
+func (x *GetUserPermissionsReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
-}
-
-func (x *GetUserPermissionsReq) GetUserId() []byte {
-	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1439,10 +1231,9 @@ func (x *GetUserPermissionsResp) GetPermissions() []*Permission {
 }
 
 type HasPermissionReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 查询者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"`   // 权限唯一标识符
-	UserId         []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"`                   // 查询者用户ID(16字节UUID)
+	TargetUserId   []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	PermissionCode string `protobuf:"bytes,3,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
+	RequestUserId  []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *HasPermissionReq) Reset() { *x = HasPermissionReq{} }
@@ -1451,18 +1242,11 @@ func (x *HasPermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.Ma
 
 func (x *HasPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *HasPermissionReq) GetAccessToken() string {
+func (x *HasPermissionReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
-}
-
-func (x *HasPermissionReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
+	return nil
 }
 
 func (x *HasPermissionReq) GetPermissionCode() string {
@@ -1472,9 +1256,9 @@ func (x *HasPermissionReq) GetPermissionCode() string {
 	return ""
 }
 
-func (x *HasPermissionReq) GetUserId() []byte {
+func (x *HasPermissionReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1497,11 +1281,11 @@ func (x *HasPermissionResp) GetOk() bool {
 }
 
 type CanAccessReq struct {
-	AccessToken    string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`         // 查询者AccessToken
-	TargetUserName string `protobuf:"bytes,2,opt,name=target_user_name" json:"target_user_name,omitempty"` // 目标用户名
-	Resource       string `protobuf:"bytes,3,opt,name=resource" json:"resource,omitempty"`                 // 资源标识符
-	Method         string `protobuf:"bytes,4,opt,name=method" json:"method,omitempty"`                     // 操作方法
-	UserId         []byte `protobuf:"bytes,5,opt,name=user_id" json:"user_id,omitempty"`                   // 查询者用户ID(16字节UUID)
+	TargetUserId  []byte `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户ID(16字节UUID)
+	Resource      string `protobuf:"bytes,3,opt,name=resource" json:"resource,omitempty"`               // 资源标识符
+	Method        string `protobuf:"bytes,4,opt,name=method" json:"method,omitempty"`                   // 操作方法
+	RequestUserId []byte `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+	UserStatus    uint64 `protobuf:"varint,8,opt,name=user_status" json:"user_status,omitempty"`        // 用户状态 0-正常 1-冻结
 }
 
 func (x *CanAccessReq) Reset() { *x = CanAccessReq{} }
@@ -1510,18 +1294,11 @@ func (x *CanAccessReq) Marshal(in []byte) ([]byte, error) { return prutal.Marsha
 
 func (x *CanAccessReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *CanAccessReq) GetAccessToken() string {
+func (x *CanAccessReq) GetTargetUserId() []byte {
 	if x != nil {
-		return x.AccessToken
+		return x.TargetUserId
 	}
-	return ""
-}
-
-func (x *CanAccessReq) GetTargetUserName() string {
-	if x != nil {
-		return x.TargetUserName
-	}
-	return ""
+	return nil
 }
 
 func (x *CanAccessReq) GetResource() string {
@@ -1538,11 +1315,18 @@ func (x *CanAccessReq) GetMethod() string {
 	return ""
 }
 
-func (x *CanAccessReq) GetUserId() []byte {
+func (x *CanAccessReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *CanAccessReq) GetUserStatus() uint64 {
+	if x != nil {
+		return x.UserStatus
+	}
+	return 0
 }
 
 type CanAccessResp struct {
@@ -1563,10 +1347,9 @@ func (x *CanAccessResp) GetOk() bool {
 }
 
 type ListRolesReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 查询者AccessToken
-	Page        uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
-	PageSize    uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
-	UserId      []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"` // 查询者用户ID(16字节UUID)
+	Page          uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
+	PageSize      uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *ListRolesReq) Reset() { *x = ListRolesReq{} }
@@ -1574,13 +1357,6 @@ func (x *ListRolesReq) Reset() { *x = ListRolesReq{} }
 func (x *ListRolesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *ListRolesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *ListRolesReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
 
 func (x *ListRolesReq) GetPage() uint32 {
 	if x != nil {
@@ -1596,9 +1372,9 @@ func (x *ListRolesReq) GetPageSize() uint32 {
 	return 0
 }
 
-func (x *ListRolesReq) GetUserId() []byte {
+func (x *ListRolesReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1621,10 +1397,9 @@ func (x *ListRolesResp) GetRoles() []*Role {
 }
 
 type ListUserGroupsReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 查询者AccessToken
-	Page        uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
-	PageSize    uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
-	UserId      []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"` // 查询者用户ID(16字节UUID)
+	Page          uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
+	PageSize      uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *ListUserGroupsReq) Reset() { *x = ListUserGroupsReq{} }
@@ -1632,13 +1407,6 @@ func (x *ListUserGroupsReq) Reset() { *x = ListUserGroupsReq{} }
 func (x *ListUserGroupsReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *ListUserGroupsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *ListUserGroupsReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
 
 func (x *ListUserGroupsReq) GetPage() uint32 {
 	if x != nil {
@@ -1654,9 +1422,9 @@ func (x *ListUserGroupsReq) GetPageSize() uint32 {
 	return 0
 }
 
-func (x *ListUserGroupsReq) GetUserId() []byte {
+func (x *ListUserGroupsReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1679,10 +1447,9 @@ func (x *ListUserGroupsResp) GetUserGroups() []*UserGroup {
 }
 
 type ListPermissionsReq struct {
-	AccessToken string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 查询者AccessToken
-	Page        uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
-	PageSize    uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
-	UserId      []byte `protobuf:"bytes,4,opt,name=user_id" json:"user_id,omitempty"` // 查询者用户ID(16字节UUID)
+	Page          uint32 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`
+	PageSize      uint32 `protobuf:"varint,3,opt,name=pageSize" json:"pageSize,omitempty"`
+	RequestUserId []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *ListPermissionsReq) Reset() { *x = ListPermissionsReq{} }
@@ -1690,13 +1457,6 @@ func (x *ListPermissionsReq) Reset() { *x = ListPermissionsReq{} }
 func (x *ListPermissionsReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *ListPermissionsReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *ListPermissionsReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
 
 func (x *ListPermissionsReq) GetPage() uint32 {
 	if x != nil {
@@ -1712,9 +1472,9 @@ func (x *ListPermissionsReq) GetPageSize() uint32 {
 	return 0
 }
 
-func (x *ListPermissionsReq) GetUserId() []byte {
+func (x *ListPermissionsReq) GetRequestUserId() []byte {
 	if x != nil {
-		return x.UserId
+		return x.RequestUserId
 	}
 	return nil
 }
@@ -1754,7 +1514,7 @@ func (x *IssueTokenReq) GetUserId() []byte {
 }
 
 type IssueTokenResp struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
 	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
 }
 
@@ -1779,7 +1539,7 @@ func (x *IssueTokenResp) GetRefreshToken() string {
 }
 
 type RefreshTokenReq struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
 	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
 	UserId       []byte `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`
 }
@@ -1812,7 +1572,7 @@ func (x *RefreshTokenReq) GetUserId() []byte {
 }
 
 type RefreshTokenResp struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
+	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
 	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
 }
 
