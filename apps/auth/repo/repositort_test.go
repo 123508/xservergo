@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -48,7 +49,7 @@ func TestCreatePermission(t *testing.T) {
 			UpdatedBy: nil,
 		},
 	}
-	err := repo.CreatePermission(permission)
+	err := repo.CreatePermission(context.Background(), permission)
 	if err != nil {
 		t.Errorf("failed to create permission: %v", err)
 	} else {
@@ -74,11 +75,11 @@ func TestCreatePermission(t *testing.T) {
 			UpdatedBy: nil,
 		},
 	}
-	err = repo.CreatePermission(childPermission)
+	err = repo.CreatePermission(context.Background(), childPermission)
 	if err != nil {
 		t.Errorf("failed to create child permission: %v", err)
 	} else {
-		t.Logf("child permission created successfully: %+v", permission)
+		t.Logf("child permission created successfully: %+v", childPermission)
 	}
 }
 
@@ -107,7 +108,7 @@ func TestUpdatePermission(t *testing.T) {
 		},
 	}
 
-	err := repo.CreatePermission(permission)
+	err := repo.CreatePermission(context.Background(), permission)
 	if err != nil {
 		t.Fatalf("failed to create permission for update test: %v", err)
 	}
@@ -118,7 +119,7 @@ func TestUpdatePermission(t *testing.T) {
 	permission.UpdatedAt = time.Now()
 	permission.Version = 2
 
-	err = repo.UpdatePermission(permission)
+	err = repo.UpdatePermission(context.Background(), permission)
 	if err != nil {
 		t.Errorf("failed to update permission: %v", err)
 	} else {
@@ -130,7 +131,7 @@ func TestGetPermissionByCode(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 测试获取存在的权限
-	permission, err := repo.GetPermissionByCode("test_permission_create")
+	permission, err := repo.GetPermissionByCode(context.Background(), "test_permission_create")
 	if err != nil {
 		t.Errorf("failed to get permission by code: %v", err)
 	} else if permission != nil {
@@ -140,7 +141,7 @@ func TestGetPermissionByCode(t *testing.T) {
 	}
 
 	// 测试获取不存在的权限
-	permission, err = repo.GetPermissionByCode("non_existent_permission")
+	permission, err = repo.GetPermissionByCode(context.Background(), "non_existent_permission")
 	if err != nil {
 		t.Errorf("failed to get non-existent permission: %v", err)
 	} else if permission == nil {
@@ -154,7 +155,7 @@ func TestGetPermissionByID(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 先通过code获取权限，然后通过ID获取
-	permByCode, err := repo.GetPermissionByCode("test_permission_create")
+	permByCode, err := repo.GetPermissionByCode(context.Background(), "test_permission_create")
 	if err != nil {
 		t.Fatalf("failed to get permission by code: %v", err)
 	}
@@ -163,7 +164,7 @@ func TestGetPermissionByID(t *testing.T) {
 		return
 	}
 
-	permByID, err := repo.GetPermissionByID(permByCode.ID[:])
+	permByID, err := repo.GetPermissionByID(context.Background(), permByCode.ID[:])
 	if err != nil {
 		t.Errorf("failed to get permission by ID: %v", err)
 	} else if permByID != nil {
@@ -193,7 +194,7 @@ func TestCreateRole(t *testing.T) {
 		},
 	}
 
-	err := repo.CreateRole(role)
+	err := repo.CreateRole(context.Background(), role)
 	if err != nil {
 		t.Errorf("failed to create role: %v", err)
 	} else {
@@ -205,7 +206,7 @@ func TestUpdateRole(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 获取测试角色
-	role, err := repo.GetRoleByCode("test_role_admin")
+	role, err := repo.GetRoleByCode(context.Background(), "test_role_admin")
 	if err != nil {
 		t.Fatalf("failed to get role for update test: %v", err)
 	}
@@ -220,7 +221,7 @@ func TestUpdateRole(t *testing.T) {
 	role.UpdatedAt = time.Now()
 	role.Version = 2
 
-	err = repo.UpdateRole(role)
+	err = repo.UpdateRole(context.Background(), role)
 	if err != nil {
 		t.Errorf("failed to update role: %v", err)
 	} else {
@@ -232,7 +233,7 @@ func TestGetRoleByCode(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 测试获取存在的角色
-	role, err := repo.GetRoleByCode("test_role_admin")
+	role, err := repo.GetRoleByCode(context.Background(), "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to get role by code: %v", err)
 	} else if role != nil {
@@ -242,7 +243,7 @@ func TestGetRoleByCode(t *testing.T) {
 	}
 
 	// 测试获取不存在的角色
-	role, err = repo.GetRoleByCode("non_existent_role")
+	role, err = repo.GetRoleByCode(context.Background(), "non_existent_role")
 	if err != nil {
 		t.Errorf("failed to get non-existent role: %v", err)
 	} else if role == nil {
@@ -255,7 +256,7 @@ func TestGetRoleByCode(t *testing.T) {
 func TestGrantPermissionToRole(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.GrantPermissionToRole("test_permission_create_child", "test_role_admin")
+	err := repo.GrantPermissionToRole(context.Background(), "test_permission_create_child", "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to grant permission to role: %v", err)
 	} else {
@@ -266,7 +267,7 @@ func TestGrantPermissionToRole(t *testing.T) {
 func TestGetRolePermission(t *testing.T) {
 	repo := setupTestDB(t)
 
-	permissions, err := repo.GetRolePermission("test_role_admin")
+	permissions, err := repo.GetRolePermission(context.Background(), "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to get role permissions: %v", err)
 	} else {
@@ -294,7 +295,7 @@ func TestCreateUserGroup(t *testing.T) {
 		},
 	}
 
-	err := repo.CreateUserGroup(userGroup)
+	err := repo.CreateUserGroup(context.Background(), userGroup)
 	if err != nil {
 		t.Errorf("failed to create user group: %v", err)
 	} else {
@@ -306,7 +307,7 @@ func TestGetUserGroupByName(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 测试获取存在的用户组
-	userGroup, err := repo.GetUserGroupByName("test_admin_group")
+	userGroup, err := repo.GetUserGroupByName(context.Background(), "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to get user group by name: %v", err)
 	} else if userGroup != nil {
@@ -319,7 +320,7 @@ func TestGetUserGroupByName(t *testing.T) {
 func TestAssignRoleToUser(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignRoleToUser("test_role_admin", testUserId)
+	err := repo.AssignRoleToUser(context.Background(), "test_role_admin", testUserId)
 	if err != nil {
 		t.Errorf("failed to assign role to user: %v", err)
 	} else {
@@ -330,7 +331,7 @@ func TestAssignRoleToUser(t *testing.T) {
 func TestGetUserRoles(t *testing.T) {
 	repo := setupTestDB(t)
 
-	roles, err := repo.GetUserRoles(testUserId)
+	roles, err := repo.GetUserRoles(context.Background(), testUserId)
 	if err != nil {
 		t.Errorf("failed to get user roles: %v", err)
 	} else {
@@ -341,7 +342,7 @@ func TestGetUserRoles(t *testing.T) {
 func TestAssignUserToGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignUserToGroup(testUserId, "test_admin_group")
+	err := repo.AssignUserToGroup(context.Background(), testUserId, "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to assign user to group: %v", err)
 	} else {
@@ -352,7 +353,7 @@ func TestAssignUserToGroup(t *testing.T) {
 func TestGetUserGroups(t *testing.T) {
 	repo := setupTestDB(t)
 
-	groups, err := repo.GetUserGroups(testUserId)
+	groups, err := repo.GetUserGroups(context.Background(), testUserId)
 	if err != nil {
 		t.Errorf("failed to get user groups: %v", err)
 	} else {
@@ -363,7 +364,7 @@ func TestGetUserGroups(t *testing.T) {
 func TestGetUserGroupMembers(t *testing.T) {
 	repo := setupTestDB(t)
 
-	members, err := repo.GetUserGroupMembers("test_admin_group")
+	members, err := repo.GetUserGroupMembers(context.Background(), "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to get user group members: %v", err)
 	} else {
@@ -374,7 +375,7 @@ func TestGetUserGroupMembers(t *testing.T) {
 func TestAssignRoleToUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignRoleToUserGroup("test_role_admin", "test_admin_group")
+	err := repo.AssignRoleToUserGroup(context.Background(), "test_role_admin", "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to assign role to user group: %v", err)
 	} else {
@@ -385,7 +386,7 @@ func TestAssignRoleToUserGroup(t *testing.T) {
 func TestRemoveRoleFromUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RemoveRoleFromUserGroup("test_role_admin", "test_admin_group")
+	err := repo.RemoveRoleFromUserGroup(context.Background(), "test_role_admin", "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to remove role from user group: %v", err)
 	} else {
@@ -396,7 +397,7 @@ func TestRemoveRoleFromUserGroup(t *testing.T) {
 func TestGetUserPermissions(t *testing.T) {
 	repo := setupTestDB(t)
 
-	permissions, err := repo.GetUserPermissions(testUserId)
+	permissions, err := repo.GetUserPermissions(context.Background(), testUserId)
 	if err != nil {
 		t.Errorf("failed to get user permissions: %v", err)
 	} else {
@@ -407,27 +408,27 @@ func TestGetUserPermissions(t *testing.T) {
 func TestHasPermission(t *testing.T) {
 	repo := setupTestDB(t)
 
-	hasPermission := repo.HasPermission(testUserId, "test_permission_create")
+	hasPermission := repo.HasPermission(context.Background(), testUserId, "test_permission_create")
 	t.Logf("user has permission 'test_permission_create': %v", hasPermission)
 
-	hasPermission = repo.HasPermission(testUserId, "non_existent_permission")
+	hasPermission = repo.HasPermission(context.Background(), testUserId, "non_existent_permission")
 	t.Logf("user has permission 'non_existent_permission': %v", hasPermission)
 }
 
 func TestCanAccess(t *testing.T) {
 	repo := setupTestDB(t)
 
-	canAccess := repo.CanAccess(testUserId, "/test/resource/create", "POST")
+	canAccess := repo.CanAccess(context.Background(), testUserId, "/test/resource/create", "POST")
 	t.Logf("user can access '/test/resource/create' with 'POST': %v", canAccess)
 
-	canAccess = repo.CanAccess(testUserId, "/forbidden/resource", "DELETE")
+	canAccess = repo.CanAccess(context.Background(), testUserId, "/forbidden/resource", "DELETE")
 	t.Logf("user can access '/forbidden/resource' with 'DELETE': %v", canAccess)
 }
 
 func TestGetRoleList(t *testing.T) {
 	repo := setupTestDB(t)
 
-	roles, err := repo.GetRoleList(1, 10)
+	roles, err := repo.GetRoleList(context.Background(), 1, 10)
 	if err != nil {
 		t.Errorf("failed to get role list: %v", err)
 	} else {
@@ -441,7 +442,7 @@ func TestGetRoleList(t *testing.T) {
 func TestGetPermissionList(t *testing.T) {
 	repo := setupTestDB(t)
 
-	permissions, err := repo.GetPermissionList(1, 10)
+	permissions, err := repo.GetPermissionList(context.Background(), 1, 10)
 	if err != nil {
 		t.Errorf("failed to get permission list: %v", err)
 	} else {
@@ -455,7 +456,7 @@ func TestGetPermissionList(t *testing.T) {
 func TestGetUserGroupList(t *testing.T) {
 	repo := setupTestDB(t)
 
-	groups, err := repo.GetUserGroupList(1, 10)
+	groups, err := repo.GetUserGroupList(context.Background(), 1, 10)
 	if err != nil {
 		t.Errorf("failed to get user group list: %v", err)
 	} else {
@@ -469,7 +470,7 @@ func TestGetUserGroupList(t *testing.T) {
 func TestRevokePermissionFromRole(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokePermissionFromRole("test_permission_create", "test_role_admin")
+	err := repo.RevokePermissionFromRole(context.Background(), "test_permission_create", "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to revoke permission from role: %v", err)
 	} else {
@@ -480,7 +481,7 @@ func TestRevokePermissionFromRole(t *testing.T) {
 func TestRevokeRoleFromUser(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokeRoleFromUser("test_role_admin", testUserId)
+	err := repo.RevokeRoleFromUser(context.Background(), "test_role_admin", testUserId)
 	if err != nil {
 		t.Errorf("failed to revoke role from user: %v", err)
 	} else {
@@ -491,7 +492,7 @@ func TestRevokeRoleFromUser(t *testing.T) {
 func TestRevokeUserFromGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokeUserFromGroup(testUserId, "test_admin_group")
+	err := repo.RevokeUserFromGroup(context.Background(), testUserId, "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to revoke user from group: %v", err)
 	} else {
@@ -502,7 +503,7 @@ func TestRevokeUserFromGroup(t *testing.T) {
 func TestDeletePermission(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.DeletePermission("test_permission_create")
+	err := repo.DeletePermission(context.Background(), "test_permission_create")
 	if err != nil {
 		t.Errorf("failed to delete permission: %v", err)
 	} else {
@@ -513,7 +514,7 @@ func TestDeletePermission(t *testing.T) {
 func TestDeleteRole(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.DeleteRole("test_role_admin")
+	err := repo.DeleteRole(context.Background(), "test_role_admin")
 	if err != nil {
 		t.Errorf("failed to delete role: %v", err)
 	} else {
@@ -525,7 +526,7 @@ func TestDeleteUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 先获取用户组ID
-	userGroup, err := repo.GetUserGroupByName("test_admin_group")
+	userGroup, err := repo.GetUserGroupByName(context.Background(), "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to get user group for deletion: %v", err)
 		return
@@ -535,7 +536,7 @@ func TestDeleteUserGroup(t *testing.T) {
 		return
 	}
 
-	err = repo.DeleteUserGroup(string(userGroup.ID[:]))
+	err = repo.DeleteUserGroup(context.Background(), string(userGroup.ID[:]))
 	if err != nil {
 		t.Errorf("failed to delete user group: %v", err)
 	} else {
