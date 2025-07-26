@@ -42,6 +42,7 @@ type UserService interface {
 	Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) error
 	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (*models.User, error)
 	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error)
+	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error
 }
 
 type ServiceImpl struct {
@@ -75,16 +76,7 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 	uLogin.Password = Encryption(uLogin.Password)
 
 	if err := s.userRepo.CreateUser(ctx, u, uLogin); err != nil {
-		switch err.(type) {
-		case *cerrors.ParamError:
-			paramErr := err.(*cerrors.ParamError)
-			return cerrors.NewCommonError(paramErr.Code, paramErr.Message, "", paramErr)
-		case *cerrors.SQLError:
-			sqlErr := err.(*cerrors.SQLError)
-			return cerrors.NewCommonError(sqlErr.Code, sqlErr.Message, "", sqlErr)
-		default:
-			return cerrors.NewCommonError(http.StatusInternalServerError, "用户注册失败", "", err)
-		}
+		return ParseRepoErrorToCommonError(err, "用户注册失败")
 	}
 
 	return nil
@@ -474,16 +466,7 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 	usr, err := simple.QueryWithCache()
 
 	if err != nil {
-		switch err.(type) {
-		case *cerrors.SQLError:
-			sqlErr := err.(*cerrors.SQLError)
-			return nil, cerrors.NewCommonError(sqlErr.Code, sqlErr.Message, "", sqlErr)
-		case *cerrors.ParamError:
-			paramErr := err.(*cerrors.ParamError)
-			return nil, cerrors.NewCommonError(paramErr.Code, paramErr.Message, "", paramErr)
-		default:
-			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "未知错误", "", err)
-		}
+		return nil, ParseRepoErrorToCommonError(err, "未知异常")
 	}
 
 	if usr == nil {
@@ -547,16 +530,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 	usr, err := simple.QueryWithCache()
 
 	if err != nil {
-		switch err.(type) {
-		case *cerrors.SQLError:
-			sqlErr := err.(*cerrors.SQLError)
-			return nil, cerrors.NewCommonError(sqlErr.Code, sqlErr.Message, "", sqlErr)
-		case *cerrors.ParamError:
-			paramErr := err.(*cerrors.ParamError)
-			return nil, cerrors.NewCommonError(paramErr.Code, paramErr.Message, "", paramErr)
-		default:
-			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "未知错误", "", err)
-		}
+		return nil, ParseRepoErrorToCommonError(err, "未知异常")
 	}
 
 	if usr == nil {
@@ -573,6 +547,25 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 		Avatar:   usr.Avatar,
 	}, nil
 
+}
+
+func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error {
+
+	ok, err := s.userRepo.ComparePassword(ctx, targetUserId, Encryption(oldPwd))
+
+	if err != nil {
+		return ParseRepoErrorToCommonError(err, "修改失败")
+	}
+
+	if !ok {
+		return cerrors.NewCommonError(http.StatusBadRequest, "旧密码错误", "", nil)
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, targetUserId, Encryption(newPwd)); err != nil {
+		return ParseRepoErrorToCommonError(err, "修改失败")
+	}
+
+	return nil
 }
 
 func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {
@@ -626,16 +619,7 @@ func (s *ServiceImpl) loginWithResp(
 
 	//错误处理部分
 	if err != nil {
-		switch err.(type) {
-		case *cerrors.ParamError:
-			paramErr := err.(*cerrors.ParamError)
-			return nil, nil, cerrors.NewCommonError(paramErr.Code, paramErr.Message, requestId, paramErr)
-		case *cerrors.SQLError:
-			sqlErr := err.(*cerrors.SQLError)
-			return nil, nil, cerrors.NewCommonError(sqlErr.Code, sqlErr.Message, requestId, sqlErr)
-		default:
-			return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "用户登录失败", requestId, err)
-		}
+		return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败")
 	}
 
 	if usr == nil {
@@ -647,17 +631,7 @@ func (s *ServiceImpl) loginWithResp(
 		ok, err := s.userRepo.ComparePassword(ctx, usr.ID, Encryption(pwd))
 		if err != nil {
 			//错误处理部分
-
-			switch err.(type) {
-			case *cerrors.ParamError:
-				paramErr := err.(*cerrors.ParamError)
-				return nil, nil, cerrors.NewCommonError(paramErr.Code, paramErr.Message, requestId, paramErr)
-			case *cerrors.SQLError:
-				sqlErr := err.(*cerrors.SQLError)
-				return nil, nil, cerrors.NewCommonError(sqlErr.Code, sqlErr.Message, requestId, sqlErr)
-			default:
-				return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "用户登录失败", requestId, err)
-			}
+			return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败")
 		}
 
 		if !ok {

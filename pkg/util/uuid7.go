@@ -193,7 +193,7 @@ func (u UUID) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary 实现 encoding.BinaryUnmarshaler 接口
-func (u UUID) UnmarshalBinary(data []byte) error {
+func (u *UUID) UnmarshalBinary(data []byte) error {
 	if len(data) != 16 {
 		return fmt.Errorf("invalid UUID length: expected 16 bytes, got %d", len(data))
 	}
@@ -207,6 +207,6 @@ func (u UUID) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText 实现 encoding.TextUnmarshaler 接口
-func (u UUID) UnmarshalText(text []byte) error {
+func (u *UUID) UnmarshalText(text []byte) error {
 	return u.unmarshalString(string(text))
 }

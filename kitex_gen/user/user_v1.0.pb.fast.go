@@ -1435,11 +1435,6 @@ func (x *ChangePasswordReq) FastRead(buf []byte, _type int8, number int32) (offs
 		if err != nil {
 			goto ReadFieldError
 		}
-	case 5:
-		offset, err = x.fastReadField5(buf, _type)
-		if err != nil {
-			goto ReadFieldError
-		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -1464,16 +1459,11 @@ func (x *ChangePasswordReq) fastReadField2(buf []byte, _type int8) (offset int, 
 }
 
 func (x *ChangePasswordReq) fastReadField3(buf []byte, _type int8) (offset int, err error) {
-	x.ConfirmPassword, offset, err = fastpb.ReadString(buf, _type)
-	return offset, err
-}
-
-func (x *ChangePasswordReq) fastReadField4(buf []byte, _type int8) (offset int, err error) {
 	x.NewPassword, offset, err = fastpb.ReadString(buf, _type)
 	return offset, err
 }
 
-func (x *ChangePasswordReq) fastReadField5(buf []byte, _type int8) (offset int, err error) {
+func (x *ChangePasswordReq) fastReadField4(buf []byte, _type int8) (offset int, err error) {
 	x.RequestUserId, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
@@ -4056,7 +4046,6 @@ func (x *ChangePasswordReq) FastWrite(buf []byte) (offset int) {
 	offset += x.fastWriteField2(buf[offset:])
 	offset += x.fastWriteField3(buf[offset:])
 	offset += x.fastWriteField4(buf[offset:])
-	offset += x.fastWriteField5(buf[offset:])
 	return offset
 }
 
@@ -4077,26 +4066,18 @@ func (x *ChangePasswordReq) fastWriteField2(buf []byte) (offset int) {
 }
 
 func (x *ChangePasswordReq) fastWriteField3(buf []byte) (offset int) {
-	if x.ConfirmPassword == "" {
+	if x.NewPassword == "" {
 		return offset
 	}
-	offset += fastpb.WriteString(buf[offset:], 3, x.GetConfirmPassword())
+	offset += fastpb.WriteString(buf[offset:], 3, x.GetNewPassword())
 	return offset
 }
 
 func (x *ChangePasswordReq) fastWriteField4(buf []byte) (offset int) {
-	if x.NewPassword == "" {
-		return offset
-	}
-	offset += fastpb.WriteString(buf[offset:], 4, x.GetNewPassword())
-	return offset
-}
-
-func (x *ChangePasswordReq) fastWriteField5(buf []byte) (offset int) {
 	if len(x.RequestUserId) == 0 {
 		return offset
 	}
-	offset += fastpb.WriteBytes(buf[offset:], 5, x.GetRequestUserId())
+	offset += fastpb.WriteBytes(buf[offset:], 4, x.GetRequestUserId())
 	return offset
 }
 
@@ -6288,7 +6269,6 @@ func (x *ChangePasswordReq) Size() (n int) {
 	n += x.sizeField2()
 	n += x.sizeField3()
 	n += x.sizeField4()
-	n += x.sizeField5()
 	return n
 }
 
@@ -6309,26 +6289,18 @@ func (x *ChangePasswordReq) sizeField2() (n int) {
 }
 
 func (x *ChangePasswordReq) sizeField3() (n int) {
-	if x.ConfirmPassword == "" {
+	if x.NewPassword == "" {
 		return n
 	}
-	n += fastpb.SizeString(3, x.GetConfirmPassword())
+	n += fastpb.SizeString(3, x.GetNewPassword())
 	return n
 }
 
 func (x *ChangePasswordReq) sizeField4() (n int) {
-	if x.NewPassword == "" {
-		return n
-	}
-	n += fastpb.SizeString(4, x.GetNewPassword())
-	return n
-}
-
-func (x *ChangePasswordReq) sizeField5() (n int) {
 	if len(x.RequestUserId) == 0 {
 		return n
 	}
-	n += fastpb.SizeBytes(5, x.GetRequestUserId())
+	n += fastpb.SizeBytes(4, x.GetRequestUserId())
 	return n
 }
 
@@ -7666,9 +7638,8 @@ var fieldIDToName_SessionStatusResp = map[int32]string{
 var fieldIDToName_ChangePasswordReq = map[int32]string{
 	1: "TargetUserId",
 	2: "OldPassword",
-	3: "ConfirmPassword",
-	4: "NewPassword",
-	5: "RequestUserId",
+	3: "NewPassword",
+	4: "RequestUserId",
 }
 
 var fieldIDToName_ForgotPasswordReq = map[int32]string{

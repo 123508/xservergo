@@ -459,7 +459,7 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 	}
 
 	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.TargetUserId); err != nil {
+	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -508,8 +508,52 @@ func (s *UserServiceImpl) SessionCheck(ctx context.Context, req *user.SessionChe
 
 // ChangePassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePasswordReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	targetUid := util.NewUUID()
+	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "请求参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	requestUid := util.NewUUID()
+	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "请求参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	if err = s.userService.ChangePassword(ctx, targetUid, requestUid, req.OldPassword, req.NewPassword); err != nil {
+		var code uint64
+		var message string
+		if com, ok := err.(*cerrors.CommonError); ok {
+			err = cerrors.NewGRPCError(com.Code, com.Message)
+			code = com.Code
+			message = com.Message
+		} else {
+			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器错误")
+			code = http.StatusInternalServerError
+			message = "服务器错误,修改密码失败"
+		}
+		return &user.OperationResult{
+			Success:   false,
+			Code:      code,
+			Message:   message,
+			Timestamp: time.Now().String(),
+		}, err
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改密码成功",
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // ForgotPassword implements the UserServiceImpl interface.
