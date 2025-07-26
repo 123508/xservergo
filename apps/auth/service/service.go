@@ -202,7 +202,7 @@ func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.P
 	}
 
 	newPermission, err := s.authRepo.GetPermissionByCode(ctx, permission.Code)
-	return newPermission, nil
+	return newPermission, err
 }
 
 func (s *ServiceImpl) UpdatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error) {
@@ -269,7 +269,7 @@ func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operato
 	}
 
 	newRole, err := s.authRepo.GetRoleByCode(ctx, role.Code)
-	return newRole, nil
+	return newRole, err
 }
 
 func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error) {
@@ -420,7 +420,7 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 	}
 
 	newUserGroup, err := s.authRepo.GetUserGroupByName(ctx, userGroup.Name)
-	return newUserGroup, nil
+	return newUserGroup, err
 }
 
 func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId util.UUID) (*models.UserGroup, error) {
