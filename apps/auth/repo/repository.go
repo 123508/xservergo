@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/123508/xservergo/pkg/util"
@@ -110,40 +111,40 @@ func (r *RepoImpl) GetDB() *gorm.DB {
 
 func (r *RepoImpl) CreatePermission(permission *models.Permission) error {
 	if permission == nil {
-		return cerrors.NewParamError("permission cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "permission cannot be nil")
 	}
 
 	if err := r.DB.Create(permission).Error; err != nil {
-		return cerrors.NewSQLError("failed to create permission: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to create permission: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) UpdatePermission(permission *models.Permission) error {
 	if permission == nil {
-		return cerrors.NewParamError("permission cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "permission cannot be nil")
 	}
 
 	if err := r.DB.Save(permission).Error; err != nil {
-		return cerrors.NewSQLError("failed to update permission: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update permission: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) DeletePermission(permissionCode string) error {
 	if permissionCode == "" {
-		return cerrors.NewParamError("permission code cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
 	}
 
 	if err := r.DB.Model(&models.Permission{}).Where("code = ?", permissionCode).Update("deleted_at", time.Now()).Error; err != nil {
-		return cerrors.NewSQLError("failed to soft delete permission: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete permission: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetPermissionByID(permissionID []byte) (*models.Permission, error) {
 	if len(permissionID) == 0 {
-		return nil, cerrors.NewParamError("permission ID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "permission ID cannot be empty")
 	}
 
 	var permission models.Permission
@@ -151,14 +152,14 @@ func (r *RepoImpl) GetPermissionByID(permissionID []byte) (*models.Permission, e
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get permission by ID: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission by ID: ", err)
 	}
 	return &permission, nil
 }
 
 func (r *RepoImpl) GetPermissionByCode(permissionCode string) (*models.Permission, error) {
 	if permissionCode == "" {
-		return nil, cerrors.NewParamError("permission code cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
 	}
 
 	var permission models.Permission
@@ -166,47 +167,47 @@ func (r *RepoImpl) GetPermissionByCode(permissionCode string) (*models.Permissio
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get permission by code: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission by code: ", err)
 	}
 	return &permission, nil
 }
 
 func (r *RepoImpl) CreateRole(role *models.Role) error {
 	if role == nil {
-		return cerrors.NewParamError("role cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "role cannot be nil")
 	}
 
 	if err := r.DB.Create(role).Error; err != nil {
-		return cerrors.NewSQLError("failed to create role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to create role: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) UpdateRole(role *models.Role) error {
 	if role == nil {
-		return cerrors.NewParamError("role cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "role cannot be nil")
 	}
 
 	if err := r.DB.Save(role).Error; err != nil {
-		return cerrors.NewSQLError("failed to update role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) DeleteRole(roleCode string) error {
 	if roleCode == "" {
-		return cerrors.NewParamError("role code cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
 
 	if err := r.DB.Model(&models.Role{}).Where("code = ?", roleCode).Update("deleted_at", time.Now()).Error; err != nil {
-		return cerrors.NewSQLError("failed to soft delete role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete role: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetRoleByID(roleID []byte) (*models.Role, error) {
 	if len(roleID) == 0 {
-		return nil, cerrors.NewParamError("role ID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "role ID cannot be empty")
 	}
 
 	var role models.Role
@@ -214,14 +215,14 @@ func (r *RepoImpl) GetRoleByID(roleID []byte) (*models.Role, error) {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get role by ID: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role by ID: ", err)
 	}
 	return &role, nil
 }
 
 func (r *RepoImpl) GetRoleByCode(roleCode string) (*models.Role, error) {
 	if roleCode == "" {
-		return nil, cerrors.NewParamError("role code cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
 
 	var role models.Role
@@ -229,14 +230,14 @@ func (r *RepoImpl) GetRoleByCode(roleCode string) (*models.Role, error) {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get role by code: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role by code: ", err)
 	}
 	return &role, nil
 }
 
 func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string) error {
 	if permissionCode == "" || roleCode == "" {
-		return cerrors.NewParamError("permission code and role code cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
 
 	// 获取权限和角色
@@ -245,7 +246,7 @@ func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string)
 		return err
 	}
 	if permission == nil {
-		return cerrors.NewParamError("permission not found")
+		return cerrors.NewParamError(http.StatusNotFound, "permission not found")
 	}
 
 	role, err := r.GetRoleByCode(roleCode)
@@ -253,7 +254,7 @@ func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string)
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 检查是否已存在关联
@@ -263,11 +264,11 @@ func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string)
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
 		if err := r.DB.Save(&existing).Error; err != nil {
-			return cerrors.NewSQLError("failed to update role permission: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role permission: ", err)
 		}
 		return nil
 	} else if err != gorm.ErrRecordNotFound {
-		return cerrors.NewSQLError("failed to check existing role permission: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to check existing role permission: ", err)
 	}
 
 	// 创建新的角色权限关联
@@ -278,14 +279,14 @@ func (r *RepoImpl) GrantPermissionToRole(permissionCode string, roleCode string)
 	}
 
 	if err := r.DB.Create(rolePermission).Error; err != nil {
-		return cerrors.NewSQLError("failed to grant permission to role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to grant permission to role: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) RevokePermissionFromRole(permissionCode string, roleCode string) error {
 	if permissionCode == "" || roleCode == "" {
-		return cerrors.NewParamError("permission code and role code cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
 
 	// 获取权限和角色
@@ -294,7 +295,7 @@ func (r *RepoImpl) RevokePermissionFromRole(permissionCode string, roleCode stri
 		return err
 	}
 	if permission == nil {
-		return cerrors.NewParamError("permission not found")
+		return cerrors.NewParamError(http.StatusNotFound, "permission not found")
 	}
 
 	role, err := r.GetRoleByCode(roleCode)
@@ -302,21 +303,21 @@ func (r *RepoImpl) RevokePermissionFromRole(permissionCode string, roleCode stri
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 软删除：将状态设置为0
 	if err := r.DB.Model(&models.RolePermission{}).
 		Where("role_id = ? AND permission_id = ?", role.ID, permission.ID).
 		Update("status", 0).Error; err != nil {
-		return cerrors.NewSQLError("failed to revoke permission from role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke permission from role: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
 	if roleCode == "" {
-		return nil, cerrors.NewParamError("role code cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
 
 	// 查询角色的所有权限（包括递归父权限）
@@ -327,7 +328,7 @@ func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
 		Joins("JOIN roles ON role_permission.role_id = roles.id").
 		Where("roles.code = ? AND role_permission.status = 1", roleCode).
 		Pluck("permission.id", &permissionIDs).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get role permission ids: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role permission ids: ", err)
 	}
 
 	// 递归查找所有父权限
@@ -341,7 +342,7 @@ func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
 		}
 		var perms []models.Permission
 		if err := r.DB.Where("id IN ?", ids).Find(&perms).Error; err != nil {
-			return cerrors.NewSQLError("failed to get permissions for recursion: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permissions for recursion: ", err)
 		}
 		var parentIDs []interface{}
 		for _, perm := range perms {
@@ -365,7 +366,7 @@ func (r *RepoImpl) GetRolePermission(roleCode string) ([]string, error) {
 
 func (r *RepoImpl) AssignRoleToUser(roleCode string, userID util.UUID) error {
 	if roleCode == "" || userID == (util.UUID{}) {
-		return cerrors.NewParamError("role code and userID cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
 
 	// 获取角色
@@ -374,7 +375,7 @@ func (r *RepoImpl) AssignRoleToUser(roleCode string, userID util.UUID) error {
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 检查是否已存在关联
@@ -384,11 +385,11 @@ func (r *RepoImpl) AssignRoleToUser(roleCode string, userID util.UUID) error {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
 		if err := r.DB.Save(&existing).Error; err != nil {
-			return cerrors.NewSQLError("failed to update user role: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user role: ", err)
 		}
 		return nil
 	} else if err != gorm.ErrRecordNotFound {
-		return cerrors.NewSQLError("failed to check existing user role: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to check existing user role: ", err)
 	}
 
 	// 创建新的用户角色关联
@@ -399,14 +400,14 @@ func (r *RepoImpl) AssignRoleToUser(roleCode string, userID util.UUID) error {
 	}
 
 	if err := r.DB.Create(userRole).Error; err != nil {
-		return cerrors.NewSQLError("failed to assign role to user: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to assign role to user: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) RevokeRoleFromUser(roleCode string, userID util.UUID) error {
 	if roleCode == "" || userID == (util.UUID{}) {
-		return cerrors.NewParamError("role code and userID cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
 
 	// 获取角色
@@ -415,21 +416,21 @@ func (r *RepoImpl) RevokeRoleFromUser(roleCode string, userID util.UUID) error {
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 软删除：将状态设置为0
 	if err := r.DB.Model(&models.UserRole{}).
 		Where("user_id = ? AND role_id = ?", userID, role.ID).
 		Update("status", 0).Error; err != nil {
-		return cerrors.NewSQLError("failed to revoke role from user: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke role from user: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetUserRoles(userID util.UUID) ([]string, error) {
 	if userID == (util.UUID{}) {
-		return nil, cerrors.NewParamError("userID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
 	var roleCodes []string
@@ -438,41 +439,41 @@ func (r *RepoImpl) GetUserRoles(userID util.UUID) ([]string, error) {
 		Joins("JOIN user_role ON roles.id = user_role.role_id").
 		Where("user_role.user_id = ? AND user_role.status = 1", userID).
 		Pluck("roles.code", &roleCodes).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user roles: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user roles: ", err)
 	}
 	return roleCodes, nil
 }
 
 func (r *RepoImpl) CreateUserGroup(userGroup *models.UserGroup) error {
 	if userGroup == nil {
-		return cerrors.NewParamError("user group cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "user group cannot be nil")
 	}
 
 	if err := r.DB.Create(userGroup).Error; err != nil {
-		return cerrors.NewSQLError("failed to create user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to create user group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) UpdateUserGroup(userGroup *models.UserGroup) error {
 	if userGroup == nil {
-		return cerrors.NewParamError("user group cannot be nil")
+		return cerrors.NewParamError(http.StatusBadRequest, "user group cannot be nil")
 	}
 
 	if err := r.DB.Save(userGroup).Error; err != nil {
-		return cerrors.NewSQLError("failed to update user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) DeleteUserGroup(groupName string) error {
 	if groupName == "" {
-		return cerrors.NewParamError("group name cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
 	// 软删除：设置 deleted_at 字段为当前时间
 	if err := r.DB.Model(&models.UserGroup{}).Where("name = ?", groupName).Update("deleted_at", time.Now()).Error; err != nil {
-		return cerrors.NewSQLError("failed to soft delete user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete user group: ", err)
 	}
 
 	return nil
@@ -480,7 +481,7 @@ func (r *RepoImpl) DeleteUserGroup(groupName string) error {
 
 func (r *RepoImpl) GetUserGroupByID(groupID []byte) (*models.UserGroup, error) {
 	if len(groupID) == 0 {
-		return nil, cerrors.NewParamError("group ID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group ID cannot be empty")
 	}
 
 	var userGroup models.UserGroup
@@ -488,14 +489,14 @@ func (r *RepoImpl) GetUserGroupByID(groupID []byte) (*models.UserGroup, error) {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get user group by ID: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by ID: ", err)
 	}
 	return &userGroup, nil
 }
 
 func (r *RepoImpl) GetUserGroupByName(groupName string) (*models.UserGroup, error) {
 	if groupName == "" {
-		return nil, cerrors.NewParamError("group name cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
 	var userGroup models.UserGroup
@@ -503,14 +504,14 @@ func (r *RepoImpl) GetUserGroupByName(groupName string) (*models.UserGroup, erro
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError("failed to get user group by name: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by name: ", err)
 	}
 	return &userGroup, nil
 }
 
 func (r *RepoImpl) GetUserGroupMembers(groupName string) ([]util.UUID, error) {
 	if groupName == "" {
-		return nil, cerrors.NewParamError("group name cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
 	var userIDList []util.UUID
@@ -519,14 +520,14 @@ func (r *RepoImpl) GetUserGroupMembers(groupName string) ([]util.UUID, error) {
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group.name = ? AND user_group_relation.status = 1", groupName).
 		Pluck("user_group_relation.user_id", &userIDList).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group members: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group members: ", err)
 	}
 	return userIDList, nil
 }
 
 func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) error {
 	if roleCode == "" || groupName == "" {
-		return cerrors.NewParamError("role code and group name cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
 
 	// 获取角色
@@ -535,7 +536,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) erro
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 获取用户组
@@ -544,7 +545,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) erro
 		return err
 	}
 	if userGroup == nil {
-		return cerrors.NewParamError("user group not found")
+		return cerrors.NewParamError(http.StatusNotFound, "user group not found")
 	}
 
 	// 检查是否已存在关联
@@ -554,11 +555,11 @@ func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) erro
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
 		if err := r.DB.Save(&existing).Error; err != nil {
-			return cerrors.NewSQLError("failed to update role group: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role group: ", err)
 		}
 		return nil
 	} else if err != gorm.ErrRecordNotFound {
-		return cerrors.NewSQLError("failed to check existing role group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to check existing role group: ", err)
 	}
 
 	// 创建新的角色用户组关联
@@ -569,14 +570,14 @@ func (r *RepoImpl) AssignRoleToUserGroup(roleCode string, groupName string) erro
 	}
 
 	if err := r.DB.Create(roleGroup).Error; err != nil {
-		return cerrors.NewSQLError("failed to assign role to user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to assign role to user group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) RemoveRoleFromUserGroup(roleCode string, groupName string) error {
 	if roleCode == "" || groupName == "" {
-		return cerrors.NewParamError("role code and group name cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
 
 	// 获取角色
@@ -585,7 +586,7 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(roleCode string, groupName string) er
 		return err
 	}
 	if role == nil {
-		return cerrors.NewParamError("role not found")
+		return cerrors.NewParamError(http.StatusNotFound, "role not found")
 	}
 
 	// 获取用户组
@@ -594,21 +595,21 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(roleCode string, groupName string) er
 		return err
 	}
 	if userGroup == nil {
-		return cerrors.NewParamError("user group not found")
+		return cerrors.NewParamError(http.StatusNotFound, "user group not found")
 	}
 
 	// 软删除：将状态设置为0
 	if err := r.DB.Model(&models.RoleGroup{}).
 		Where("role_id = ? AND group_id = ?", role.ID, userGroup.ID).
 		Update("status", 0).Error; err != nil {
-		return cerrors.NewSQLError("failed to revoke role from user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke role from user group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetUserGroupPermissions(groupName string) ([]string, error) {
 	if groupName == "" {
-		return nil, cerrors.NewParamError("group name cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
 	var permissionCodes []string
@@ -619,14 +620,14 @@ func (r *RepoImpl) GetUserGroupPermissions(groupName string) ([]string, error) {
 		Joins("JOIN user_group ON role_group.group_id = user_group.id").
 		Where("user_group.name = ? AND role_permission.status = 1 AND role_group.status = 1", groupName).
 		Pluck("permission.code", &permissionCodes).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group permissions: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group permissions: ", err)
 	}
 	return permissionCodes, nil
 }
 
 func (r *RepoImpl) AssignUserToGroup(userID util.UUID, groupName string) error {
 	if userID == (util.UUID{}) || groupName == "" {
-		return cerrors.NewParamError("userID and group name cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
 
 	// 获取用户组
@@ -635,7 +636,7 @@ func (r *RepoImpl) AssignUserToGroup(userID util.UUID, groupName string) error {
 		return err
 	}
 	if userGroup == nil {
-		return cerrors.NewParamError("user group not found")
+		return cerrors.NewParamError(http.StatusNotFound, "user group not found")
 	}
 
 	// 检查是否已存在关联
@@ -645,11 +646,11 @@ func (r *RepoImpl) AssignUserToGroup(userID util.UUID, groupName string) error {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
 		if err := r.DB.Save(&existing).Error; err != nil {
-			return cerrors.NewSQLError("failed to update user group relation: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user group relation: ", err)
 		}
 		return nil
 	} else if err != gorm.ErrRecordNotFound {
-		return cerrors.NewSQLError("failed to check existing user group relation: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to check existing user group relation: ", err)
 	}
 
 	// 创建新的用户组关联
@@ -660,14 +661,14 @@ func (r *RepoImpl) AssignUserToGroup(userID util.UUID, groupName string) error {
 	}
 
 	if err := r.DB.Create(userGroupRelation).Error; err != nil {
-		return cerrors.NewSQLError("failed to assign user to group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to assign user to group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) RevokeUserFromGroup(userID util.UUID, groupName string) error {
 	if userID == (util.UUID{}) || groupName == "" {
-		return cerrors.NewParamError("userID and group name cannot be empty")
+		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
 
 	// 获取用户组
@@ -676,21 +677,21 @@ func (r *RepoImpl) RevokeUserFromGroup(userID util.UUID, groupName string) error
 		return err
 	}
 	if userGroup == nil {
-		return cerrors.NewParamError("user group not found")
+		return cerrors.NewParamError(http.StatusNotFound, "user group not found")
 	}
 
 	// 软删除：将状态设置为0
 	if err := r.DB.Model(&models.UserGroupRelation{}).
 		Where("user_id = ? AND group_id = ?", userID, userGroup.ID).
 		Update("status", 0).Error; err != nil {
-		return cerrors.NewSQLError("failed to revoke user from group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke user from group: ", err)
 	}
 	return nil
 }
 
 func (r *RepoImpl) GetUserGroups(userID util.UUID) ([]string, error) {
 	if userID == (util.UUID{}) {
-		return nil, cerrors.NewParamError("userID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
 	var groupNames []string
@@ -699,14 +700,14 @@ func (r *RepoImpl) GetUserGroups(userID util.UUID) ([]string, error) {
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
 		Pluck("user_group.name", &groupNames).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user groups: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user groups: ", err)
 	}
 	return groupNames, nil
 }
 
 func (r *RepoImpl) GetUserPermissions(userID util.UUID) ([]string, error) {
 	if userID == (util.UUID{}) {
-		return nil, cerrors.NewParamError("userID cannot be empty")
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
 	var permissionCodes []string
@@ -746,7 +747,7 @@ func (r *RepoImpl) getUserDirectPermissions(userID util.UUID) ([]string, error) 
 		Joins("JOIN user_role ON roles.id = user_role.role_id").
 		Where("user_role.user_id = ? AND user_role.status = 1", userID).
 		Pluck("roles.code", &relos).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user direct permissions: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user direct permissions: ", err)
 	}
 	permissions := make([]string, 0)
 	for _, role := range relos {
@@ -777,7 +778,7 @@ func (r *RepoImpl) getUserGroupPermissions(userID util.UUID) ([]string, error) {
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
 		Pluck("user_group.id", &groupIDs).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group ids: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group ids: ", err)
 	}
 
 	visited := make(map[string]bool)
@@ -790,7 +791,7 @@ func (r *RepoImpl) getUserGroupPermissions(userID util.UUID) ([]string, error) {
 		}
 		var groups []models.UserGroup
 		if err := r.DB.Where("id IN ?", ids).Find(&groups).Error; err != nil {
-			return cerrors.NewSQLError("failed to get user groups for recursion: ", err)
+			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user groups for recursion: ", err)
 		}
 		var parentIDs []interface{}
 		for _, group := range groups {
@@ -817,7 +818,7 @@ func (r *RepoImpl) getUserGroupPermissions(userID util.UUID) ([]string, error) {
 		Joins("JOIN role_group ON roles.id = role_group.role_id").
 		Where("role_group.group_id IN ? AND role_group.status = 1", allGroupIDs).
 		Pluck("roles.code", &roleCodes).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group role codes: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group role codes: ", err)
 	}
 
 	// 获取所有角色的权限代码
@@ -911,7 +912,7 @@ func (r *RepoImpl) GetRoleList(page uint32, pageSize uint32) ([]*models.Role, er
 	offset := (page - 1) * pageSize
 
 	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&roles).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get role list: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role list: ", err)
 	}
 	return roles, nil
 }
@@ -928,7 +929,7 @@ func (r *RepoImpl) GetPermissionList(page uint32, pageSize uint32) ([]*models.Pe
 	offset := (page - 1) * pageSize
 
 	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&permissions).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get permission list: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission list: ", err)
 	}
 	return permissions, nil
 }
@@ -945,7 +946,7 @@ func (r *RepoImpl) GetUserGroupList(page uint32, pageSize uint32) ([]*models.Use
 	offset := (page - 1) * pageSize
 
 	if err := r.DB.Offset(int(offset)).Limit(int(pageSize)).Find(&userGroups).Error; err != nil {
-		return nil, cerrors.NewSQLError("failed to get user group list: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group list: ", err)
 	}
 	return userGroups, nil
 }

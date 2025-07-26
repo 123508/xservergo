@@ -10,11 +10,12 @@ service UserService {
   rpc PhoneLogin(PhoneLoginReq) returns (LoginResp) {}                      // 手机密码登录
   rpc AccountLogin(AccountLoginReq) returns (LoginResp) {}                  // 账号登录
   rpc SmsLogin(SmsLoginReq) returns (SmsLoginResp) {}                       // 验证码登录
-  rpc GenerateQrCode(GenerateQrCodeReq) returns (GenerateQrCodeResp) {}              // 生成二维码
-  rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (QrCodeLoginStatusResp);  // 长轮询登录状态 (客户端调用)
+  rpc GenerateQrCode(GenerateQrCodeReq) returns (GenerateQrCodeResp) {}     // 生成二维码
+  rpc QrCodePreLoginStatus(QrCodePreLoginStatusReq) returns (QrCodePreLoginStatusResp){}// 预长轮询登录状态
+  rpc QrCodeLoginStatus(QrCodeLoginStatusReq) returns (QrCodeLoginStatusResp){}          // 长轮询登录状态 (客户端调用)
   rpc QrPreLogin(QrPreLoginReq)returns(QrPreLoginResp){}
-  rpc ConfirmQrLogin(ConfirmQrLoginReq) returns (LoginResp) {}              // 确认扫码登录
-  rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                  // 取消登录 (移动端调用)
+  rpc ConfirmQrLogin(ConfirmQrLoginReq) returns (Empty) {}                  // 确认扫码登录
+  rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                      // 取消登录 (移动端调用)
   rpc OAuthLogin(OAuthLoginReq) returns (LoginResp) {}                      // 第三方登录
   rpc Logout(LogoutReq) returns (OperationResult) {}                        // 登出
   rpc SessionCheck(SessionCheckReq) returns (SessionStatusResp) {}          // 会话检查
@@ -37,7 +38,8 @@ service UserService {
   rpc CompleteChangePhone(CompleteChangePhoneReq)returns(OperationResult){} // 完成换绑手机
 
   // ---------- 用户管理 ---------- //
-  rpc GetUserInfo(GetUserInfoReq) returns (UserInfoResp) {}                // 获取用户信息
+  rpc GetUserInfoById(GetUserInfoByIdReq) returns (UserInfoResp) {}            // 获取用户信息
+  rpc GetUserInfoByOthers(GetUserInfoByOthersReq) returns (UserInfoResp) {}
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (OperationResult) {}       // 更新用户信息
   rpc ListUsers(ListUsersReq) returns (ListUsersResp) {}                   // 用户列表
   rpc SearchUserByNickname(SearchUserByNicknameReq) returns (SearchUserByNicknameResp){} // 根据用户昵称模糊查询
@@ -168,8 +170,20 @@ message GenerateQrCodeReq {
 
 message GenerateQrCodeResp {
   string qr_code_url = 1;   // 二维码图片URL
-  string request_id = 2;
-  uint64 expires_at = 3;    // 过期时间戳(毫秒)
+  string ticket= 2;
+  string request_id = 3;
+  uint64 expires_at = 4;    // 过期时间戳(毫秒)
+}
+
+message QrCodePreLoginStatusReq{
+  string ticket = 1;
+  uint64 timeout = 2;
+  string request_id = 3;
+}
+
+message QrCodePreLoginStatusResp{
+  bool ok = 1;
+  bytes user_id = 2;
 }
 
 // 长轮询状态请求
@@ -177,9 +191,10 @@ message QrCodeLoginStatusReq {
   string ticket = 1;             // 票据ID(即会话ID)
   uint64 timeout = 2;            // 长轮询超时时间 (毫秒, 0=使用默认)
   string request_id = 3;
+  bytes user_id = 4;
 }
 
-// 长轮询状态响应 (流式)
+// 长轮询状态响应
 message QrCodeLoginStatusResp {
   enum Status {
     UNKNOWN = 0;
@@ -188,16 +203,16 @@ message QrCodeLoginStatusResp {
     CONFIRMED = 3;    // 已确认
     EXPIRED = 4;      // 已过期
     CANCELLED = 5;    // 已取消
+    ERROR = 6;        // 错误状态
   }
 
   Status status = 1;              // 当前状态
   LoginResponse login_resp = 2;   // 登录响应 (仅当状态为CONFIRMED时有效)
-  int64 next_poll_in = 3;         // 下次轮询时间 (毫秒, 仅当状态未完成时)
+  uint64 next_poll_in = 3;         // 下次轮询时间 (毫秒, 仅当状态未完成时)
 }
 
 // 登录响应
 message LoginResponse {
-
   oneof result {
     LoginResp success = 1;
     LoginFailure failure = 2;
@@ -211,26 +226,25 @@ message LoginFailure {
 
 message QrPreLoginReq{
   string ticket = 1;
-  string phone = 2;
-  string request_id = 3;
-}
-
-message QrPreLoginResp{
-  bool user_exist=1;
   bytes user_id=2;
   string request_id = 3;
 }
 
+message QrPreLoginResp{
+  bool ok=1;
+  string request_id = 2;
+}
+
 message ConfirmQrLoginReq {
   string ticket = 1;
-  bytes uid = 2;        // 确认登录的用户id
+  bytes user_id=2;
   string request_id = 3;
 }
 
 // 取消登录请求 (移动端)
 message CancelQrLoginReq {
   string ticket = 1;             // 票据ID
-  bytes uid = 2;
+  bytes user_id=2;
   string request_id = 3;
 }
 
@@ -276,10 +290,11 @@ message ForgotPasswordReq {
 }
 
 message ResetPasswordReq {
-  string verification_token = 1;  // 验证码
-  string new_password = 2;
-  string request_id=3;
-  bytes request_user_id=4;
+  bytes target_user_id=1;
+  string verification_token = 2;  // 验证码
+  string new_password = 3;
+  string request_id=4;
+  bytes request_user_id=5;
 }
 
 // ---------- 绑定管理 ---------- //
@@ -354,9 +369,13 @@ message CompleteChangePhoneReq{
 }
 
 // ---------- 用户管理 ---------- //
-message GetUserInfoReq {
+message GetUserInfoByIdReq {
+  bytes target_user_id = 1;
+  bytes request_user_id=5;
+}
+
+message GetUserInfoByOthersReq {
   oneof identifier {
-    bytes target_user_id = 1;
     string username = 2;
     string email = 3;
     string phone = 4;

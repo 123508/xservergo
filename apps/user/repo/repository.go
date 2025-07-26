@@ -9,6 +9,7 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 type UserRepository interface {
@@ -23,8 +24,8 @@ type UserRepository interface {
 	DeleteUser(ctx context.Context, userID util.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
 	UpdatePassword(ctx context.Context, userID util.UUID, password string) error
-	RemoveEmail(ctx context.Context, userID util.UUID, version int) (int, error)
-	SetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error)
+	ResetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error)
+	ResetPhone(ctx context.Context, userID util.UUID, phone string, version int) (int, error)
 	FreezeUser(ctx context.Context, userID util.UUID, version int) (int, error)
 	UnfreezeUser(ctx context.Context, userID util.UUID, version int) (int, error)
 }
@@ -46,7 +47,7 @@ func (r *RepoImpl) GetDB() *gorm.DB {
 func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *models.UserLogin) error {
 
 	if user == nil || uLogin == nil {
-		return cerrors.NewParamError("NOT_ALLOWED_EMPTY_PARAM")
+		return cerrors.NewParamError(http.StatusBadRequest, "不允许空参数")
 	}
 
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -74,7 +75,7 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 
 	if err != nil {
 		logs.ErrorLogger.Error("创建用户对象错误", zap.Error(err))
-		return cerrors.NewSQLError("CREATE_USER_FAIL", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "创建用户错误", err)
 	}
 
 	return nil
@@ -90,7 +91,7 @@ func (r *RepoImpl) ComparePassword(ctx context.Context, userID util.UUID, passwo
 
 	if err := r.DB.WithContext(ctx).Raw(compStmt, userID, password).Scan(&res).Error; err != nil {
 		logs.ErrorLogger.Error("查询用户密码错误", zap.Error(err))
-		return false, cerrors.NewSQLError("GET_USER_PWD_FAIL", err)
+		return false, cerrors.NewSQLError(http.StatusInternalServerError, "查询用户密码失败", err)
 	}
 
 	return res != 0, nil
@@ -106,7 +107,7 @@ from users where id = ? and is_deleted = 0 limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, userID).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过id获取用户信息", zap.Error(err))
-		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err)
 	}
 
 	return &row, nil
@@ -122,11 +123,11 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, email).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过email获取用户信息", zap.Error(err))
-		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err)
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError("用户账户或密码错误")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
 	}
 
 	return &row, nil
@@ -142,11 +143,11 @@ func (r *RepoImpl) GetUserByPhone(ctx context.Context, phone string) (*models.Us
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, phone).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过phone获取用户信息", zap.Error(err))
-		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err)
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError("用户账户或密码错误")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
 	}
 
 	return &row, nil
@@ -163,11 +164,11 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, username).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过username获取用户信息", zap.Error(err))
-		return nil, cerrors.NewSQLError("GET_USER_FAIL", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err)
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError("用户账户或密码错误")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
 	}
 
 	return &row, nil
@@ -204,7 +205,7 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User) (int, error) 
 			zap.Error(result.Error),
 			zap.ByteString("userID", u.ID[:]),
 			zap.Int("version", u.Version))
-		return u.Version, cerrors.NewSQLError("UPDATE_USER_FAIL", result.Error)
+		return u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
 	}
 
 	// 3. 检查乐观锁冲突
@@ -213,7 +214,7 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User) (int, error) 
 		logs.ErrorLogger.Error(err.Error(),
 			zap.ByteString("userID", u.ID[:]),
 			zap.Int("expected_version", u.Version))
-		return u.Version, cerrors.NewSQLError("UPDATE_USER_FAIL", result.Error)
+		return u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
 	}
 
 	// 4. 获取新版本号（避免额外查询）
@@ -240,7 +241,7 @@ func (r *RepoImpl) DeleteUser(ctx context.Context, UserID util.UUID) error {
 	})
 	if err != nil {
 		logs.ErrorLogger.Error("删除用户异常", zap.Error(err))
-		return cerrors.NewSQLError("DELETE_USER_FAIL", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "删除用户失败", err)
 	}
 	return nil
 }
@@ -259,7 +260,7 @@ func (r *RepoImpl) ListUsers(ctx context.Context,
 	var users []models.User
 	if err := tx.Find(&users).Error; err != nil {
 		logs.ErrorLogger.Error("查询用户列表失败", zap.Error(err))
-		return nil, cerrors.NewSQLError("GET_USER_LIST_FAIL", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户列表失败", err)
 	}
 	return users, nil
 }
@@ -274,43 +275,19 @@ set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
 
 	if err := result.Error; err != nil {
 		logs.ErrorLogger.Error("更新用户密码错误", zap.Error(err))
-		return cerrors.NewSQLError("UPDATE_PASSWORD_FAIL", result.Error)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户密码失败", result.Error)
 	}
 
 	// 检查是否成功更新
 	if result.RowsAffected == 0 {
-		err := errors.New("更新密码失败：用户不存在或版本不匹配")
-		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return cerrors.NewSQLError("UPDATE_PASSWORD_FAIL", result.Error)
+		logs.ErrorLogger.Error("更新密码失败：用户不存在或版本不匹配", zap.ByteString("userID", userID[:]))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户密码失败", result.Error)
 	}
 
 	return nil
 }
 
-func (r *RepoImpl) RemoveEmail(ctx context.Context, userID util.UUID, version int) (int, error) {
-
-	removeStmt := `update users 
-						set email = '', version =version+1 , updated_at = CURRENT_TIMESTAMP
-						where id = ? and version = ? and is_deleted = 0`
-
-	result := r.DB.WithContext(ctx).Exec(removeStmt, userID, version)
-
-	if err := result.Error; err != nil {
-		logs.ErrorLogger.Error("解绑邮箱失败:", zap.Error(err), zap.String("uid", userID.String()))
-		return version, cerrors.NewSQLError("REMOVE_USER_EMAIL_FAIL", result.Error)
-	}
-
-	// 检查是否成功更新
-	if result.RowsAffected == 0 {
-		err := errors.New("解绑邮箱失败：用户不存在或版本不匹配")
-		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return version, cerrors.NewSQLError("REMOVE_USER_EMAIL_FAIL", result.Error)
-	}
-
-	return version + 1, nil
-}
-
-func (r *RepoImpl) SetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error) {
+func (r *RepoImpl) ResetEmail(ctx context.Context, userID util.UUID, email string, version int) (int, error) {
 
 	setStmt := `update users 
 						set email = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP
@@ -319,15 +296,35 @@ func (r *RepoImpl) SetEmail(ctx context.Context, userID util.UUID, email string,
 	result := r.DB.WithContext(ctx).Exec(setStmt, email, userID, version)
 
 	if err := result.Error; err != nil {
-		logs.ErrorLogger.Error("绑定邮箱失败", zap.Error(err))
-		return version, cerrors.NewSQLError("SET_USER_EMAIL_FAIL", result.Error)
+		logs.ErrorLogger.Error("重置邮箱失败", zap.Error(err))
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "重置邮箱失败", result.Error)
 	}
 
 	// 检查是否成功更新
 	if result.RowsAffected == 0 {
-		err := errors.New("绑定邮箱失败：用户不存在或版本不匹配")
-		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return version, cerrors.NewSQLError("SET_USER_EMAIL_FAIL", result.Error)
+		logs.ErrorLogger.Error("重置邮箱失败：用户不存在或版本不匹配", zap.ByteString("userID", userID[:]))
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "重置邮箱失败", result.Error)
+	}
+
+	return version + 1, nil
+}
+
+func (r *RepoImpl) ResetPhone(ctx context.Context, userID util.UUID, phone string, version int) (int, error) {
+	setStmt := `update users 
+						set phone = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP
+						where id = ? and version = ? and is_deleted = 0`
+
+	result := r.DB.WithContext(ctx).Exec(setStmt, phone, userID, version)
+
+	if err := result.Error; err != nil {
+		logs.ErrorLogger.Error("重置手机号失败", zap.Error(err))
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "重置手机号失败", result.Error)
+	}
+
+	// 检查是否成功更新
+	if result.RowsAffected == 0 {
+		logs.ErrorLogger.Error("重置手机号失败：用户不存在或版本不匹配", zap.ByteString("userID", userID[:]))
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "重置手机号失败", result.Error)
 	}
 
 	return version + 1, nil
@@ -343,14 +340,14 @@ func (r *RepoImpl) FreezeUser(ctx context.Context, userID util.UUID, version int
 
 	if result.Error != nil {
 		logs.ErrorLogger.Error("冻结用户失败", zap.Error(result.Error))
-		return version, cerrors.NewSQLError("FREEZE_USER_FAIL", result.Error)
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "冻结用户失败", result.Error)
 	}
 
 	// 检查是否成功更新
 	if result.RowsAffected == 0 {
 		err := errors.New("冻结失败：用户不存在或版本不匹配")
 		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return version, cerrors.NewSQLError("FREEZE_USER_FAIL", result.Error)
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "冻结用户失败", result.Error)
 	}
 
 	return version + 1, nil
@@ -366,14 +363,14 @@ func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID util.UUID, version i
 
 	if result.Error != nil {
 		logs.ErrorLogger.Error("解冻用户失败", zap.Error(result.Error))
-		return version, cerrors.NewSQLError("UNFREEZE_USER_FAIL", result.Error)
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "解冻用户失败", result.Error)
 	}
 
 	// 检查是否成功更新
 	if result.RowsAffected == 0 {
 		err := errors.New("解冻失败：用户不存在或版本不匹配")
 		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userID[:]))
-		return version, cerrors.NewSQLError("UNFREEZE_USER_FAIL", result.Error)
+		return version, cerrors.NewSQLError(http.StatusInternalServerError, "解冻用户失败", result.Error)
 	}
 
 	return version + 1, nil

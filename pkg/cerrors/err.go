@@ -9,12 +9,14 @@ import (
 //----------------- repo层错误 -----------------//
 
 type SQLError struct {
+	Code    uint64
 	Message string
 	Err     error
 }
 
-func NewSQLError(msg string, err error) error {
+func NewSQLError(code uint64, msg string, err error) error {
 	return &SQLError{
+		Code:    code,
 		Message: msg,
 		Err:     err,
 	}
@@ -27,9 +29,9 @@ func (e *SQLError) Error() string {
 	}
 
 	if e.Err != nil {
-		return "message:" + e.Message + ",error:" + e.Err.Error()
+		return "code:" + strconv.FormatUint(e.Code, 10) + ",message:" + e.Message + ",error:" + e.Err.Error()
 	} else {
-		return "message:" + e.Message + ",error:nil"
+		return "code:" + strconv.FormatUint(e.Code, 10) + ",message:" + e.Message + ",error:nil"
 	}
 }
 
@@ -56,11 +58,13 @@ func (e *SQLError) Unwrap() error {
 }
 
 type ParamError struct {
+	Code    uint64
 	Message string
 }
 
-func NewParamError(text string) error {
+func NewParamError(code uint64, text string) error {
 	return &ParamError{
+		Code:    code,
 		Message: text,
 	}
 }
@@ -75,7 +79,7 @@ func (e *ParamError) Error() string {
 		e.Message = "some param is nil"
 	}
 
-	return "message:" + e.Message
+	return "code:" + strconv.FormatUint(e.Code, 10) + "message:" + e.Message
 }
 
 func (e *ParamError) Is(target error) bool {
@@ -119,7 +123,7 @@ func (e *CommonError) Error() string {
 		return ""
 	}
 
-	resp := "code:" + strconv.FormatUint(uint64(e.Code), 10) + ",message:" + e.Message
+	resp := "code:" + strconv.FormatUint(e.Code, 10) + ",message:" + e.Message
 
 	if e.RequestId != "" {
 		resp += ",requestId:" + e.RequestId

@@ -203,12 +203,15 @@ func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenRe
 	uid := util.NewUUID()
 
 	if err = uid.Unmarshal(req.UserId); err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求内容不正确")
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
 	token, err := s.authService.IssueToken(ctx, uid)
 
 	if err != nil {
+		if com, ok := err.(*cerrors.CommonError); ok {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
 
@@ -223,7 +226,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 	uid := util.NewUUID()
 
 	if err = uid.Unmarshal(req.UserId); err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求内容不正确")
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
 	token := models.Token{
@@ -234,6 +237,9 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 	Token, err := s.authService.RefreshToken(ctx, token, uid)
 
 	if err != nil {
+		if com, ok := err.(*cerrors.CommonError); ok {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
 
@@ -248,13 +254,16 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 	uid, perms, ver, err := s.authService.VerifyToken(ctx, req.AccessToken)
 
 	if err != nil {
+		if com, ok := err.(*cerrors.CommonError); ok {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
 
 	Uid, err := uid.Marshal()
 
 	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
 	}
 
 	return &auth.VerifyTokenResp{

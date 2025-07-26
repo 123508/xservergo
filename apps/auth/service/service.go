@@ -142,11 +142,11 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 
 func (s *ServiceImpl) RefreshToken(ctx context.Context, token models.Token, uid util.UUID) (models.Token, error) {
 	if token.AccessToken == "" || token.RefreshToken == "" || uid.IsZero() {
-		return models.Token{}, cerrors.NewParamError("请求参数错误")
+		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	if b, err := s.Rds.Get(ctx, token.RefreshToken).Bool(); err != nil || !b {
-		return models.Token{}, cerrors.NewParamError("请求参数错误")
+		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	issueToken, err := s.IssueToken(ctx, uid)
@@ -173,17 +173,17 @@ func (s *ServiceImpl) RefreshToken(ctx context.Context, token models.Token, uid 
 
 func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, error) {
 	if accessToken == "" {
-		return util.NewUUID(), nil, 0, cerrors.NewParamError("请求参数错误")
+		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	if b, err := s.Rds.Get(ctx, accessToken).Bool(); err == nil && b {
-		return util.NewUUID(), nil, 0, cerrors.NewParamError("请求参数错误")
+		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	claims, err := ParseJWT(accessToken)
 
 	if err != nil {
-		return util.NewUUID(), nil, 0, cerrors.NewParamError("请求参数错误")
+		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	return claims.UserId, claims.Perms, claims.PVer, nil
