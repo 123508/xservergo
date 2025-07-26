@@ -233,7 +233,7 @@ func (s *ServiceImpl) DeletePermission(ctx context.Context, permissionCode strin
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeletePermission(ctx, permissionCode)
+	err := s.authRepo.DeletePermission(ctx, permissionCode, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除权限错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除权限错误", "", err)
@@ -300,7 +300,7 @@ func (s *ServiceImpl) DeleteRole(ctx context.Context, roleCode string, operatorI
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeleteRole(ctx, roleCode)
+	err := s.authRepo.DeleteRole(ctx, roleCode, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除角色错误", "", err)
@@ -328,7 +328,7 @@ func (s *ServiceImpl) GrantPermissionToRole(ctx context.Context, permissionCode,
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.GrantPermissionToRole(ctx, permissionCode, roleCode)
+	err := s.authRepo.GrantPermissionToRole(ctx, permissionCode, roleCode, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("授权权限到角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "授权权限到角色错误", "", err)
@@ -342,7 +342,7 @@ func (s *ServiceImpl) RevokePermissionFromRole(ctx context.Context, permissionCo
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokePermissionFromRole(ctx, permissionCode, roleCode)
+	err := s.authRepo.RevokePermissionFromRole(ctx, permissionCode, roleCode, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("撤销权限从角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "撤销权限从角色错误", "", err)
@@ -370,7 +370,7 @@ func (s *ServiceImpl) AssignRoleToUser(ctx context.Context, roleCode string, use
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignRoleToUser(ctx, roleCode, userID)
+	err := s.authRepo.AssignRoleToUser(ctx, roleCode, userID, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配角色到用户错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配角色到用户错误", "", err)
@@ -384,7 +384,7 @@ func (s *ServiceImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, u
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokeRoleFromUser(ctx, roleCode, userID)
+	err := s.authRepo.RevokeRoleFromUser(ctx, roleCode, userID, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户撤销角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户撤销角色错误", "", err)
@@ -451,7 +451,7 @@ func (s *ServiceImpl) DeleteUserGroup(ctx context.Context, groupName string, ope
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeleteUserGroup(ctx, groupName)
+	err := s.authRepo.DeleteUserGroup(ctx, groupName, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除用户组错误", "", err)
@@ -493,7 +493,7 @@ func (s *ServiceImpl) AssignRoleToUserGroup(ctx context.Context, roleCode, group
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignRoleToUserGroup(ctx, roleCode, groupName)
+	err := s.authRepo.AssignRoleToUserGroup(ctx, roleCode, groupName, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配角色到用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配角色到用户组错误", "", err)
@@ -507,7 +507,7 @@ func (s *ServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode, gro
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RemoveRoleFromUserGroup(ctx, roleCode, groupName)
+	err := s.authRepo.RemoveRoleFromUserGroup(ctx, roleCode, groupName, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户组撤销角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户组撤销角色错误", "", err)
@@ -535,7 +535,7 @@ func (s *ServiceImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, g
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignUserToGroup(ctx, userID, groupName)
+	err := s.authRepo.AssignUserToGroup(ctx, userID, groupName, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配用户到用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配用户到用户组错误", "", err)
@@ -549,7 +549,7 @@ func (s *ServiceImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID,
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokeUserFromGroup(ctx, userID, groupName)
+	err := s.authRepo.RevokeUserFromGroup(ctx, userID, groupName, &operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户组撤销用户错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户组撤销用户错误", "", err)

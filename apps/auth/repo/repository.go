@@ -20,7 +20,7 @@ type AuthRepository interface {
 	// UpdatePermission 更新权限
 	UpdatePermission(ctx context.Context, permission *models.Permission) error
 	// DeletePermission 删除权限
-	DeletePermission(ctx context.Context, permissionCode string) error
+	DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error
 	// GetPermissionByID 根据权限ID获取权限
 	GetPermissionByID(ctx context.Context, permissionID []byte) (*models.Permission, error)
 	// GetPermissionByCode 根据权限代码获取权限
@@ -31,24 +31,24 @@ type AuthRepository interface {
 	// UpdateRole 更新角色
 	UpdateRole(ctx context.Context, role *models.Role) error
 	// DeleteRole 删除角色
-	DeleteRole(ctx context.Context, roleCode string) error
+	DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error
 	// GetRoleByID 根据角色ID获取角色
 	GetRoleByID(ctx context.Context, roleID []byte) (*models.Role, error)
 	// GetRoleByCode 根据角色代码获取角色
 	GetRoleByCode(ctx context.Context, roleCode string) (*models.Role, error)
 
 	// GrantPermissionToRole 授予权限给角色
-	GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string) error
+	GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error
 	// RevokePermissionFromRole 撤销角色的权限
-	RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string) error
+	RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error
 	// GetRolePermission 获取角色的权限
 	// 返回权限代码列表
 	GetRolePermission(ctx context.Context, roleCode string) ([]string, error)
 
 	// AssignRoleToUser 分配角色给用户
-	AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID) error
+	AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
 	// RevokeRoleFromUser 撤销用户的角色
-	RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID) error
+	RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
 	// GetUserRoles 获取用户的角色
 	GetUserRoles(ctx context.Context, userID util.UUID) ([]string, error)
 
@@ -57,7 +57,7 @@ type AuthRepository interface {
 	// UpdateUserGroup 更新用户组
 	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup) error
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(ctx context.Context, groupName string) error
+	DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error
 	// GetUserGroupByID 根据用户组ID获取用户组
 	GetUserGroupByID(ctx context.Context, groupID []byte) (*models.UserGroup, error)
 	// GetUserGroupByName 根据用户组名称获取用户组
@@ -66,16 +66,16 @@ type AuthRepository interface {
 	// 返回成员用户名列表
 	GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
-	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string) error
+	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
 	// RemoveRoleFromUserGroup 从用户组中移除角色
-	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string) error
+	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
 	// GetUserGroupPermissions 获取用户组的权限
 	GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error)
 
 	// AssignUserToGroup 分配用户到用户组
-	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string) error
+	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
 	// RevokeUserFromGroup 撤销用户组中的用户
-	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string) error
+	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
 	// GetUserGroups 获取用户所属的用户组
 	// 返回用户组名称列表
 	GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error)
@@ -132,12 +132,12 @@ func (r *RepoImpl) UpdatePermission(ctx context.Context, permission *models.Perm
 	return nil
 }
 
-func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string) error {
+func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error {
 	if permissionCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
 	}
 
-	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("code = ?", permissionCode).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("code = ?", permissionCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete permission: ", err)
 	}
 	return nil
@@ -195,12 +195,12 @@ func (r *RepoImpl) UpdateRole(ctx context.Context, role *models.Role) error {
 	return nil
 }
 
-func (r *RepoImpl) DeleteRole(ctx context.Context, roleCode string) error {
+func (r *RepoImpl) DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error {
 	if roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
 
-	if err := r.DB.WithContext(ctx).Model(&models.Role{}).Where("code = ?", roleCode).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Role{}).Where("code = ?", roleCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete role: ", err)
 	}
 	return nil
@@ -236,7 +236,7 @@ func (r *RepoImpl) GetRoleByCode(ctx context.Context, roleCode string) (*models.
 	return &role, nil
 }
 
-func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string) error {
+func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
@@ -264,6 +264,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
+		existing.UpdatedBy = operatorId
 		if err := r.DB.WithContext(ctx).Save(&existing).Error; err != nil {
 			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role permission: ", err)
 		}
@@ -277,6 +278,9 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 		RoleID:       role.ID,
 		PermissionID: permission.ID,
 		Status:       1,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
 	}
 
 	if err := r.DB.WithContext(ctx).Create(rolePermission).Error; err != nil {
@@ -285,7 +289,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 	return nil
 }
 
-func (r *RepoImpl) RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string) error {
+func (r *RepoImpl) RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
@@ -310,7 +314,10 @@ func (r *RepoImpl) RevokePermissionFromRole(ctx context.Context, permissionCode 
 	// 软删除：将状态设置为0
 	if err := r.DB.WithContext(ctx).Model(&models.RolePermission{}).
 		Where("role_id = ? AND permission_id = ?", role.ID, permission.ID).
-		Update("status", 0).Error; err != nil {
+		Updates(map[string]interface{}{
+			"status":     0,
+			"updated_by": operatorId,
+		}).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke permission from role: ", err)
 	}
 	return nil
@@ -365,7 +372,7 @@ func (r *RepoImpl) GetRolePermission(ctx context.Context, roleCode string) ([]st
 	return allPermissionCodes, nil
 }
 
-func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID) error {
+func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
 	if roleCode == "" || userID == (util.UUID{}) {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
@@ -385,6 +392,7 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
+		existing.UpdatedBy = operatorId
 		if err := r.DB.WithContext(ctx).Save(&existing).Error; err != nil {
 			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user role: ", err)
 		}
@@ -398,6 +406,9 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 		UserID: userID,
 		RoleID: role.ID,
 		Status: 1,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
 	}
 
 	if err := r.DB.WithContext(ctx).Create(userRole).Error; err != nil {
@@ -406,7 +417,7 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 	return nil
 }
 
-func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID) error {
+func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
 	if roleCode == "" || userID == (util.UUID{}) {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
@@ -423,7 +434,10 @@ func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, user
 	// 软删除：将状态设置为0
 	if err := r.DB.WithContext(ctx).Model(&models.UserRole{}).
 		Where("user_id = ? AND role_id = ?", userID, role.ID).
-		Update("status", 0).Error; err != nil {
+		Updates(map[string]interface{}{
+			"status":     0,
+			"updated_by": operatorId,
+		}).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke role from user: ", err)
 	}
 	return nil
@@ -467,13 +481,16 @@ func (r *RepoImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGr
 	return nil
 }
 
-func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupName string) error {
+func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error {
 	if groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
 	// 软删除：设置 deleted_at 字段为当前时间
-	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("name = ?", groupName).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("name = ?", groupName).Updates(map[string]interface{}{
+		"deleted_at": time.Now(),
+		"updated_by": operatorId,
+	}).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete user group: ", err)
 	}
 
@@ -526,7 +543,7 @@ func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupName string) ([
 	return userIDList, nil
 }
 
-func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string) error {
+func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
 	if roleCode == "" || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
@@ -555,6 +572,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
+		existing.UpdatedBy = operatorId
 		if err := r.DB.WithContext(ctx).Save(&existing).Error; err != nil {
 			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role group: ", err)
 		}
@@ -568,6 +586,9 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 		RoleID:  role.ID,
 		GroupID: userGroup.ID,
 		Status:  1,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
 	}
 
 	if err := r.DB.WithContext(ctx).Create(roleGroup).Error; err != nil {
@@ -576,7 +597,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	return nil
 }
 
-func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string) error {
+func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
 	if roleCode == "" || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
@@ -602,7 +623,10 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string,
 	// 软删除：将状态设置为0
 	if err := r.DB.WithContext(ctx).Model(&models.RoleGroup{}).
 		Where("role_id = ? AND group_id = ?", role.ID, userGroup.ID).
-		Update("status", 0).Error; err != nil {
+		Updates(map[string]interface{}{
+			"status":     0,
+			"updated_by": operatorId,
+		}).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke role from user group: ", err)
 	}
 	return nil
@@ -626,7 +650,7 @@ func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupName string
 	return permissionCodes, nil
 }
 
-func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string) error {
+func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
 	if userID == (util.UUID{}) || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
@@ -646,6 +670,7 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
+		existing.UpdatedBy = operatorId
 		if err := r.DB.WithContext(ctx).Save(&existing).Error; err != nil {
 			return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user group relation: ", err)
 		}
@@ -659,6 +684,9 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 		UserID:  userID,
 		GroupID: userGroup.ID,
 		Status:  1,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
 	}
 
 	if err := r.DB.WithContext(ctx).Create(userGroupRelation).Error; err != nil {
@@ -667,7 +695,7 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 	return nil
 }
 
-func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string) error {
+func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
 	if userID == (util.UUID{}) || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
@@ -684,7 +712,10 @@ func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, gr
 	// 软删除：将状态设置为0
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroupRelation{}).
 		Where("user_id = ? AND group_id = ?", userID, userGroup.ID).
-		Update("status", 0).Error; err != nil {
+		Updates(map[string]interface{}{
+			"status":     0,
+			"updated_by": operatorId,
+		}).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to revoke user from group: ", err)
 	}
 	return nil
