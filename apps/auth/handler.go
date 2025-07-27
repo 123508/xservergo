@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
+	"net/http"
+
 	"github.com/123508/xservergo/apps/auth/service"
 	auth "github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -9,8 +12,31 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"net/http"
 )
+
+// permissionTypeFromString maps string to auth.Permission_Type enum.
+func permissionTypeFromString(t string) auth.Permission_Type {
+	switch t {
+	case "MENU":
+		return auth.Permission_MENU
+	case "BUTTON":
+		return auth.Permission_BUTTON
+	case "API":
+		return auth.Permission_API
+	case "DATA":
+		return auth.Permission_DATA
+	case "FILE":
+		return auth.Permission_FILE
+	case "FIELD":
+		return auth.Permission_FIELD
+	case "TASK":
+		return auth.Permission_TASK
+	case "MODULE":
+		return auth.Permission_MODULE
+	default:
+		return auth.Permission_API
+	}
+}
 
 // AuthServiceImpl implements the last service interface defined in the IDL.
 type AuthServiceImpl struct {
@@ -25,8 +51,58 @@ func NewAuthServiceImpl(database *gorm.DB, rds *redis.Client) *AuthServiceImpl {
 
 // CreatePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.CreatePermissionReq) (resp *auth.Permission, err error) {
-	// TODO: Your code here...
-	return
+	parentId := &util.UUID{}
+	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
+		parentId = nil
+	}
+	operatorId := &util.UUID{}
+	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	status := int8(1)
+	if !req.Permission.Status {
+		status = 0
+	}
+	permission := models.Permission{
+		ID:          util.NewUUID(),
+		Code:        req.Permission.Code,
+		Name:        req.Permission.PermissionName,
+		Description: req.Permission.Description,
+		ParentID:    parentId,
+		Type:        models.PermissionType(req.Permission.Type),
+		Resource:    req.Permission.Resource,
+		Method:      req.Permission.Method,
+		Status:      status,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
+	}
+	newPermission, err := s.authService.CreatePermission(ctx, &permission, *operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+	}
+	id, err := newPermission.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
+	}
+	parentIdMarshaled, err := newPermission.ParentID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+	}
+	return &auth.Permission{
+		Id:             id,
+		Code:           newPermission.Code,
+		PermissionName: newPermission.Name,
+		Description:    newPermission.Description,
+		ParentId:       parentIdMarshaled,
+		Type:           permissionTypeFromString(string(newPermission.Type)),
+		Resource:       newPermission.Resource,
+		Method:         newPermission.Method,
+		Status:         newPermission.Status == 1,
+	}, nil
 }
 
 // UpdatePermission implements the AuthServiceImpl interface.
