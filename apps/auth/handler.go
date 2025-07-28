@@ -107,8 +107,62 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 
 // UpdatePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.UpdatePermissionReq) (resp *auth.Permission, err error) {
-	// TODO: Your code here...
-	return
+	parentId := &util.UUID{}
+	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
+		parentId = nil
+	}
+	operatorId := &util.UUID{}
+	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	status := int8(1)
+	if !req.Permission.Status {
+		status = 0
+	}
+	permissionId := util.UUID{}
+	if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	permission := models.Permission{
+		ID:          permissionId,
+		Code:        req.Permission.Code,
+		Name:        req.Permission.PermissionName,
+		Description: req.Permission.Description,
+		ParentID:    parentId,
+		Type:        models.PermissionType(req.Permission.Type),
+		Resource:    req.Permission.Resource,
+		Method:      req.Permission.Method,
+		Status:      status,
+		AuditFields: models.AuditFields{
+			UpdatedBy: operatorId,
+		},
+	}
+	newPermission, err := s.authService.UpdatePermission(ctx, &permission, *operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+	}
+	id, err := newPermission.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
+	}
+	parentIdMarshaled, err := newPermission.ParentID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+	}
+	return &auth.Permission{
+		Id:             id,
+		Code:           newPermission.Code,
+		PermissionName: newPermission.Name,
+		Description:    newPermission.Description,
+		ParentId:       parentIdMarshaled,
+		Type:           permissionTypeFromString(string(newPermission.Type)),
+		Resource:       newPermission.Resource,
+		Method:         newPermission.Method,
+		Status:         newPermission.Status == 1,
+	}, nil
 }
 
 // DeletePermission implements the AuthServiceImpl interface.
