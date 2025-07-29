@@ -22,7 +22,7 @@ type AuthRepository interface {
 	// DeletePermission 删除权限
 	DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error
 	// GetPermissionByID 根据权限ID获取权限
-	GetPermissionByID(ctx context.Context, permissionID []byte) (*models.Permission, error)
+	GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error)
 	// GetPermissionByCode 根据权限代码获取权限
 	GetPermissionByCode(ctx context.Context, permissionCode string) (*models.Permission, error)
 
@@ -143,16 +143,13 @@ func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, 
 	return nil
 }
 
-func (r *RepoImpl) GetPermissionByID(ctx context.Context, permissionID []byte) (*models.Permission, error) {
-	if len(permissionID) == 0 {
+func (r *RepoImpl) GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error) {
+	if permissionID == (util.UUID{}) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "permission ID cannot be empty")
 	}
 
 	var permission models.Permission
 	if err := r.DB.WithContext(ctx).Where("id = ?", permissionID).First(&permission).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
-		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission by ID: ", err)
 	}
 	return &permission, nil
