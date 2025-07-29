@@ -167,8 +167,29 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 
 // DeletePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeletePermission(ctx context.Context, req *auth.DeletePermissionReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	permissionId := util.UUID{}
+	if err := permissionId.Unmarshal(req.PermissionId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	operatorId := &util.UUID{}
+	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	permission, err := s.authService.GetPermissionByID(ctx, permissionId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, err.Error())
+	}
+	err = s.authService.DeletePermission(ctx, permission.Code, *operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetPermission implements the AuthServiceImpl interface.
