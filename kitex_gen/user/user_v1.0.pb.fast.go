@@ -39,6 +39,11 @@ func (x *OperationResult) FastRead(buf []byte, _type int8, number int32) (offset
 		if err != nil {
 			goto ReadFieldError
 		}
+	case 6:
+		offset, err = x.fastReadField6(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -74,6 +79,11 @@ func (x *OperationResult) fastReadField4(buf []byte, _type int8) (offset int, er
 
 func (x *OperationResult) fastReadField5(buf []byte, _type int8) (offset int, err error) {
 	x.Timestamp, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *OperationResult) fastReadField6(buf []byte, _type int8) (offset int, err error) {
+	x.RequestUserId, offset, err = fastpb.ReadBytes(buf, _type)
 	return offset, err
 }
 
@@ -577,6 +587,11 @@ func (x *SmsLoginReq) FastRead(buf []byte, _type int8, number int32) (offset int
 		if err != nil {
 			goto ReadFieldError
 		}
+	case 5:
+		offset, err = x.fastReadField5(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -612,6 +627,11 @@ func (x *SmsLoginReq) fastReadField3(buf []byte, _type int8) (offset int, err er
 
 func (x *SmsLoginReq) fastReadField4(buf []byte, _type int8) (offset int, err error) {
 	x.RequestId, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *SmsLoginReq) fastReadField5(buf []byte, _type int8) (offset int, err error) {
+	x.Type, offset, err = fastpb.ReadUint64(buf, _type)
 	return offset, err
 }
 
@@ -1485,6 +1505,11 @@ func (x *ForgotPasswordReq) FastRead(buf []byte, _type int8, number int32) (offs
 		if err != nil {
 			goto ReadFieldError
 		}
+	case 4:
+		offset, err = x.fastReadField4(buf, _type)
+		if err != nil {
+			goto ReadFieldError
+		}
 	default:
 		offset, err = fastpb.Skip(buf, _type, number)
 		if err != nil {
@@ -1516,6 +1541,11 @@ func (x *ForgotPasswordReq) fastReadField3(buf []byte, _type int8) (offset int, 
 	var ov ForgotPasswordReq_Username
 	x.Identify = &ov
 	ov.Username, offset, err = fastpb.ReadString(buf, _type)
+	return offset, err
+}
+
+func (x *ForgotPasswordReq) fastReadField4(buf []byte, _type int8) (offset int, err error) {
+	x.Type, offset, err = fastpb.ReadUint64(buf, _type)
 	return offset, err
 }
 
@@ -3023,6 +3053,7 @@ func (x *OperationResult) FastWrite(buf []byte) (offset int) {
 	offset += x.fastWriteField3(buf[offset:])
 	offset += x.fastWriteField4(buf[offset:])
 	offset += x.fastWriteField5(buf[offset:])
+	offset += x.fastWriteField6(buf[offset:])
 	return offset
 }
 
@@ -3063,6 +3094,14 @@ func (x *OperationResult) fastWriteField5(buf []byte) (offset int) {
 		return offset
 	}
 	offset += fastpb.WriteString(buf[offset:], 5, x.GetTimestamp())
+	return offset
+}
+
+func (x *OperationResult) fastWriteField6(buf []byte) (offset int) {
+	if len(x.RequestUserId) == 0 {
+		return offset
+	}
+	offset += fastpb.WriteBytes(buf[offset:], 6, x.GetRequestUserId())
 	return offset
 }
 
@@ -3436,6 +3475,7 @@ func (x *SmsLoginReq) FastWrite(buf []byte) (offset int) {
 	offset += x.fastWriteField2(buf[offset:])
 	offset += x.fastWriteField3(buf[offset:])
 	offset += x.fastWriteField4(buf[offset:])
+	offset += x.fastWriteField5(buf[offset:])
 	return offset
 }
 
@@ -3468,6 +3508,14 @@ func (x *SmsLoginReq) fastWriteField4(buf []byte) (offset int) {
 		return offset
 	}
 	offset += fastpb.WriteString(buf[offset:], 4, x.GetRequestId())
+	return offset
+}
+
+func (x *SmsLoginReq) fastWriteField5(buf []byte) (offset int) {
+	if x.Type == 0 {
+		return offset
+	}
+	offset += fastpb.WriteUint64(buf[offset:], 5, x.GetType())
 	return offset
 }
 
@@ -4088,6 +4136,7 @@ func (x *ForgotPasswordReq) FastWrite(buf []byte) (offset int) {
 	offset += x.fastWriteField1(buf[offset:])
 	offset += x.fastWriteField2(buf[offset:])
 	offset += x.fastWriteField3(buf[offset:])
+	offset += x.fastWriteField4(buf[offset:])
 	return offset
 }
 
@@ -4112,6 +4161,14 @@ func (x *ForgotPasswordReq) fastWriteField3(buf []byte) (offset int) {
 		return offset
 	}
 	offset += fastpb.WriteString(buf[offset:], 3, x.GetUsername())
+	return offset
+}
+
+func (x *ForgotPasswordReq) fastWriteField4(buf []byte) (offset int) {
+	if x.Type == 0 {
+		return offset
+	}
+	offset += fastpb.WriteUint64(buf[offset:], 4, x.GetType())
 	return offset
 }
 
@@ -5246,6 +5303,7 @@ func (x *OperationResult) Size() (n int) {
 	n += x.sizeField3()
 	n += x.sizeField4()
 	n += x.sizeField5()
+	n += x.sizeField6()
 	return n
 }
 
@@ -5286,6 +5344,14 @@ func (x *OperationResult) sizeField5() (n int) {
 		return n
 	}
 	n += fastpb.SizeString(5, x.GetTimestamp())
+	return n
+}
+
+func (x *OperationResult) sizeField6() (n int) {
+	if len(x.RequestUserId) == 0 {
+		return n
+	}
+	n += fastpb.SizeBytes(6, x.GetRequestUserId())
 	return n
 }
 
@@ -5659,6 +5725,7 @@ func (x *SmsLoginReq) Size() (n int) {
 	n += x.sizeField2()
 	n += x.sizeField3()
 	n += x.sizeField4()
+	n += x.sizeField5()
 	return n
 }
 
@@ -5691,6 +5758,14 @@ func (x *SmsLoginReq) sizeField4() (n int) {
 		return n
 	}
 	n += fastpb.SizeString(4, x.GetRequestId())
+	return n
+}
+
+func (x *SmsLoginReq) sizeField5() (n int) {
+	if x.Type == 0 {
+		return n
+	}
+	n += fastpb.SizeUint64(5, x.GetType())
 	return n
 }
 
@@ -6311,6 +6386,7 @@ func (x *ForgotPasswordReq) Size() (n int) {
 	n += x.sizeField1()
 	n += x.sizeField2()
 	n += x.sizeField3()
+	n += x.sizeField4()
 	return n
 }
 
@@ -6335,6 +6411,14 @@ func (x *ForgotPasswordReq) sizeField3() (n int) {
 		return n
 	}
 	n += fastpb.SizeString(3, x.GetUsername())
+	return n
+}
+
+func (x *ForgotPasswordReq) sizeField4() (n int) {
+	if x.Type == 0 {
+		return n
+	}
+	n += fastpb.SizeUint64(4, x.GetType())
 	return n
 }
 
@@ -7466,6 +7550,7 @@ var fieldIDToName_OperationResult = map[int32]string{
 	3: "Message",
 	4: "RequestId",
 	5: "Timestamp",
+	6: "RequestUserId",
 }
 
 var fieldIDToName_UserInfo = map[int32]string{
@@ -7530,6 +7615,7 @@ var fieldIDToName_SmsLoginReq = map[int32]string{
 	2: "Code",
 	3: "Flow",
 	4: "RequestId",
+	5: "Type",
 }
 
 var fieldIDToName_SmsLoginResp = map[int32]string{
@@ -7646,6 +7732,7 @@ var fieldIDToName_ForgotPasswordReq = map[int32]string{
 	1: "Phone",
 	2: "Email",
 	3: "Username",
+	4: "Type",
 }
 
 var fieldIDToName_ResetPasswordReq = map[int32]string{

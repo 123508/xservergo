@@ -210,3 +210,12 @@ func (u UUID) MarshalText() ([]byte, error) {
 func (u *UUID) UnmarshalText(text []byte) error {
 	return u.unmarshalString(string(text))
 }
+
+// 系统级固定UUID (v7格式)
+var SystemUUID = UUID{
+	0x00, 0x00, 0x00, 0x00, // 时间戳高位 (全零)
+	0x00, 0x00, // 时间戳低位 (全零)
+	0x70, 0x00, // 版本7(0111) + 随机位
+	0x80, 0x00, // 变体位(10) + 随机位
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 固定后缀
+}

@@ -12,7 +12,6 @@ import (
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util"
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -29,7 +28,7 @@ type UserService interface {
 	EmailLogin(ctx context.Context, email, pwd string) (*models.User, *models.Token, error)
 	PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error)
 	UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error)
-	SmsSendCode(ctx context.Context, phone string) (string, error)
+	SmsSendCode(ctx context.Context, phone string, msgType uint64) (string, error)
 	SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error)
 	SendPhoneCode(ctx context.Context, phone string) error
 	SendEmailCode(ctx context.Context, email string) error
@@ -43,6 +42,7 @@ type UserService interface {
 	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (*models.User, error)
 	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error)
 	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error
+	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (bool, util.UUID, string, error)
 }
 
 type ServiceImpl struct {
@@ -114,22 +114,38 @@ func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (
 	return s.loginWithResp(ctx, usr, pwd, err, true, "")
 }
 
-func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string) (string, error) {
+func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string, msgType uint64) (string, error) {
 
-	requestId := uuid.New().String()
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
 
-	pipeline := s.Rds.Pipeline()
-
-	pipeline.Set(ctx, util.TakeKey("userservice", "user", "SmsLogin", phone), true, 10*time.Minute)
-
-	pipeline.Set(ctx, util.TakeKey("common", "requestId", requestId), "ok", 10)
-
-	if _, err := pipeline.Exec(ctx); err != nil {
-		return "", cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", nil)
+	if err != nil {
+		return "", err
 	}
 
-	if err := s.SendPhoneCode(ctx, phone); err != nil {
-		return "", err
+	if err := s.Rds.Set(
+		ctx,
+		util.TakeKey("userservice", "user", "SmsLogin",
+			phone,
+		),
+		true,
+		10*time.Minute,
+	).Err(); err != nil {
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", err)
+	}
+
+	SmsCodeToken := util.TakeKey("userservice", "user", "SmsLogin", "vCode", phone)
+
+	var Err error
+
+	switch msgType {
+	case 1:
+		Err = s.SendEmailCode(ctx, SmsCodeToken)
+	default:
+		Err = s.SendPhoneCode(ctx, SmsCodeToken)
+	}
+
+	if Err != nil {
+		return "", Err
 	}
 
 	return requestId, nil
@@ -138,16 +154,12 @@ func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string) (string, er
 func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error) {
 
 	//校验requestId
-	result, err := s.Rds.Get(ctx, util.TakeKey("common", "requestId", requestId)).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "redis查询requestId错误", requestId, nil)
-	} else if result != "ok" || errors.Is(err, redis.Nil) {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "requestId过期", requestId, nil)
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return nil, nil, err
 	}
 
 	//校验验证码
-	res, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "vCode_Phone", phone)).Result()
+	res, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "SmsLogin", "vCode", phone)).Result()
 
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -178,7 +190,7 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 }
 
 func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64, error) {
-	session := util.NewQRLoginSession(ip, userAgent, 5*time.Second)
+	session := util.NewQRLoginSession(ip, userAgent, 5*time.Minute)
 	_, qrCode, err := session.GenerateQR(50, "H")
 	if err != nil {
 		return "", "", 0, cerrors.NewCommonError(http.StatusInternalServerError, "生成二维码错误", "", err)
@@ -192,18 +204,13 @@ func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) 
 		return "", "", 0, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", "", err)
 	}
 
-	requestId := uuid.New().String()
+	requestId, err := s.GenerateRequestId(ctx, 5*time.Minute)
 
-	if err = s.Rds.Set(
-		ctx,
-		util.TakeKey("userservice", "user", "requestId", requestId),
-		"ok",
-		5*time.Minute,
-	).Err(); err != nil {
-		return "", "", 0, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", "", err)
+	if err != nil {
+		return "", "", 0, err
 	}
 
-	return qrCode, requestId, uint64(time.Now().Add(5 * time.Second).Unix()), nil
+	return qrCode, requestId, uint64(time.Now().Add(5 * time.Minute).Unix()), nil
 }
 
 func (s *ServiceImpl) QrCodePreLoginStatus(
@@ -214,14 +221,8 @@ func (s *ServiceImpl) QrCodePreLoginStatus(
 ) (bool, util.UUID, error) {
 
 	//校验链路是否合法
-	requestIdToken := util.TakeKey("common", "requestId", requestId)
-
-	ok, err := s.Rds.Get(ctx, requestIdToken).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return false, util.NewUUID(), cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	} else if ok != "ok" || errors.Is(err, redis.Nil) {
-		return false, util.NewUUID(), cerrors.NewCommonError(http.StatusInternalServerError, "请求无效", requestId, err)
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return false, util.NewUUID(), err
 	}
 
 	//获取uid
@@ -270,16 +271,9 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 ) (uint64, *models.User, *models.Token, error) {
 
 	//校验链路是否合法
-	requestIdToken := util.TakeKey("common", "requestId", requestId)
-
-	ok, err := s.Rds.Get(ctx, requestIdToken).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return 6, nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	} else if ok != "ok" || errors.Is(err, redis.Nil) {
-		return 6, nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "请求无效", requestId, err)
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return 6, nil, nil, err
 	}
-
 	//校验ticket
 	ticketToken := util.TakeKey("userservice", "user", "qrLogin", ticket)
 
@@ -311,7 +305,7 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 
 	//超时响应
 	if status == 4 {
-		return status, nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求超时", requestId, err)
+		return status, nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求超时", requestId, nil)
 	}
 
 	//已取消状态
@@ -334,17 +328,11 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (bool, error) {
 
 	//校验链路是否合法
-	requestIdToken := util.TakeKey("common", "requestId", requestId)
-
-	ok, err := s.Rds.Get(ctx, requestIdToken).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return false, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	} else if ok != "ok" || errors.Is(err, redis.Nil) {
-		return false, cerrors.NewCommonError(http.StatusInternalServerError, "请求无效", requestId, err)
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return false, err
 	}
 
-	//教研二维码是否过期
+	//校验二维码是否过期
 	ticketToken := util.TakeKey("userservice", "user", "qrLogin", ticket)
 
 	result, err := s.Rds.Get(ctx, ticketToken).Result()
@@ -389,14 +377,8 @@ func (s *ServiceImpl) ConfirmOrCancelQrLogin(
 	status int,
 ) error {
 	//校验链路是否合法
-	requestIdToken := util.TakeKey("common", requestId)
-
-	ok, err := s.Rds.Get(ctx, requestIdToken).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	} else if ok != "ok" || errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "请求无效", requestId, err)
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return err
 	}
 
 	//校验上下文用户是否为同一个人
@@ -568,7 +550,37 @@ func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestU
 	return nil
 }
 
-func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {
+func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (bool, util.UUID, string, error) {
+
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
+
+	if err != nil {
+		return false, util.NewUUID(), "", err
+	}
+
+	usr, err := s.GetUserInfoBySpecialSig(ctx, sign, util.SystemUUID, queryType, serialType)
+	if err != nil {
+		return false, util.NewUUID(), "", err
+	}
+
+	ForgetToken := util.TakeKey("userserivce", "user", "forgetPassword", usr.ID)
+
+	var Err error
+
+	switch msgType {
+	case 1:
+		Err = s.SendEmailCode(ctx, ForgetToken)
+	default:
+		Err = s.SendPhoneCode(ctx, ForgetToken)
+	}
+	if Err != nil {
+		return false, util.NewUUID(), "", Err
+	}
+
+	return true, usr.ID, requestId, nil
+}
+
+func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string) error {
 
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
@@ -578,7 +590,7 @@ func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {
 
 	if err := s.Rds.
 		Set(ctx,
-			util.TakeKey("userservice", "user", "vCode_Phone", phone),
+			key,
 			vCode,
 			10*time.Minute).
 		Err(); err != nil {
@@ -588,7 +600,7 @@ func (s *ServiceImpl) SendPhoneCode(ctx context.Context, phone string) error {
 	return nil
 }
 
-func (s *ServiceImpl) SendEmailCode(ctx context.Context, email string) error {
+func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string) error {
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
 	//TODO 这里之后调用发送验证码的逻辑
@@ -597,7 +609,7 @@ func (s *ServiceImpl) SendEmailCode(ctx context.Context, email string) error {
 
 	if err := s.Rds.
 		Set(ctx,
-			util.TakeKey("userservice", "user", "vCode_Email", email),
+			key,
 			vCode,
 			10*time.Minute).
 		Err(); err != nil {
@@ -623,7 +635,7 @@ func (s *ServiceImpl) loginWithResp(
 	}
 
 	if usr == nil {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "用户登录失败", requestId, nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "获取用户失败", requestId, nil)
 	}
 
 	if hasPwd {

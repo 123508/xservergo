@@ -65,6 +65,7 @@ message OperationResult {
   string message = 3;     // 用户提示信息
   string request_id = 4;  // 请求追踪ID
   string timestamp = 5;   // 服务器时间戳(毫秒)
+  bytes request_user_id=6;// 请求用户id
 }
 
 message UserInfo {
@@ -144,6 +145,7 @@ message SmsLoginReq {
   string code = 2;         // 验证阶段提供
   LoginFlowType flow = 3;  // 流程类型
   string request_id = 4;   // 验证阶段携带
+  uint64 type = 5;      // 验证码发送方式 0手机号 1邮箱
 }
 
 enum LoginFlowType {
@@ -286,6 +288,7 @@ message ForgotPasswordReq {
     string email=2;     // 邮箱
     string username=3;  // 用户名
   }
+  uint64 type = 4;      // 验证码发送方式 0手机号 1邮箱
 }
 
 message ResetPasswordReq {

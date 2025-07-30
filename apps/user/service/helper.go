@@ -1,10 +1,16 @@
 package service
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"github.com/123508/xservergo/pkg/cerrors"
+	"github.com/123508/xservergo/pkg/util"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"net/http"
+	"time"
 )
 
 type QueryType uint64
@@ -35,4 +41,24 @@ func ParseRepoErrorToCommonError(err error, defaultText string) error {
 	default:
 		return cerrors.NewCommonError(http.StatusInternalServerError, defaultText, "", err)
 	}
+}
+
+func (s *ServiceImpl) GenerateRequestId(ctx context.Context, expire time.Duration) (string, error) {
+	requestId := uuid.New().String()
+	if err := s.Rds.Set(ctx, util.TakeKey("userservice", "user", "requestId", requestId), "ok", expire).Err(); err != nil {
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "生产requestId失败", "", err)
+	}
+	return requestId, nil
+}
+
+func (s *ServiceImpl) VerityRequestID(ctx context.Context, requestId string) error {
+	//校验requestId
+	result, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "requestId", requestId)).Result()
+
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusInternalServerError, "redis查询requestId错误", requestId, nil)
+	} else if result != "ok" || errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusBadRequest, "requestId过期", requestId, nil)
+	}
+	return nil
 }

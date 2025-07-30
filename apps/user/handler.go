@@ -197,7 +197,7 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 // SmsLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (resp *user.SmsLoginResp, err error) {
 	if req.Flow == 0 {
-		requestId, err := s.userService.SmsSendCode(ctx, req.Phone)
+		requestId, err := s.userService.SmsSendCode(ctx, req.Phone, req.Type)
 		if err != nil {
 			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "发送验证码错误")
 		} else {
@@ -558,8 +558,64 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 
 // ForgotPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPasswordReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	var ok bool
+	var uid util.UUID
+	var requestId string
+
+	if req.GetUsername() != "" {
+		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, req.GetUsername(), service.USERNAME, serializer.JSON, req.Type)
+	} else if req.GetEmail() != "" {
+		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, req.GetEmail(), service.EMAIL, serializer.JSON, req.Type)
+	} else if req.GetPhone() != "" {
+		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, req.GetPhone(), service.PHONE, serializer.JSON, req.Type)
+	} else {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+	}
+
+	if err != nil {
+		var code uint64
+		var message string
+		if com, ok := err.(*cerrors.CommonError); ok {
+			err = cerrors.NewGRPCError(com.Code, com.Message)
+			code = com.Code
+			message = com.Message
+		} else {
+			code = http.StatusInternalServerError
+			message = "服务器异常"
+		}
+		return &user.OperationResult{
+			Success:       false,
+			Code:          code,
+			Message:       message,
+			RequestId:     requestId,
+			Timestamp:     time.Now().String(),
+			RequestUserId: nil,
+		}, cerrors.NewGRPCError(code, message)
+	} else {
+		marshal, err := uid.Marshal()
+		if err != nil {
+			return &user.OperationResult{
+				Success:   false,
+				Code:      http.StatusInternalServerError,
+				Message:   "序列化失败",
+				Timestamp: time.Now().String(),
+			}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
+		}
+
+		return &user.OperationResult{
+			Success:       ok,
+			Code:          http.StatusOK,
+			Message:       "成功",
+			RequestId:     requestId,
+			Timestamp:     time.Now().String(),
+			RequestUserId: marshal,
+		}, nil
+	}
 }
 
 // ResetPassword implements the UserServiceImpl interface.
