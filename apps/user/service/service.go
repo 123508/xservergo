@@ -43,6 +43,7 @@ type UserService interface {
 	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error)
 	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error
 	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (bool, util.UUID, string, error)
+	ResetPassword(ctx context.Context, targetUserId, requestUserId util.UUID, newPwd, requestId, VerifyCode string) error
 }
 
 type ServiceImpl struct {
@@ -172,21 +173,24 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
 	}
 
-	pipeline := s.Rds.Pipeline()
-
-	pipeline.Del(ctx, util.TakeKey("userservice", "user", "vCode_Phone", phone))
-
-	pipeline.Del(ctx, util.TakeKey("userservice", "user", "SmsLogin", phone))
-
-	_, err = pipeline.Exec(ctx)
-
-	if err != nil {
-		return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", requestId, nil)
-	}
-
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
-	return s.loginWithResp(ctx, usr, "", err, false, requestId)
+	resp, token, err := s.loginWithResp(ctx, usr, "", err, false, requestId)
+
+	//登录成功,删除凭证
+	if err == nil {
+		pipeline := s.Rds.Pipeline()
+
+		pipeline.Del(ctx, util.TakeKey("userservice", "user", "vCode_Phone", phone))
+
+		pipeline.Del(ctx, util.TakeKey("userservice", "user", "SmsLogin", phone))
+
+		if _, err = pipeline.Exec(ctx); err != nil {
+			return nil, nil, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", requestId, nil)
+		}
+	}
+
+	return resp, token, err
 }
 
 func (s *ServiceImpl) GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64, error) {
@@ -578,6 +582,41 @@ func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType
 	}
 
 	return true, usr.ID, requestId, nil
+}
+
+func (s *ServiceImpl) ResetPassword(ctx context.Context, targetUserId, requestUserId util.UUID, newPwd, requestId, VerifyCode string) error {
+
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return err
+	}
+
+	//TODO权限校验部分
+
+	ForgetToken := util.TakeKey("userserivce", "user", "forgetPassword", targetUserId)
+
+	//校验验证码部分
+	result, err := s.Rds.Get(ctx, ForgetToken).Result()
+
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return cerrors.NewCommonError(http.StatusNotFound, "更新失败,验证码已过期或使用", requestId, nil)
+		}
+		return cerrors.NewCommonError(http.StatusInternalServerError, "更新失败,redis错误", requestId, err)
+	}
+
+	if result != VerifyCode {
+		return cerrors.NewCommonError(http.StatusBadRequest, "更新失败,验证码错误", requestId, nil)
+	}
+
+	//更新密码
+	if err := s.userRepo.UpdatePassword(ctx, targetUserId, Encryption(newPwd)); err != nil {
+		return ParseRepoErrorToCommonError(err, "更新密码失败")
+	} else {
+		//移除凭证，使其只能使用一次
+		s.Rds.Del(ctx, ForgetToken)
+	}
+
+	return nil
 }
 
 func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string) error {

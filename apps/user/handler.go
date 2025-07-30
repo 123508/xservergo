@@ -620,8 +620,52 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 
 // ResetPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPasswordReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	requestUid := util.NewUUID()
+	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+	}
+	targetUid := util.NewUUID()
+	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+	}
+
+	if err = s.userService.ResetPassword(ctx, targetUid, requestUid, req.NewPassword, req.RequestId, req.VerificationToken); err != nil {
+		var code uint64
+		var message string
+		if com, ok := err.(*cerrors.CommonError); ok {
+			err = cerrors.NewGRPCError(com.Code, com.Message)
+			code = com.Code
+			message = com.Message
+		} else {
+			code = http.StatusInternalServerError
+			message = "服务器异常,更新失败"
+		}
+		return &user.OperationResult{
+			Success:   false,
+			Code:      code,
+			Message:   message,
+			RequestId: req.RequestId,
+			Timestamp: time.Now().String(),
+		}, err
+	} else {
+		return &user.OperationResult{
+			Success:   true,
+			Code:      http.StatusOK,
+			Message:   "更新成功",
+			RequestId: req.RequestId,
+			Timestamp: time.Now().String(),
+		}, nil
+	}
 }
 
 // StartBindEmail implements the UserServiceImpl interface.
