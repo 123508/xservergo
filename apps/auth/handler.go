@@ -194,8 +194,33 @@ func (s *AuthServiceImpl) DeletePermission(ctx context.Context, req *auth.Delete
 
 // GetPermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermissionReq) (resp *auth.Permission, err error) {
-	// TODO: Your code here...
-	return
+	permissionId := util.UUID{}
+	if err := permissionId.Unmarshal(req.PermissionId); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	permission, err := s.authService.GetPermissionByID(ctx, permissionId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusNotFound, "权限不存在")
+	}
+	id, err := permission.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
+	}
+	parentIdMarshaled, err := permission.ParentID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+	}
+	return &auth.Permission{
+		Id:             id,
+		Code:           permission.Code,
+		PermissionName: permission.Name,
+		Description:    permission.Description,
+		ParentId:       parentIdMarshaled,
+		Type:           permissionTypeFromString(string(permission.Type)),
+		Resource:       permission.Resource,
+		Method:         permission.Method,
+		Status:         permission.Status == 1,
+	}, nil
 }
 
 // CreateRole implements the AuthServiceImpl interface.
