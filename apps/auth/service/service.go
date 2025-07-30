@@ -34,6 +34,8 @@ type AuthService interface {
 	DeletePermission(ctx context.Context, permissionCode string, operatorId util.UUID) error
 	// GetPermissionByCode 获取权限
 	GetPermissionByCode(ctx context.Context, permissionCode string) (*models.Permission, error)
+	// GetPermissionByID 获取权限
+	GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error)
 
 	// CreateRole 创建角色
 	CreateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error)
@@ -248,6 +250,20 @@ func (s *ServiceImpl) GetPermissionByCode(ctx context.Context, permissionCode st
 	}
 
 	permission, err := s.authRepo.GetPermissionByCode(ctx, permissionCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
+	}
+
+	return permission, nil
+}
+
+func (s *ServiceImpl) GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error) {
+	if permissionID.IsZero() {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	permission, err := s.authRepo.GetPermissionByID(ctx, permissionID)
 	if err != nil {
 		logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
