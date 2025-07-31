@@ -27,12 +27,12 @@ service UserService {
 
   // ---------- 绑定管理 ---------- //
   rpc StartBindEmail(StartBindEmailReq) returns (OperationResult) {}        // 预绑定邮箱
-  rpc CompleteBindEmail(CompleteBindEmailReq) returns (OperationResult) {}  // 完成邮箱绑定
+  rpc CompleteBindEmail(CompleteBindEmailReq) returns (CompleteBindEmailResp) {}  // 完成邮箱绑定
   rpc StartChangeEmail(StartChangeEmailReq)returns(OperationResult){}       // 预换绑邮箱
   rpc VerifyNewEmail(VerifyNewEmailReq)returns(OperationResult){}           // 验证新邮箱
   rpc CompleteChangeEmail(CompleteChangeEmailReq)returns(OperationResult){} // 完成换绑邮箱
   rpc StartBindPhone(StartBindPhoneReq) returns (OperationResult) {}        // 预绑定手机
-  rpc CompleteBindPhone(CompleteBindPhoneReq) returns (OperationResult) {}  // 完成手机绑定
+  rpc CompleteBindPhone(CompleteBindPhoneReq) returns (CompleteBindPhoneResp) {}  // 完成手机绑定
   rpc StartChangePhone(StartChangePhoneReq)returns(OperationResult){}       // 预换绑手机
   rpc VerifyNewPhone(VerifyNewPhoneReq)returns(OperationResult){}           // 验证新手机号码
   rpc CompleteChangePhone(CompleteChangePhoneReq)returns(OperationResult){} // 完成换绑手机
@@ -50,10 +50,6 @@ service UserService {
   rpc ReactivateUser(ReactivateUserReq) returns (OperationResult) {}       // 解冻用户
   rpc StartDeleteUser(StartDeleteReq) returns (OperationResult) {}         // 预删除用户
   rpc DeleteUser(DeleteUserReq) returns (OperationResult) {}               // 删除用户
-
-  // ---------- 安全服务 ---------- //
-  rpc VerifySecurityCode(VerifyCodeReq) returns (VerifyCodeResp) {}        // 验证安全码
-  rpc SendVerification(SendVerificationReq) returns (OperationResult) {}   // 发送验证码
 }
 
 // ====================== 数据结构 ====================== //
@@ -145,7 +141,6 @@ message SmsLoginReq {
   string code = 2;         // 验证阶段提供
   LoginFlowType flow = 3;  // 流程类型
   string request_id = 4;   // 验证阶段携带
-  uint64 type = 5;      // 验证码发送方式 0手机号 1邮箱
 }
 
 enum LoginFlowType {
@@ -312,6 +307,12 @@ message CompleteBindEmailReq {
   string verification_code = 3;
   string request_id=4;
   bytes request_user_id=5;
+  uint64 version=6;
+}
+
+message CompleteBindEmailResp{
+  OperationResult operation=1;
+  uint64 version=2;
 }
 
 message StartChangeEmailReq{
@@ -347,6 +348,12 @@ message CompleteBindPhoneReq {
   string verification_code = 3;  // 短信验证码
   string request_id = 4;   // 预绑定返回的请求ID
   bytes request_user_id=5;
+  uint64 version=6;
+}
+
+message CompleteBindPhoneResp{
+    OperationResult operation=1;
+    uint64 version=2;
 }
 
 message StartChangePhoneReq{
@@ -464,33 +471,4 @@ message DeleteUserReq {
   bytes request_user_id = 2;
   string verification_code = 3;  // 二次验证码
   string request_id=4;
-}
-
-// ---------- 安全服务 ---------- //
-message VerifyCodeReq {
-  string identity = 1;  // 邮箱或手机号
-  string code = 2;
-  CodeType code_type = 3;
-}
-
-enum CodeType {
-  CODE_LOGIN = 0;
-  CODE_BIND_EMAIL = 1;
-  CODE_RESET_PASSWORD = 2;
-  CODE_BIND_PHONE = 3;
-}
-
-message VerifyCodeResp {
-  bool valid = 1;
-  string token = 2;  // 用于后续操作
-}
-
-message SendVerificationReq {
-  string identity = 1;  // 邮箱或手机号
-  VerificationType type = 2;
-}
-
-enum VerificationType {
-  VERIFY_SMS = 0;
-  VERIFY_EMAIL = 1;
 }

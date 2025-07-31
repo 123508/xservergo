@@ -15,6 +15,62 @@ import (
 	"github.com/123508/xservergo/kitex_gen/user"
 )
 
+func parseServiceErrToHandlerError(ctx context.Context, err error, requestId string) (*user.OperationResult, error) {
+
+	var code uint64
+	var message string
+	if com, ok := err.(*cerrors.CommonError); ok {
+		err = cerrors.NewGRPCError(com.Code, com.Message)
+		code = com.Code
+		message = com.Message
+	} else {
+		code = http.StatusInternalServerError
+		message = "服务器异常,操作失败"
+	}
+
+	resp := &user.OperationResult{
+		Success:   false,
+		Code:      code,
+		Message:   message,
+		Timestamp: time.Now().String(),
+	}
+
+	if requestId != "" {
+		resp.RequestId = requestId
+	}
+
+	return resp, cerrors.NewGRPCError(code, message)
+}
+
+func unmarshalUID(ctx context.Context, uid []byte) (*user.OperationResult, error, util.UUID) {
+
+	Uid := util.NewUUID()
+	if err := Uid.Unmarshal(uid); err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "请求参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误"), Uid
+	}
+
+	return nil, nil, Uid
+}
+
+func marshalUID(ctx context.Context, uid util.UUID) (*user.OperationResult, error, []byte) {
+	marshal, err := uid.Marshal()
+
+	if err != nil {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusInternalServerError,
+			Message:   "序列化失败",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败"), marshal
+	}
+	return nil, nil, marshal
+}
+
 // UserServiceImpl implements the last service interface defined in the IDL.
 type UserServiceImpl struct {
 	userService service.UserService
@@ -50,37 +106,16 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		},
 	}
 
-	err = s.userService.Register(ctx, u, uLogin)
-
-	if err == nil {
-		resp = &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "创建用户成功",
-			Timestamp: time.Now().String(),
-		}
-	} else {
-		com, ok := err.(*cerrors.CommonError)
-		if !ok {
-			resp = &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusInternalServerError,
-				Message:   "创建用户失败",
-				Timestamp: time.Now().String(),
-			}
-
-		} else {
-			resp = &user.OperationResult{
-				Success:   false,
-				Code:      com.Code,
-				Message:   com.Message,
-				Timestamp: time.Now().String(),
-			}
-
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-		}
+	if err = s.userService.Register(ctx, u, uLogin); err != nil {
+		return parseServiceErrToHandlerError(ctx, err, "")
 	}
-	return resp, err
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "创建用户成功",
+		Timestamp: time.Now().String(),
+	}, err
 }
 
 // EmailLogin implements the UserServiceImpl interface.
@@ -91,34 +126,26 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 	resp = &user.LoginResp{}
 
 	if err != nil {
+		_, err := parseServiceErrToHandlerError(ctx, err, "")
+		return &user.LoginResp{}, err
+	}
 
-		com, ok := err.(*cerrors.CommonError)
+	_, err, marshal := marshalUID(ctx, login.ID)
 
-		if ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
-		}
+	if err != nil {
+		return &user.LoginResp{}, err
+	}
 
-	} else {
-
-		marshal, err := login.ID.Marshal()
-
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
-		}
-
-		resp.AccessToken = token.AccessToken
-		resp.RefreshToken = token.RefreshToken
-		resp.UserInfo = &user.UserInfo{
+	return &user.LoginResp{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		UserInfo: &user.UserInfo{
 			UserId:   marshal,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
-		}
-	}
-
-	return resp, err
+		},
+	}, err
 }
 
 // PhoneLogin implements the UserServiceImpl interface.
@@ -197,7 +224,7 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 // SmsLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (resp *user.SmsLoginResp, err error) {
 	if req.Flow == 0 {
-		requestId, err := s.userService.SmsSendCode(ctx, req.Phone, req.Type)
+		requestId, err := s.userService.SmsSendCode(ctx, req.Phone)
 		if err != nil {
 			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "发送验证码错误")
 		} else {
@@ -297,9 +324,8 @@ func (s *UserServiceImpl) QrCodePreLoginStatus(ctx context.Context, req *user.Qr
 // QrCodeLoginStatus implements the UserServiceImpl interface.
 func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginStatusReq) (resp *user.QrCodeLoginStatusResp, err error) {
 
-	uid := util.NewUUID()
-
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	_, err, uid := unmarshalUID(ctx, req.UserId)
+	if err != nil {
 		return &user.QrCodeLoginStatusResp{
 			Status: 6,
 			LoginResp: &user.LoginResponse{
@@ -372,9 +398,9 @@ func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCod
 // QrPreLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginReq) (resp *user.QrPreLoginResp, err error) {
 
-	uid := util.NewUUID()
+	_, err, uid := unmarshalUID(ctx, req.UserId)
 
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	if err != nil {
 		return &user.QrPreLoginResp{
 			Ok:        false,
 			RequestId: req.RequestId,
@@ -402,9 +428,8 @@ func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginRe
 func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQrLoginReq) (resp *user.Empty, err error) {
 	resp = &user.Empty{}
 
-	uid := util.NewUUID()
-
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	_, err, uid := unmarshalUID(ctx, req.UserId)
+	if err != nil {
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
@@ -423,9 +448,9 @@ func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQ
 func (s *UserServiceImpl) CancelQrLogin(ctx context.Context, req *user.CancelQrLoginReq) (resp *user.Empty, err error) {
 	resp = &user.Empty{}
 
-	uid := util.NewUUID()
+	_, err, uid := unmarshalUID(ctx, req.UserId)
 
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	if err != nil {
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
@@ -448,47 +473,23 @@ func (s *UserServiceImpl) OAuthLogin(ctx context.Context, req *user.OAuthLoginRe
 
 // Logout implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp *user.OperationResult, err error) {
-	targetUid := util.NewUUID()
-	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "请求参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return res, err
 	}
 
-	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "请求参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return res, err
 	}
 
 	if err = s.userService.Logout(ctx, requestUid, targetUid, &models.Token{
 		AccessToken:  req.AccessToken,
 		RefreshToken: req.RefreshToken,
 	}); err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器错误")
-			code = http.StatusInternalServerError
-			message = "服务器错误"
-		}
-		return &user.OperationResult{
-			Success:   false,
-			Code:      code,
-			Message:   message,
-			Timestamp: time.Now().String(),
-		}, err
+		return parseServiceErrToHandlerError(ctx, err, "")
 	}
 
 	return &user.OperationResult{
@@ -508,44 +509,20 @@ func (s *UserServiceImpl) SessionCheck(ctx context.Context, req *user.SessionChe
 
 // ChangePassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePasswordReq) (resp *user.OperationResult, err error) {
-	targetUid := util.NewUUID()
-	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "请求参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return res, err
 	}
 
-	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "请求参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return res, err
 	}
 
 	if err = s.userService.ChangePassword(ctx, targetUid, requestUid, req.OldPassword, req.NewPassword); err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器错误")
-			code = http.StatusInternalServerError
-			message = "服务器错误,修改密码失败"
-		}
-		return &user.OperationResult{
-			Success:   false,
-			Code:      code,
-			Message:   message,
-			Timestamp: time.Now().String(),
-		}, err
+		return parseServiceErrToHandlerError(ctx, err, "")
 	}
 
 	return &user.OperationResult{
@@ -578,106 +555,120 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 	}
 
 	if err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			code = http.StatusInternalServerError
-			message = "服务器异常"
-		}
-		return &user.OperationResult{
-			Success:       false,
-			Code:          code,
-			Message:       message,
-			RequestId:     requestId,
-			Timestamp:     time.Now().String(),
-			RequestUserId: nil,
-		}, cerrors.NewGRPCError(code, message)
-	} else {
-		marshal, err := uid.Marshal()
-		if err != nil {
-			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusInternalServerError,
-				Message:   "序列化失败",
-				Timestamp: time.Now().String(),
-			}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
-		}
-
-		return &user.OperationResult{
-			Success:       ok,
-			Code:          http.StatusOK,
-			Message:       "成功",
-			RequestId:     requestId,
-			Timestamp:     time.Now().String(),
-			RequestUserId: marshal,
-		}, nil
+		return parseServiceErrToHandlerError(ctx, err, requestId)
 	}
+
+	res, err, marshal := marshalUID(ctx, uid)
+
+	if err != nil {
+		return res, err
+	}
+
+	return &user.OperationResult{
+		Success:       ok,
+		Code:          http.StatusOK,
+		Message:       "成功",
+		RequestId:     requestId,
+		Timestamp:     time.Now().String(),
+		RequestUserId: marshal,
+	}, nil
 }
 
 // ResetPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPasswordReq) (resp *user.OperationResult, err error) {
-	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return res, err
 	}
-	targetUid := util.NewUUID()
-	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return res, err
 	}
 
 	if err = s.userService.ResetPassword(ctx, targetUid, requestUid, req.NewPassword, req.RequestId, req.VerificationToken); err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			code = http.StatusInternalServerError
-			message = "服务器异常,更新失败"
-		}
-		return &user.OperationResult{
-			Success:   false,
-			Code:      code,
-			Message:   message,
-			RequestId: req.RequestId,
-			Timestamp: time.Now().String(),
-		}, err
-	} else {
-		return &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "更新成功",
-			RequestId: req.RequestId,
-			Timestamp: time.Now().String(),
-		}, nil
+		return parseServiceErrToHandlerError(ctx, err, "")
 	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "更新成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // StartBindEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBindEmailReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.StartBindEmail(ctx, targetUid, requestUid, req.NewEmail)
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "发送成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // CompleteBindEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.CompleteBindEmailReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.CompleteBindEmailReq) (resp *user.CompleteBindEmailResp, err error) {
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return &user.CompleteBindEmailResp{
+			Operation: res,
+			Version:   req.Version,
+		}, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &user.CompleteBindEmailResp{
+			Operation: res,
+			Version:   req.Version,
+		}, err
+	}
+
+	v, err := s.userService.CompleteBindEmail(ctx, targetUid, requestUid, req.NewEmail, req.VerificationCode, req.RequestId, int(req.Version))
+
+	if err != nil {
+		res, err := parseServiceErrToHandlerError(ctx, err, "")
+		return &user.CompleteBindEmailResp{
+			Operation: res,
+			Version:   uint64(v),
+		}, err
+	}
+	return &user.CompleteBindEmailResp{
+		Operation: &user.OperationResult{
+			Success:   true,
+			Code:      http.StatusOK,
+			Message:   "绑定成功",
+			RequestId: req.RequestId,
+			Timestamp: time.Now().String(),
+		},
+		Version: uint64(v),
+	}, nil
 }
 
 // StartChangeEmail implements the UserServiceImpl interface.
@@ -700,14 +691,73 @@ func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.Com
 
 // StartBindPhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBindPhoneReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.StartBindPhone(ctx, targetUid, requestUid, req.NewPhone)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "发送成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // CompleteBindPhone implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.CompleteBindPhoneReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.CompleteBindPhoneReq) (resp *user.CompleteBindPhoneResp, err error) {
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
+		return &user.CompleteBindPhoneResp{
+			Operation: res,
+			Version:   req.Version,
+		}, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &user.CompleteBindPhoneResp{
+			Operation: res,
+			Version:   req.Version,
+		}, err
+	}
+
+	v, err := s.userService.CompleteBindPhone(ctx, targetUid, requestUid, req.NewPhone, req.VerificationCode, req.RequestId, int(req.Version))
+
+	if err != nil {
+		res, err := parseServiceErrToHandlerError(ctx, err, "")
+		return &user.CompleteBindPhoneResp{
+			Operation: res,
+			Version:   uint64(v),
+		}, err
+	}
+
+	return &user.CompleteBindPhoneResp{
+		Operation: &user.OperationResult{
+			Success:   true,
+			Code:      http.StatusOK,
+			Message:   "修改成功",
+			RequestId: req.RequestId,
+			Timestamp: time.Now().String(),
+		},
+		Version: uint64(v),
+	}, nil
 }
 
 // StartChangePhone implements the UserServiceImpl interface.
@@ -730,49 +780,28 @@ func (s *UserServiceImpl) CompleteChangePhone(ctx context.Context, req *user.Com
 
 // GetUserInfoById implements the UserServiceImpl interface.
 func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUserInfoByIdReq) (resp *user.UserInfoResp, err error) {
-	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+
+	if err != nil {
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "参数错误",
-				Timestamp: time.Now().String(),
-			},
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+			Result: res,
+		}, err
 	}
-	targetUid := util.NewUUID()
-	if err = targetUid.Unmarshal(req.TargetUserId); err != nil {
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "参数错误",
-				Timestamp: time.Now().String(),
-			},
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+			Result: res,
+		}, err
 	}
 
 	userinfo, err := s.userService.GetUserInfoById(ctx, targetUid, requestUid)
+
 	if err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
-			code = http.StatusInternalServerError
-			message = "服务器异常"
-		}
+		result, err := parseServiceErrToHandlerError(ctx, err, "")
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      code,
-				Message:   message,
-				Timestamp: time.Now().String(),
-			},
+			Result: result,
 		}, err
 	}
 
@@ -787,17 +816,12 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
 
-	marshal, err := userinfo.ID.Marshal()
+	res, err, marshal := marshalUID(ctx, userinfo.ID)
 
 	if err != nil {
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusInternalServerError,
-				Message:   "序列化失败",
-				Timestamp: time.Now().String(),
-			},
-		}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
+			Result: res,
+		}, err
 	}
 
 	return &user.UserInfoResp{
@@ -821,16 +845,13 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 
 // GetUserInfoByOthers implements the UserServiceImpl interface.
 func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.GetUserInfoByOthersReq) (resp *user.UserInfoResp, err error) {
-	requestUid := util.NewUUID()
-	if err = requestUid.Unmarshal(req.RequestUserId); err != nil {
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+
+	if err != nil {
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "参数错误",
-				Timestamp: time.Now().String(),
-			},
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+			Result: res,
+		}, err
 	}
 
 	var userinfo *models.User
@@ -853,24 +874,9 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 	}
 
 	if err != nil {
-		var code uint64
-		var message string
-		if com, ok := err.(*cerrors.CommonError); ok {
-			err = cerrors.NewGRPCError(com.Code, com.Message)
-			code = com.Code
-			message = com.Message
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
-			code = http.StatusInternalServerError
-			message = "服务器异常"
-		}
+		result, err := parseServiceErrToHandlerError(ctx, err, "")
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      code,
-				Message:   message,
-				Timestamp: time.Now().String(),
-			},
+			Result: result,
 		}, err
 	}
 
@@ -885,17 +891,13 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
 
-	marshal, err := userinfo.ID.Marshal()
+	//序列化部分
+	res, err, marshal := marshalUID(ctx, userinfo.ID)
 
 	if err != nil {
 		return &user.UserInfoResp{
-			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusInternalServerError,
-				Message:   "序列化失败",
-				Timestamp: time.Now().String(),
-			},
-		}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
+			Result: res,
+		}, err
 	}
 
 	return &user.UserInfoResp{
@@ -961,18 +963,6 @@ func (s *UserServiceImpl) StartDeleteUser(ctx context.Context, req *user.StartDe
 
 // DeleteUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) DeleteUser(ctx context.Context, req *user.DeleteUserReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// VerifySecurityCode implements the UserServiceImpl interface.
-func (s *UserServiceImpl) VerifySecurityCode(ctx context.Context, req *user.VerifyCodeReq) (resp *user.VerifyCodeResp, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// SendVerification implements the UserServiceImpl interface.
-func (s *UserServiceImpl) SendVerification(ctx context.Context, req *user.SendVerificationReq) (resp *user.OperationResult, err error) {
 	// TODO: Your code here...
 	return
 }

@@ -274,20 +274,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"VerifySecurityCode": kitex.NewMethodInfo(
-		verifySecurityCodeHandler,
-		newVerifySecurityCodeArgs,
-		newVerifySecurityCodeResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"SendVerification": kitex.NewMethodInfo(
-		sendVerificationHandler,
-		newSendVerificationArgs,
-		newSendVerificationResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 }
 
 var (
@@ -3200,14 +3186,14 @@ func (p *CompleteBindEmailArgs) GetFirstArgument() interface{} {
 }
 
 type CompleteBindEmailResult struct {
-	Success *user.OperationResult
+	Success *user.CompleteBindEmailResp
 }
 
-var CompleteBindEmailResult_Success_DEFAULT *user.OperationResult
+var CompleteBindEmailResult_Success_DEFAULT *user.CompleteBindEmailResp
 
 func (p *CompleteBindEmailResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetSuccess() {
-		p.Success = new(user.OperationResult)
+		p.Success = new(user.CompleteBindEmailResp)
 	}
 	return p.Success.FastRead(buf, _type, number)
 }
@@ -3234,7 +3220,7 @@ func (p *CompleteBindEmailResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CompleteBindEmailResult) Unmarshal(in []byte) error {
-	msg := new(user.OperationResult)
+	msg := new(user.CompleteBindEmailResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -3242,7 +3228,7 @@ func (p *CompleteBindEmailResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteBindEmailResult) GetSuccess() *user.OperationResult {
+func (p *CompleteBindEmailResult) GetSuccess() *user.CompleteBindEmailResp {
 	if !p.IsSetSuccess() {
 		return CompleteBindEmailResult_Success_DEFAULT
 	}
@@ -3250,7 +3236,7 @@ func (p *CompleteBindEmailResult) GetSuccess() *user.OperationResult {
 }
 
 func (p *CompleteBindEmailResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.OperationResult)
+	p.Success = x.(*user.CompleteBindEmailResp)
 }
 
 func (p *CompleteBindEmailResult) IsSetSuccess() bool {
@@ -3965,14 +3951,14 @@ func (p *CompleteBindPhoneArgs) GetFirstArgument() interface{} {
 }
 
 type CompleteBindPhoneResult struct {
-	Success *user.OperationResult
+	Success *user.CompleteBindPhoneResp
 }
 
-var CompleteBindPhoneResult_Success_DEFAULT *user.OperationResult
+var CompleteBindPhoneResult_Success_DEFAULT *user.CompleteBindPhoneResp
 
 func (p *CompleteBindPhoneResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
 	if !p.IsSetSuccess() {
-		p.Success = new(user.OperationResult)
+		p.Success = new(user.CompleteBindPhoneResp)
 	}
 	return p.Success.FastRead(buf, _type, number)
 }
@@ -3999,7 +3985,7 @@ func (p *CompleteBindPhoneResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CompleteBindPhoneResult) Unmarshal(in []byte) error {
-	msg := new(user.OperationResult)
+	msg := new(user.CompleteBindPhoneResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -4007,7 +3993,7 @@ func (p *CompleteBindPhoneResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteBindPhoneResult) GetSuccess() *user.OperationResult {
+func (p *CompleteBindPhoneResult) GetSuccess() *user.CompleteBindPhoneResp {
 	if !p.IsSetSuccess() {
 		return CompleteBindPhoneResult_Success_DEFAULT
 	}
@@ -4015,7 +4001,7 @@ func (p *CompleteBindPhoneResult) GetSuccess() *user.OperationResult {
 }
 
 func (p *CompleteBindPhoneResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.OperationResult)
+	p.Success = x.(*user.CompleteBindPhoneResp)
 }
 
 func (p *CompleteBindPhoneResult) IsSetSuccess() bool {
@@ -6015,312 +6001,6 @@ func (p *DeleteUserResult) GetResult() interface{} {
 	return p.Success
 }
 
-func verifySecurityCodeHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(user.VerifyCodeReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(user.UserService).VerifySecurityCode(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *VerifySecurityCodeArgs:
-		success, err := handler.(user.UserService).VerifySecurityCode(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*VerifySecurityCodeResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newVerifySecurityCodeArgs() interface{} {
-	return &VerifySecurityCodeArgs{}
-}
-
-func newVerifySecurityCodeResult() interface{} {
-	return &VerifySecurityCodeResult{}
-}
-
-type VerifySecurityCodeArgs struct {
-	Req *user.VerifyCodeReq
-}
-
-func (p *VerifySecurityCodeArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
-	if !p.IsSetReq() {
-		p.Req = new(user.VerifyCodeReq)
-	}
-	return p.Req.FastRead(buf, _type, number)
-}
-
-func (p *VerifySecurityCodeArgs) FastWrite(buf []byte) (n int) {
-	if !p.IsSetReq() {
-		return 0
-	}
-	return p.Req.FastWrite(buf)
-}
-
-func (p *VerifySecurityCodeArgs) Size() (n int) {
-	if !p.IsSetReq() {
-		return 0
-	}
-	return p.Req.Size()
-}
-
-func (p *VerifySecurityCodeArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *VerifySecurityCodeArgs) Unmarshal(in []byte) error {
-	msg := new(user.VerifyCodeReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var VerifySecurityCodeArgs_Req_DEFAULT *user.VerifyCodeReq
-
-func (p *VerifySecurityCodeArgs) GetReq() *user.VerifyCodeReq {
-	if !p.IsSetReq() {
-		return VerifySecurityCodeArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *VerifySecurityCodeArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *VerifySecurityCodeArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type VerifySecurityCodeResult struct {
-	Success *user.VerifyCodeResp
-}
-
-var VerifySecurityCodeResult_Success_DEFAULT *user.VerifyCodeResp
-
-func (p *VerifySecurityCodeResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
-	if !p.IsSetSuccess() {
-		p.Success = new(user.VerifyCodeResp)
-	}
-	return p.Success.FastRead(buf, _type, number)
-}
-
-func (p *VerifySecurityCodeResult) FastWrite(buf []byte) (n int) {
-	if !p.IsSetSuccess() {
-		return 0
-	}
-	return p.Success.FastWrite(buf)
-}
-
-func (p *VerifySecurityCodeResult) Size() (n int) {
-	if !p.IsSetSuccess() {
-		return 0
-	}
-	return p.Success.Size()
-}
-
-func (p *VerifySecurityCodeResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *VerifySecurityCodeResult) Unmarshal(in []byte) error {
-	msg := new(user.VerifyCodeResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *VerifySecurityCodeResult) GetSuccess() *user.VerifyCodeResp {
-	if !p.IsSetSuccess() {
-		return VerifySecurityCodeResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *VerifySecurityCodeResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.VerifyCodeResp)
-}
-
-func (p *VerifySecurityCodeResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *VerifySecurityCodeResult) GetResult() interface{} {
-	return p.Success
-}
-
-func sendVerificationHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(user.SendVerificationReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(user.UserService).SendVerification(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *SendVerificationArgs:
-		success, err := handler.(user.UserService).SendVerification(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*SendVerificationResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newSendVerificationArgs() interface{} {
-	return &SendVerificationArgs{}
-}
-
-func newSendVerificationResult() interface{} {
-	return &SendVerificationResult{}
-}
-
-type SendVerificationArgs struct {
-	Req *user.SendVerificationReq
-}
-
-func (p *SendVerificationArgs) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
-	if !p.IsSetReq() {
-		p.Req = new(user.SendVerificationReq)
-	}
-	return p.Req.FastRead(buf, _type, number)
-}
-
-func (p *SendVerificationArgs) FastWrite(buf []byte) (n int) {
-	if !p.IsSetReq() {
-		return 0
-	}
-	return p.Req.FastWrite(buf)
-}
-
-func (p *SendVerificationArgs) Size() (n int) {
-	if !p.IsSetReq() {
-		return 0
-	}
-	return p.Req.Size()
-}
-
-func (p *SendVerificationArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *SendVerificationArgs) Unmarshal(in []byte) error {
-	msg := new(user.SendVerificationReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var SendVerificationArgs_Req_DEFAULT *user.SendVerificationReq
-
-func (p *SendVerificationArgs) GetReq() *user.SendVerificationReq {
-	if !p.IsSetReq() {
-		return SendVerificationArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *SendVerificationArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *SendVerificationArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type SendVerificationResult struct {
-	Success *user.OperationResult
-}
-
-var SendVerificationResult_Success_DEFAULT *user.OperationResult
-
-func (p *SendVerificationResult) FastRead(buf []byte, _type int8, number int32) (n int, err error) {
-	if !p.IsSetSuccess() {
-		p.Success = new(user.OperationResult)
-	}
-	return p.Success.FastRead(buf, _type, number)
-}
-
-func (p *SendVerificationResult) FastWrite(buf []byte) (n int) {
-	if !p.IsSetSuccess() {
-		return 0
-	}
-	return p.Success.FastWrite(buf)
-}
-
-func (p *SendVerificationResult) Size() (n int) {
-	if !p.IsSetSuccess() {
-		return 0
-	}
-	return p.Success.Size()
-}
-
-func (p *SendVerificationResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *SendVerificationResult) Unmarshal(in []byte) error {
-	msg := new(user.OperationResult)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *SendVerificationResult) GetSuccess() *user.OperationResult {
-	if !p.IsSetSuccess() {
-		return SendVerificationResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *SendVerificationResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.OperationResult)
-}
-
-func (p *SendVerificationResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *SendVerificationResult) GetResult() interface{} {
-	return p.Success
-}
-
 type kClient struct {
 	c client.Client
 }
@@ -6511,7 +6191,7 @@ func (p *kClient) StartBindEmail(ctx context.Context, Req *user.StartBindEmailRe
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq) (r *user.OperationResult, err error) {
+func (p *kClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq) (r *user.CompleteBindEmailResp, err error) {
 	var _args CompleteBindEmailArgs
 	_args.Req = Req
 	var _result CompleteBindEmailResult
@@ -6561,7 +6241,7 @@ func (p *kClient) StartBindPhone(ctx context.Context, Req *user.StartBindPhoneRe
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq) (r *user.OperationResult, err error) {
+func (p *kClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq) (r *user.CompleteBindPhoneResp, err error) {
 	var _args CompleteBindPhoneArgs
 	_args.Req = Req
 	var _result CompleteBindPhoneResult
@@ -6696,26 +6376,6 @@ func (p *kClient) DeleteUser(ctx context.Context, Req *user.DeleteUserReq) (r *u
 	_args.Req = Req
 	var _result DeleteUserResult
 	if err = p.c.Call(ctx, "DeleteUser", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) VerifySecurityCode(ctx context.Context, Req *user.VerifyCodeReq) (r *user.VerifyCodeResp, err error) {
-	var _args VerifySecurityCodeArgs
-	_args.Req = Req
-	var _result VerifySecurityCodeResult
-	if err = p.c.Call(ctx, "VerifySecurityCode", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) SendVerification(ctx context.Context, Req *user.SendVerificationReq) (r *user.OperationResult, err error) {
-	var _args SendVerificationArgs
-	_args.Req = Req
-	var _result SendVerificationResult
-	if err = p.c.Call(ctx, "SendVerification", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

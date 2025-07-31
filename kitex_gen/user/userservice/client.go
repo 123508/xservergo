@@ -29,12 +29,12 @@ type Client interface {
 	ForgotPassword(ctx context.Context, Req *user.ForgotPasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	ResetPassword(ctx context.Context, Req *user.ResetPasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartBindEmail(ctx context.Context, Req *user.StartBindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq, callOptions ...callopt.Option) (r *user.CompleteBindEmailResp, err error)
 	StartChangeEmail(ctx context.Context, Req *user.StartChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	VerifyNewEmail(ctx context.Context, Req *user.VerifyNewEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	CompleteChangeEmail(ctx context.Context, Req *user.CompleteChangeEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartBindPhone(ctx context.Context, Req *user.StartBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq, callOptions ...callopt.Option) (r *user.CompleteBindPhoneResp, err error)
 	StartChangePhone(ctx context.Context, Req *user.StartChangePhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	VerifyNewPhone(ctx context.Context, Req *user.VerifyNewPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	CompleteChangePhone(ctx context.Context, Req *user.CompleteChangePhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
@@ -48,8 +48,6 @@ type Client interface {
 	ReactivateUser(ctx context.Context, Req *user.ReactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartDeleteUser(ctx context.Context, Req *user.StartDeleteReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	DeleteUser(ctx context.Context, Req *user.DeleteUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	VerifySecurityCode(ctx context.Context, Req *user.VerifyCodeReq, callOptions ...callopt.Option) (r *user.VerifyCodeResp, err error)
-	SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -171,7 +169,7 @@ func (p *kUserServiceClient) StartBindEmail(ctx context.Context, Req *user.Start
 	return p.kClient.StartBindEmail(ctx, Req)
 }
 
-func (p *kUserServiceClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+func (p *kUserServiceClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq, callOptions ...callopt.Option) (r *user.CompleteBindEmailResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.CompleteBindEmail(ctx, Req)
 }
@@ -196,7 +194,7 @@ func (p *kUserServiceClient) StartBindPhone(ctx context.Context, Req *user.Start
 	return p.kClient.StartBindPhone(ctx, Req)
 }
 
-func (p *kUserServiceClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+func (p *kUserServiceClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq, callOptions ...callopt.Option) (r *user.CompleteBindPhoneResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.CompleteBindPhone(ctx, Req)
 }
@@ -264,14 +262,4 @@ func (p *kUserServiceClient) StartDeleteUser(ctx context.Context, Req *user.Star
 func (p *kUserServiceClient) DeleteUser(ctx context.Context, Req *user.DeleteUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.DeleteUser(ctx, Req)
-}
-
-func (p *kUserServiceClient) VerifySecurityCode(ctx context.Context, Req *user.VerifyCodeReq, callOptions ...callopt.Option) (r *user.VerifyCodeResp, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.VerifySecurityCode(ctx, Req)
-}
-
-func (p *kUserServiceClient) SendVerification(ctx context.Context, Req *user.SendVerificationReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.SendVerification(ctx, Req)
 }

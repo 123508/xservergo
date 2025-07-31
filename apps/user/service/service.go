@@ -12,6 +12,7 @@ import (
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -24,26 +25,30 @@ var authClient = cli.InitAuthService()
 
 type UserService interface {
 	GetRedis() *redis.Client
-	Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) error
-	EmailLogin(ctx context.Context, email, pwd string) (*models.User, *models.Token, error)
-	PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error)
-	UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error)
-	SmsSendCode(ctx context.Context, phone string, msgType uint64) (string, error)
-	SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error)
-	SendPhoneCode(ctx context.Context, phone string) error
-	SendEmailCode(ctx context.Context, email string) error
-	GenerateQrCode(ctx context.Context, ip, userAgent string) (string, string, uint64, error)
-	QrCodePreLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string) (bool, util.UUID, error)
-	QrCodeLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string, uid util.UUID) (uint64, *models.User, *models.Token, error)
-	QrPreLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (bool, error)
-	ConfirmQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) error
-	CancelQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) error
-	Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) error
-	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (*models.User, error)
-	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error)
-	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error
-	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (bool, util.UUID, string, error)
-	ResetPassword(ctx context.Context, targetUserId, requestUserId util.UUID, newPwd, requestId, VerifyCode string) error
+	Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) (err error)
+	EmailLogin(ctx context.Context, email, pwd string) (userinfo *models.User, token *models.Token, err error)
+	PhoneLogin(ctx context.Context, phone, pwd string) (userinfo *models.User, token *models.Token, err error)
+	UserNameLogin(ctx context.Context, username, pwd string) (userinfo *models.User, token *models.Token, err error)
+	SmsSendCode(ctx context.Context, phone string) (verifyCode string, err error)
+	SmsLogin(ctx context.Context, phone, code, requestId string) (userinfo *models.User, token *models.Token, err error)
+	SendPhoneCode(ctx context.Context, key, phone string) (err error)
+	SendEmailCode(ctx context.Context, key, email string) (err error)
+	GenerateQrCode(ctx context.Context, ip, userAgent string) (qrCode string, requestId string, expire uint64, err error)
+	QrCodePreLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string) (ok bool, uid util.UUID, err error)
+	QrCodeLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string, uid util.UUID) (status uint64, userinfo *models.User, token *models.Token, err error)
+	QrPreLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (ok bool, err error)
+	ConfirmQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (err error)
+	CancelQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (err error)
+	Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) (err error)
+	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (userinfo *models.User, err error)
+	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (userinfo *models.User, err error)
+	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) (err error)
+	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (ok bool, uid util.UUID, requestId string, err error)
+	ResetPassword(ctx context.Context, targetUserId, requestUserId util.UUID, newPwd, requestId, VerifyCode string) (err error)
+	StartBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail string) (requestId string, err error)
+	CompleteBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail, verifyCode, requestId string, version int) (v int, err error)
+	StartBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone string) (requestId string, err error)
+	CompleteBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone, verifyCode, requestId string, version int) (v int, err error)
 }
 
 type ServiceImpl struct {
@@ -91,7 +96,7 @@ func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*model
 
 	usr, err := s.userRepo.GetUserByEmail(ctx, email)
 
-	return s.loginWithResp(ctx, usr, pwd, err, true, "")
+	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
 
 }
 
@@ -102,7 +107,7 @@ func (s *ServiceImpl) PhoneLogin(ctx context.Context, phone, pwd string) (*model
 
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
-	return s.loginWithResp(ctx, usr, pwd, err, true, "")
+	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
 }
 
 func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error) {
@@ -112,10 +117,10 @@ func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (
 
 	usr, err := s.userRepo.GetUserByUsername(ctx, username)
 
-	return s.loginWithResp(ctx, usr, pwd, err, true, "")
+	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
 }
 
-func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string, msgType uint64) (string, error) {
+func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string) (string, error) {
 
 	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
 
@@ -136,17 +141,8 @@ func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string, msgType uin
 
 	SmsCodeToken := util.TakeKey("userservice", "user", "SmsLogin", "vCode", phone)
 
-	var Err error
-
-	switch msgType {
-	case 1:
-		Err = s.SendEmailCode(ctx, SmsCodeToken)
-	default:
-		Err = s.SendPhoneCode(ctx, SmsCodeToken)
-	}
-
-	if Err != nil {
-		return "", Err
+	if err := s.SendPhoneCode(ctx, SmsCodeToken, phone); err != nil {
+		return "", err
 	}
 
 	return requestId, nil
@@ -175,7 +171,7 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
-	resp, token, err := s.loginWithResp(ctx, usr, "", err, false, requestId)
+	resp, token, err := s.LoginWithResp(ctx, usr, "", err, false, requestId)
 
 	//登录成功,删除凭证
 	if err == nil {
@@ -320,7 +316,7 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 	//校验成功状态
 	usr, err := s.userRepo.GetUserByID(ctx, uid)
 
-	usr, token, err := s.loginWithResp(ctx, usr, "", err, false, requestId)
+	usr, token, err := s.LoginWithResp(ctx, usr, "", err, false, requestId)
 
 	if err != nil {
 		return 6, nil, nil, err
@@ -573,9 +569,9 @@ func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType
 
 	switch msgType {
 	case 1:
-		Err = s.SendEmailCode(ctx, ForgetToken)
+		Err = s.SendEmailCode(ctx, ForgetToken, sign)
 	default:
-		Err = s.SendPhoneCode(ctx, ForgetToken)
+		Err = s.SendPhoneCode(ctx, ForgetToken, sign)
 	}
 	if Err != nil {
 		return false, util.NewUUID(), "", Err
@@ -619,7 +615,7 @@ func (s *ServiceImpl) ResetPassword(ctx context.Context, targetUserId, requestUs
 	return nil
 }
 
-func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string) error {
+func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string, phone string) error {
 
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
@@ -639,7 +635,7 @@ func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string) error {
 	return nil
 }
 
-func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string) error {
+func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string, email string) error {
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
 	//TODO 这里之后调用发送验证码的逻辑
@@ -658,8 +654,134 @@ func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string) error {
 	return nil
 }
 
-// 辅助函数(用于用户登录)
-func (s *ServiceImpl) loginWithResp(
+func (s *ServiceImpl) StartBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail string) (string, error) {
+
+	//这里校验邮箱的合法性
+
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
+	if err != nil {
+		return "", err
+	}
+
+	emailToken := util.TakeKey("userserivce", "user", "StartBindEmail", newEmail, targetUserId)
+
+	if err = s.SendEmailCode(ctx, emailToken, newEmail); err != nil {
+		return "", err
+	}
+
+	return requestId, nil
+}
+
+func (s *ServiceImpl) CompleteBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail, verifyCode, requestId string, version int) (v int, err error) {
+
+	//请求用户
+	usr, err := s.userRepo.GetUserByID(ctx, targetUserId)
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	//CAS校验
+	if usr.Version != version {
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
+	}
+
+	//权限校验
+	// targetUserId、requestUserId、usr.Status
+
+	//校验requestId
+	if err = s.VerityRequestID(ctx, requestId); err != nil {
+		return version, err
+	}
+
+	//获取验证码
+	emailToken := util.TakeKey("userserivce", "user", "StartBindEmail", newEmail, targetUserId)
+	code, err := s.Rds.Get(ctx, emailToken).Result()
+
+	//获取验证码失败
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return version, cerrors.NewCommonError(http.StatusNotFound, "验证码过期", requestId, nil)
+		}
+		return version, cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", requestId, err)
+	}
+
+	//校验验证码
+	if code != verifyCode {
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
+	}
+
+	defer s.Rds.Del(ctx, emailToken)
+
+	//重置邮箱
+	v, err = s.userRepo.ResetEmail(ctx, targetUserId, newEmail, version)
+
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器错误")
+	}
+	return v, nil
+}
+
+func (s *ServiceImpl) StartBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone string) (string, error) {
+
+	//这里校验手机号的合法性
+
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
+	if err != nil {
+		return "", err
+	}
+
+	phoneToken := util.TakeKey("userserivce", "user", "StartBindPhone", newPhone, targetUserId)
+
+	if err = s.SendPhoneCode(ctx, phoneToken, newPhone); err != nil {
+		return "", err
+	}
+
+	return requestId, nil
+}
+
+func (s *ServiceImpl) CompleteBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone, verifyCode, requestId string, version int) (v int, err error) {
+
+	//请求用户
+	usr, err := s.userRepo.GetUserByID(ctx, targetUserId)
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	//CAS校验
+	if usr.Version != version {
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
+	}
+
+	//鉴权部分
+
+	phoneToken := util.TakeKey("userserivce", "user", "StartBindPhone", newPhone, targetUserId)
+	code, err := s.Rds.Get(ctx, phoneToken).Result()
+
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return version, cerrors.NewCommonError(http.StatusNotFound, "验证码过期", requestId, nil)
+		}
+		return version, cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", requestId, err)
+	}
+
+	//校验验证码
+	if code != verifyCode {
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
+	}
+
+	defer s.Rds.Del(ctx, phoneToken)
+
+	//重置手机号
+	v, err = s.userRepo.ResetPhone(ctx, targetUserId, newPhone, version)
+
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器错误")
+	}
+	return v, nil
+}
+
+// LoginWithResp 辅助函数(用于用户登录)
+func (s *ServiceImpl) LoginWithResp(
 	ctx context.Context,
 	usr *models.User,
 	pwd string,
@@ -695,7 +817,7 @@ func (s *ServiceImpl) loginWithResp(
 	}
 
 	//获取token部分
-	resp, err := s.requestToken(ctx, usr.ID)
+	resp, err := s.RequestToken(ctx, usr.ID, usr.Version)
 
 	if err != nil {
 		return nil, nil, err
@@ -715,8 +837,8 @@ func (s *ServiceImpl) loginWithResp(
 
 }
 
-// 辅助函数(用于请求token)
-func (s *ServiceImpl) requestToken(ctx context.Context, userId util.UUID) (*auth.IssueTokenResp, error) {
+// RequestToken 辅助函数(用于请求token)
+func (s *ServiceImpl) RequestToken(ctx context.Context, userId util.UUID, version int) (*auth.IssueTokenResp, error) {
 
 	marshal, err := userId.Marshal()
 
@@ -733,4 +855,24 @@ func (s *ServiceImpl) requestToken(ctx context.Context, userId util.UUID) (*auth
 	}
 
 	return resp, nil
+}
+
+func (s *ServiceImpl) GenerateRequestId(ctx context.Context, expire time.Duration) (string, error) {
+	requestId := uuid.New().String()
+	if err := s.Rds.Set(ctx, util.TakeKey("userservice", "user", "requestId", requestId), "ok", expire).Err(); err != nil {
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "生产requestId失败", "", err)
+	}
+	return requestId, nil
+}
+
+func (s *ServiceImpl) VerityRequestID(ctx context.Context, requestId string) error {
+	//校验requestId
+	result, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "requestId", requestId)).Result()
+
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusInternalServerError, "redis查询requestId错误", requestId, nil)
+	} else if result != "ok" || errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusBadRequest, "requestId过期", requestId, nil)
+	}
+	return nil
 }
