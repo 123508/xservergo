@@ -429,8 +429,8 @@ func (x *UpdatePermissionReq) GetRequestUserId() []byte {
 }
 
 type DeletePermissionReq struct {
-	PermissionId  []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"`     // 权限ID(16字节UUID)
-	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
+	PermissionCode string `protobuf:"bytes,2,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
+	RequestUserId  []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
 }
 
 func (x *DeletePermissionReq) Reset() { *x = DeletePermissionReq{} }
@@ -439,11 +439,11 @@ func (x *DeletePermissionReq) Marshal(in []byte) ([]byte, error) { return prutal
 
 func (x *DeletePermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *DeletePermissionReq) GetPermissionId() []byte {
+func (x *DeletePermissionReq) GetPermissionCode() string {
 	if x != nil {
-		return x.PermissionId
+		return x.PermissionCode
 	}
-	return nil
+	return ""
 }
 
 func (x *DeletePermissionReq) GetRequestUserId() []byte {
@@ -454,8 +454,8 @@ func (x *DeletePermissionReq) GetRequestUserId() []byte {
 }
 
 type GetPermissionReq struct {
-	PermissionId  []byte `protobuf:"bytes,2,opt,name=permission_id" json:"permission_id,omitempty"`     // 权限ID(16字节UUID)
-	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+	PermissionCode string `protobuf:"bytes,2,opt,name=permission_code" json:"permission_code,omitempty"` // 权限唯一标识符
+	RequestUserId  []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
 func (x *GetPermissionReq) Reset() { *x = GetPermissionReq{} }
@@ -464,11 +464,11 @@ func (x *GetPermissionReq) Marshal(in []byte) ([]byte, error) { return prutal.Ma
 
 func (x *GetPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetPermissionReq) GetPermissionId() []byte {
+func (x *GetPermissionReq) GetPermissionCode() string {
 	if x != nil {
-		return x.PermissionId
+		return x.PermissionCode
 	}
-	return nil
+	return ""
 }
 
 func (x *GetPermissionReq) GetRequestUserId() []byte {
@@ -529,7 +529,7 @@ func (x *UpdateRoleReq) GetRequestUserId() []byte {
 }
 
 type DeleteRoleReq struct {
-	RoleId        []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`                 // 角色ID(16字节UUID)
+	RoleCode      string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
 	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 删除者用户ID(16字节UUID)
 }
 
@@ -539,11 +539,11 @@ func (x *DeleteRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.Marsh
 
 func (x *DeleteRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *DeleteRoleReq) GetRoleId() []byte {
+func (x *DeleteRoleReq) GetRoleCode() string {
 	if x != nil {
-		return x.RoleId
+		return x.RoleCode
 	}
-	return nil
+	return ""
 }
 
 func (x *DeleteRoleReq) GetRequestUserId() []byte {
@@ -554,7 +554,7 @@ func (x *DeleteRoleReq) GetRequestUserId() []byte {
 }
 
 type GetRoleReq struct {
-	RoleId        []byte `protobuf:"bytes,2,opt,name=role_id" json:"role_id,omitempty"`                 // 角色ID(16字节UUID)
+	RoleCode      string `protobuf:"bytes,2,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
 	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
 }
 
@@ -564,11 +564,11 @@ func (x *GetRoleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalA
 
 func (x *GetRoleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *GetRoleReq) GetRoleId() []byte {
+func (x *GetRoleReq) GetRoleCode() string {
 	if x != nil {
-		return x.RoleId
+		return x.RoleCode
 	}
-	return nil
+	return ""
 }
 
 func (x *GetRoleReq) GetRequestUserId() []byte {
