@@ -164,7 +164,7 @@ func TestGetPermissionByID(t *testing.T) {
 		return
 	}
 
-	permByID, err := repo.GetPermissionByID(context.Background(), permByCode.ID[:])
+	permByID, err := repo.GetPermissionByID(context.Background(), permByCode.ID)
 	if err != nil {
 		t.Errorf("failed to get permission by ID: %v", err)
 	} else if permByID != nil {
