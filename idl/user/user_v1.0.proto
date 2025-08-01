@@ -27,12 +27,12 @@ service UserService {
 
   // ---------- 绑定管理 ---------- //
   rpc StartBindEmail(StartBindEmailReq) returns (OperationResult) {}        // 预绑定邮箱
-  rpc CompleteBindEmail(CompleteBindEmailReq) returns (CompleteBindEmailResp) {}  // 完成邮箱绑定
+  rpc CompleteBindEmail(CompleteBindEmailReq) returns (OperationResult) {}  // 完成邮箱绑定
   rpc StartChangeEmail(StartChangeEmailReq)returns(OperationResult){}       // 预换绑邮箱
   rpc VerifyNewEmail(VerifyNewEmailReq)returns(OperationResult){}           // 验证新邮箱
   rpc CompleteChangeEmail(CompleteChangeEmailReq)returns(OperationResult){} // 完成换绑邮箱
   rpc StartBindPhone(StartBindPhoneReq) returns (OperationResult) {}        // 预绑定手机
-  rpc CompleteBindPhone(CompleteBindPhoneReq) returns (CompleteBindPhoneResp) {}  // 完成手机绑定
+  rpc CompleteBindPhone(CompleteBindPhoneReq) returns (OperationResult) {}  // 完成手机绑定
   rpc StartChangePhone(StartChangePhoneReq)returns(OperationResult){}       // 预换绑手机
   rpc VerifyNewPhone(VerifyNewPhoneReq)returns(OperationResult){}           // 验证新手机号码
   rpc CompleteChangePhone(CompleteChangePhoneReq)returns(OperationResult){} // 完成换绑手机
@@ -62,6 +62,7 @@ message OperationResult {
   string request_id = 4;  // 请求追踪ID
   string timestamp = 5;   // 服务器时间戳(毫秒)
   bytes request_user_id=6;// 请求用户id
+  uint64 version=7;       // 响应的jwt版本
 }
 
 message UserInfo {
@@ -310,14 +311,8 @@ message CompleteBindEmailReq {
   uint64 version=6;
 }
 
-message CompleteBindEmailResp{
-  OperationResult operation=1;
-  uint64 version=2;
-}
-
 message StartChangeEmailReq{
   bytes target_user_id=1;
-  string old_email=2;
   bytes request_user_id=3;
 }
 
@@ -334,31 +329,26 @@ message CompleteChangeEmailReq{
   string verification_code=2;
   string request_id=3;
   bytes request_user_id=4;
+  uint64 version=5;
 }
 
 message StartBindPhoneReq {
-  bytes target_user_id = 1;       // 当前用户ID
-  string new_phone = 2;    // 要绑定的新手机号
+  bytes target_user_id = 1;  // 当前用户ID
+  string new_phone = 2;      // 要绑定的新手机号
   bytes request_user_id=3;   // 操作者ID
 }
 
 message CompleteBindPhoneReq {
-  bytes target_user_id = 1;       // 当前用户ID
-  string new_phone = 2;    // 要绑定的手机号
+  bytes target_user_id = 1; // 当前用户ID
+  string new_phone = 2;     // 要绑定的手机号
   string verification_code = 3;  // 短信验证码
-  string request_id = 4;   // 预绑定返回的请求ID
+  string request_id = 4;    // 预绑定返回的请求ID
   bytes request_user_id=5;
   uint64 version=6;
 }
 
-message CompleteBindPhoneResp{
-    OperationResult operation=1;
-    uint64 version=2;
-}
-
 message StartChangePhoneReq{
   bytes target_user_id=1;
-  string old_phone=2;
   bytes request_user_id=3;
 }
 
@@ -375,6 +365,7 @@ message CompleteChangePhoneReq{
   string verification_code=2;
   string request_id=3;
   bytes request_user_id=4;
+  uint64 version=5;
 }
 
 // ---------- 用户管理 ---------- //

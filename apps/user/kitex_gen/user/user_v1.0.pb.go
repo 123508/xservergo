@@ -131,6 +131,7 @@ type OperationResult struct {
 	RequestId     string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`           // 请求追踪ID
 	Timestamp     string `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`             // 服务器时间戳(毫秒)
 	RequestUserId []byte `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 请求用户id
+	Version       uint64 `protobuf:"varint,7,opt,name=version" json:"version,omitempty"`                // 响应的jwt版本
 }
 
 func (x *OperationResult) Reset() { *x = OperationResult{} }
@@ -179,6 +180,13 @@ func (x *OperationResult) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *OperationResult) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type UserInfo struct {
@@ -1514,36 +1522,8 @@ func (x *CompleteBindEmailReq) GetVersion() uint64 {
 	return 0
 }
 
-type CompleteBindEmailResp struct {
-	Operation *OperationResult `protobuf:"bytes,1,opt,name=operation" json:"operation,omitempty"`
-	Version   uint64           `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
-}
-
-func (x *CompleteBindEmailResp) Reset() { *x = CompleteBindEmailResp{} }
-
-func (x *CompleteBindEmailResp) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *CompleteBindEmailResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CompleteBindEmailResp) GetOperation() *OperationResult {
-	if x != nil {
-		return x.Operation
-	}
-	return nil
-}
-
-func (x *CompleteBindEmailResp) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
 type StartChangeEmailReq struct {
 	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	OldEmail      string `protobuf:"bytes,2,opt,name=old_email" json:"old_email,omitempty"`
 	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
@@ -1558,13 +1538,6 @@ func (x *StartChangeEmailReq) GetTargetUserId() []byte {
 		return x.TargetUserId
 	}
 	return nil
-}
-
-func (x *StartChangeEmailReq) GetOldEmail() string {
-	if x != nil {
-		return x.OldEmail
-	}
-	return ""
 }
 
 func (x *StartChangeEmailReq) GetRequestUserId() []byte {
@@ -1628,6 +1601,7 @@ type CompleteChangeEmailReq struct {
 	VerificationCode string `protobuf:"bytes,2,opt,name=verification_code" json:"verification_code,omitempty"`
 	RequestId        string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
 	RequestUserId    []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Version          uint64 `protobuf:"varint,5,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *CompleteChangeEmailReq) Reset() { *x = CompleteChangeEmailReq{} }
@@ -1664,6 +1638,13 @@ func (x *CompleteChangeEmailReq) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *CompleteChangeEmailReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type StartBindPhoneReq struct {
@@ -1756,36 +1737,8 @@ func (x *CompleteBindPhoneReq) GetVersion() uint64 {
 	return 0
 }
 
-type CompleteBindPhoneResp struct {
-	Operation *OperationResult `protobuf:"bytes,1,opt,name=operation" json:"operation,omitempty"`
-	Version   uint64           `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
-}
-
-func (x *CompleteBindPhoneResp) Reset() { *x = CompleteBindPhoneResp{} }
-
-func (x *CompleteBindPhoneResp) Marshal(in []byte) ([]byte, error) {
-	return prutal.MarshalAppend(in, x)
-}
-
-func (x *CompleteBindPhoneResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *CompleteBindPhoneResp) GetOperation() *OperationResult {
-	if x != nil {
-		return x.Operation
-	}
-	return nil
-}
-
-func (x *CompleteBindPhoneResp) GetVersion() uint64 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
 type StartChangePhoneReq struct {
 	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	OldPhone      string `protobuf:"bytes,2,opt,name=old_phone" json:"old_phone,omitempty"`
 	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
@@ -1800,13 +1753,6 @@ func (x *StartChangePhoneReq) GetTargetUserId() []byte {
 		return x.TargetUserId
 	}
 	return nil
-}
-
-func (x *StartChangePhoneReq) GetOldPhone() string {
-	if x != nil {
-		return x.OldPhone
-	}
-	return ""
 }
 
 func (x *StartChangePhoneReq) GetRequestUserId() []byte {
@@ -1870,6 +1816,7 @@ type CompleteChangePhoneReq struct {
 	VerificationCode string `protobuf:"bytes,2,opt,name=verification_code" json:"verification_code,omitempty"`
 	RequestId        string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
 	RequestUserId    []byte `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Version          uint64 `protobuf:"varint,5,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *CompleteChangePhoneReq) Reset() { *x = CompleteChangePhoneReq{} }
@@ -1906,6 +1853,13 @@ func (x *CompleteChangePhoneReq) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *CompleteChangePhoneReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 // ---------- 用户管理 ---------- //
@@ -2501,12 +2455,12 @@ type UserService interface {
 	ForgotPassword(ctx context.Context, req *ForgotPasswordReq) (res *OperationResult, err error)
 	ResetPassword(ctx context.Context, req *ResetPasswordReq) (res *OperationResult, err error)
 	StartBindEmail(ctx context.Context, req *StartBindEmailReq) (res *OperationResult, err error)
-	CompleteBindEmail(ctx context.Context, req *CompleteBindEmailReq) (res *CompleteBindEmailResp, err error)
+	CompleteBindEmail(ctx context.Context, req *CompleteBindEmailReq) (res *OperationResult, err error)
 	StartChangeEmail(ctx context.Context, req *StartChangeEmailReq) (res *OperationResult, err error)
 	VerifyNewEmail(ctx context.Context, req *VerifyNewEmailReq) (res *OperationResult, err error)
 	CompleteChangeEmail(ctx context.Context, req *CompleteChangeEmailReq) (res *OperationResult, err error)
 	StartBindPhone(ctx context.Context, req *StartBindPhoneReq) (res *OperationResult, err error)
-	CompleteBindPhone(ctx context.Context, req *CompleteBindPhoneReq) (res *CompleteBindPhoneResp, err error)
+	CompleteBindPhone(ctx context.Context, req *CompleteBindPhoneReq) (res *OperationResult, err error)
 	StartChangePhone(ctx context.Context, req *StartChangePhoneReq) (res *OperationResult, err error)
 	VerifyNewPhone(ctx context.Context, req *VerifyNewPhoneReq) (res *OperationResult, err error)
 	CompleteChangePhone(ctx context.Context, req *CompleteChangePhoneReq) (res *OperationResult, err error)

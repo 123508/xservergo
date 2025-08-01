@@ -2409,10 +2409,10 @@ func (p *CompleteBindEmailArgs) GetFirstArgument() interface{} {
 }
 
 type CompleteBindEmailResult struct {
-	Success *user.CompleteBindEmailResp
+	Success *user.OperationResult
 }
 
-var CompleteBindEmailResult_Success_DEFAULT *user.CompleteBindEmailResp
+var CompleteBindEmailResult_Success_DEFAULT *user.OperationResult
 
 func (p *CompleteBindEmailResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -2422,7 +2422,7 @@ func (p *CompleteBindEmailResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CompleteBindEmailResult) Unmarshal(in []byte) error {
-	msg := new(user.CompleteBindEmailResp)
+	msg := new(user.OperationResult)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2430,7 +2430,7 @@ func (p *CompleteBindEmailResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteBindEmailResult) GetSuccess() *user.CompleteBindEmailResp {
+func (p *CompleteBindEmailResult) GetSuccess() *user.OperationResult {
 	if !p.IsSetSuccess() {
 		return CompleteBindEmailResult_Success_DEFAULT
 	}
@@ -2438,7 +2438,7 @@ func (p *CompleteBindEmailResult) GetSuccess() *user.CompleteBindEmailResp {
 }
 
 func (p *CompleteBindEmailResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.CompleteBindEmailResp)
+	p.Success = x.(*user.OperationResult)
 }
 
 func (p *CompleteBindEmailResult) IsSetSuccess() bool {
@@ -2964,10 +2964,10 @@ func (p *CompleteBindPhoneArgs) GetFirstArgument() interface{} {
 }
 
 type CompleteBindPhoneResult struct {
-	Success *user.CompleteBindPhoneResp
+	Success *user.OperationResult
 }
 
-var CompleteBindPhoneResult_Success_DEFAULT *user.CompleteBindPhoneResp
+var CompleteBindPhoneResult_Success_DEFAULT *user.OperationResult
 
 func (p *CompleteBindPhoneResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -2977,7 +2977,7 @@ func (p *CompleteBindPhoneResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CompleteBindPhoneResult) Unmarshal(in []byte) error {
-	msg := new(user.CompleteBindPhoneResp)
+	msg := new(user.OperationResult)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2985,7 +2985,7 @@ func (p *CompleteBindPhoneResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteBindPhoneResult) GetSuccess() *user.CompleteBindPhoneResp {
+func (p *CompleteBindPhoneResult) GetSuccess() *user.OperationResult {
 	if !p.IsSetSuccess() {
 		return CompleteBindPhoneResult_Success_DEFAULT
 	}
@@ -2993,7 +2993,7 @@ func (p *CompleteBindPhoneResult) GetSuccess() *user.CompleteBindPhoneResp {
 }
 
 func (p *CompleteBindPhoneResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.CompleteBindPhoneResp)
+	p.Success = x.(*user.OperationResult)
 }
 
 func (p *CompleteBindPhoneResult) IsSetSuccess() bool {
@@ -4637,7 +4637,7 @@ func (p *kClient) StartBindEmail(ctx context.Context, Req *user.StartBindEmailRe
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq) (r *user.CompleteBindEmailResp, err error) {
+func (p *kClient) CompleteBindEmail(ctx context.Context, Req *user.CompleteBindEmailReq) (r *user.OperationResult, err error) {
 	var _args CompleteBindEmailArgs
 	_args.Req = Req
 	var _result CompleteBindEmailResult
@@ -4687,7 +4687,7 @@ func (p *kClient) StartBindPhone(ctx context.Context, Req *user.StartBindPhoneRe
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq) (r *user.CompleteBindPhoneResp, err error) {
+func (p *kClient) CompleteBindPhone(ctx context.Context, Req *user.CompleteBindPhoneReq) (r *user.OperationResult, err error) {
 	var _args CompleteBindPhoneArgs
 	_args.Req = Req
 	var _result CompleteBindPhoneResult

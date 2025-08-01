@@ -3,7 +3,9 @@ package service
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"github.com/123508/xservergo/pkg/cerrors"
+	"github.com/redis/go-redis/v9"
 	"net/http"
 )
 
@@ -35,4 +37,16 @@ func ParseRepoErrorToCommonError(err error, defaultText string) error {
 	default:
 		return cerrors.NewCommonError(http.StatusInternalServerError, defaultText, "", err)
 	}
+}
+
+func ParseRedisErr(err error, requestId string) error {
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusNotFound, "请求参数不存在", requestId, err)
+	}
+
+	return cerrors.NewCommonError(http.StatusInternalServerError, "redis异常", requestId, err)
 }

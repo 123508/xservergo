@@ -15,7 +15,7 @@ import (
 	"github.com/123508/xservergo/kitex_gen/user"
 )
 
-func parseServiceErrToHandlerError(ctx context.Context, err error, requestId string) (*user.OperationResult, error) {
+func parseServiceErrToHandlerError(ctx context.Context, err error, requestId string, version uint64) (*user.OperationResult, error) {
 
 	var code uint64
 	var message string
@@ -33,25 +33,38 @@ func parseServiceErrToHandlerError(ctx context.Context, err error, requestId str
 		Code:      code,
 		Message:   message,
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}
 
 	if requestId != "" {
 		resp.RequestId = requestId
 	}
 
+	if version > 0 {
+		resp.Version = version
+	}
+
 	return resp, cerrors.NewGRPCError(code, message)
 }
 
-func unmarshalUID(ctx context.Context, uid []byte) (*user.OperationResult, error, util.UUID) {
+func unmarshalUID(ctx context.Context, uid []byte, version uint64) (*user.OperationResult, error, util.UUID) {
 
 	Uid := util.NewUUID()
 	if err := Uid.Unmarshal(uid); err != nil {
-		return &user.OperationResult{
+
+		resp := &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
 			Message:   "请求参数错误",
 			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误"), Uid
+			Version:   0,
+		}
+
+		if version > 0 {
+			resp.Version = version
+		}
+
+		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误"), Uid
 	}
 
 	return nil, nil, Uid
@@ -94,7 +107,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Status:   0,
 		AuditFields: models.AuditFields{
 			CreatedAt: time.Now(),
-			Version:   0,
+			Version:   1,
 		},
 	}
 
@@ -102,12 +115,12 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Password: req.Password,
 		AuditFields: models.AuditFields{
 			CreatedAt: time.Now(),
-			Version:   0,
+			Version:   1,
 		},
 	}
 
 	if err = s.userService.Register(ctx, u, uLogin); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "")
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
 	}
 
 	return &user.OperationResult{
@@ -115,6 +128,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Code:      http.StatusOK,
 		Message:   "创建用户成功",
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, err
 }
 
@@ -126,7 +140,7 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 	resp = &user.LoginResp{}
 
 	if err != nil {
-		_, err := parseServiceErrToHandlerError(ctx, err, "")
+		_, err := parseServiceErrToHandlerError(ctx, err, "", 0)
 		return &user.LoginResp{}, err
 	}
 
@@ -324,7 +338,7 @@ func (s *UserServiceImpl) QrCodePreLoginStatus(ctx context.Context, req *user.Qr
 // QrCodeLoginStatus implements the UserServiceImpl interface.
 func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCodeLoginStatusReq) (resp *user.QrCodeLoginStatusResp, err error) {
 
-	_, err, uid := unmarshalUID(ctx, req.UserId)
+	_, err, uid := unmarshalUID(ctx, req.UserId, 0)
 	if err != nil {
 		return &user.QrCodeLoginStatusResp{
 			Status: 6,
@@ -398,7 +412,7 @@ func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCod
 // QrPreLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginReq) (resp *user.QrPreLoginResp, err error) {
 
-	_, err, uid := unmarshalUID(ctx, req.UserId)
+	_, err, uid := unmarshalUID(ctx, req.UserId, 0)
 
 	if err != nil {
 		return &user.QrPreLoginResp{
@@ -428,7 +442,7 @@ func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginRe
 func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQrLoginReq) (resp *user.Empty, err error) {
 	resp = &user.Empty{}
 
-	_, err, uid := unmarshalUID(ctx, req.UserId)
+	_, err, uid := unmarshalUID(ctx, req.UserId, 0)
 	if err != nil {
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -448,7 +462,7 @@ func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQ
 func (s *UserServiceImpl) CancelQrLogin(ctx context.Context, req *user.CancelQrLoginReq) (resp *user.Empty, err error) {
 	resp = &user.Empty{}
 
-	_, err, uid := unmarshalUID(ctx, req.UserId)
+	_, err, uid := unmarshalUID(ctx, req.UserId, 0)
 
 	if err != nil {
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
@@ -473,13 +487,13 @@ func (s *UserServiceImpl) OAuthLogin(ctx context.Context, req *user.OAuthLoginRe
 
 // Logout implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp *user.OperationResult, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return res, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return res, err
@@ -489,7 +503,7 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 		AccessToken:  req.AccessToken,
 		RefreshToken: req.RefreshToken,
 	}); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "")
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
 	}
 
 	return &user.OperationResult{
@@ -497,6 +511,7 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 		Code:      http.StatusOK,
 		Message:   "成功退出",
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, nil
 
 }
@@ -509,20 +524,20 @@ func (s *UserServiceImpl) SessionCheck(ctx context.Context, req *user.SessionChe
 
 // ChangePassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePasswordReq) (resp *user.OperationResult, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return res, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return res, err
 	}
 
 	if err = s.userService.ChangePassword(ctx, targetUid, requestUid, req.OldPassword, req.NewPassword); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "")
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
 	}
 
 	return &user.OperationResult{
@@ -530,6 +545,7 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 		Code:      http.StatusOK,
 		Message:   "修改密码成功",
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, nil
 }
 
@@ -555,7 +571,7 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 	}
 
 	if err != nil {
-		return parseServiceErrToHandlerError(ctx, err, requestId)
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	res, err, marshal := marshalUID(ctx, uid)
@@ -571,25 +587,26 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 		RequestId:     requestId,
 		Timestamp:     time.Now().String(),
 		RequestUserId: marshal,
+		Version:       0,
 	}, nil
 }
 
 // ResetPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPasswordReq) (resp *user.OperationResult, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return res, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return res, err
 	}
 
 	if err = s.userService.ResetPassword(ctx, targetUid, requestUid, req.NewPassword, req.RequestId, req.VerificationToken); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "")
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
 	}
 
 	return &user.OperationResult{
@@ -598,19 +615,20 @@ func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPass
 		Message:   "更新成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, nil
 }
 
 // StartBindEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBindEmailReq) (resp *user.OperationResult, err error) {
 
-	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return resp, err
 	}
 
-	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return resp, err
@@ -618,7 +636,7 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 
 	requestId, err := s.userService.StartBindEmail(ctx, targetUid, requestUid, req.NewEmail)
 	if err != nil {
-		return parseServiceErrToHandlerError(ctx, err, requestId)
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	return &user.OperationResult{
@@ -627,77 +645,137 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 		Message:   "发送成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, nil
 }
 
 // CompleteBindEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.CompleteBindEmailReq) (resp *user.CompleteBindEmailResp, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
-
+func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.CompleteBindEmailReq) (resp *user.OperationResult, err error) {
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
 	if err != nil {
-		return &user.CompleteBindEmailResp{
-			Operation: res,
-			Version:   req.Version,
-		}, err
+		return res, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
 
 	if err != nil {
-		return &user.CompleteBindEmailResp{
-			Operation: res,
-			Version:   req.Version,
-		}, err
+		return res, err
 	}
 
 	v, err := s.userService.CompleteBindEmail(ctx, targetUid, requestUid, req.NewEmail, req.VerificationCode, req.RequestId, int(req.Version))
 
 	if err != nil {
-		res, err := parseServiceErrToHandlerError(ctx, err, "")
-		return &user.CompleteBindEmailResp{
-			Operation: res,
-			Version:   uint64(v),
-		}, err
+		res, err = parseServiceErrToHandlerError(ctx, err, "", req.Version)
+		return res, err
 	}
-	return &user.CompleteBindEmailResp{
-		Operation: &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "绑定成功",
-			RequestId: req.RequestId,
-			Timestamp: time.Now().String(),
-		},
-		Version: uint64(v),
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "绑定成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
 	}, nil
 }
 
 // StartChangeEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartChangeEmail(ctx context.Context, req *user.StartChangeEmailReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// VerifyNewEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNewEmailReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// CompleteChangeEmail implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.CompleteChangeEmailReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// StartBindPhone implements the UserServiceImpl interface.
-func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBindPhoneReq) (resp *user.OperationResult, err error) {
-	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return resp, err
 	}
 
-	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.StartChangeEmail(ctx, targetUid, requestUid)
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "发送验证码成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+		Version:   0,
+	}, nil
+}
+
+// VerifyNewEmail implements the UserServiceImpl interface.
+func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNewEmailReq) (resp *user.OperationResult, err error) {
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.VerifyNewEmail(ctx, targetUid, requestUid, req.VerificationCode, req.NewEmail, req.RequestId)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "请求成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+		Version:   0,
+	}, nil
+}
+
+// CompleteChangeEmail implements the UserServiceImpl interface.
+func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.CompleteChangeEmailReq) (resp *user.OperationResult, err error) {
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
+
+	if err != nil {
+		return resp, err
+	}
+
+	v, err := s.userService.CompleteChangeEmail(ctx, targetUid, requestUid, req.VerificationCode, req.RequestId, int(req.Version))
+
+	if err != nil {
+		resp, err = parseServiceErrToHandlerError(ctx, err, req.RequestId, req.Version)
+		return resp, err
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
+	}, nil
+}
+
+// StartBindPhone implements the UserServiceImpl interface.
+func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBindPhoneReq) (resp *user.OperationResult, err error) {
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return resp, err
@@ -706,7 +784,7 @@ func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBin
 	requestId, err := s.userService.StartBindPhone(ctx, targetUid, requestUid, req.NewPhone)
 
 	if err != nil {
-		return parseServiceErrToHandlerError(ctx, err, requestId)
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	return &user.OperationResult{
@@ -715,72 +793,133 @@ func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBin
 		Message:   "发送成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
+		Version:   0,
 	}, nil
 }
 
 // CompleteBindPhone implements the UserServiceImpl interface.
-func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.CompleteBindPhoneReq) (resp *user.CompleteBindPhoneResp, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.CompleteBindPhoneReq) (resp *user.OperationResult, err error) {
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
 
 	if err != nil {
-		return &user.CompleteBindPhoneResp{
-			Operation: res,
-			Version:   req.Version,
-		}, err
+		return res, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
 
 	if err != nil {
-		return &user.CompleteBindPhoneResp{
-			Operation: res,
-			Version:   req.Version,
-		}, err
+		return res, err
 	}
 
 	v, err := s.userService.CompleteBindPhone(ctx, targetUid, requestUid, req.NewPhone, req.VerificationCode, req.RequestId, int(req.Version))
 
 	if err != nil {
-		res, err := parseServiceErrToHandlerError(ctx, err, "")
-		return &user.CompleteBindPhoneResp{
-			Operation: res,
-			Version:   uint64(v),
-		}, err
+		res, err = parseServiceErrToHandlerError(ctx, err, "", req.Version)
+		return res, err
 	}
 
-	return &user.CompleteBindPhoneResp{
-		Operation: &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "修改成功",
-			RequestId: req.RequestId,
-			Timestamp: time.Now().String(),
-		},
-		Version: uint64(v),
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
 	}, nil
 }
 
 // StartChangePhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartChangePhone(ctx context.Context, req *user.StartChangePhoneReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.StartChangePhone(ctx, targetUid, requestUid)
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "发送验证码成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+		Version:   0,
+	}, nil
 }
 
 // VerifyNewPhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) VerifyNewPhone(ctx context.Context, req *user.VerifyNewPhoneReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return resp, err
+	}
+
+	requestId, err := s.userService.VerifyNewPhone(ctx, targetUid, requestUid, req.VerificationCode, req.NewPhone, req.RequestId)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "请求成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+		Version:   0,
+	}, nil
 }
 
 // CompleteChangePhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) CompleteChangePhone(ctx context.Context, req *user.CompleteChangePhoneReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	resp, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
+
+	if err != nil {
+		return resp, err
+	}
+
+	resp, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
+
+	if err != nil {
+		return resp, err
+	}
+
+	v, err := s.userService.CompleteChangePhone(ctx, targetUid, requestUid, req.VerificationCode, req.RequestId, int(req.Version))
+
+	if err != nil {
+		resp, err = parseServiceErrToHandlerError(ctx, err, req.RequestId, req.Version)
+		return resp, err
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
+	}, nil
 }
 
 // GetUserInfoById implements the UserServiceImpl interface.
 func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUserInfoByIdReq) (resp *user.UserInfoResp, err error) {
-	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId)
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
 
 	if err != nil {
 		return &user.UserInfoResp{
@@ -788,7 +927,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 		}, err
 	}
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return &user.UserInfoResp{
@@ -799,7 +938,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 	userinfo, err := s.userService.GetUserInfoById(ctx, targetUid, requestUid)
 
 	if err != nil {
-		result, err := parseServiceErrToHandlerError(ctx, err, "")
+		result, err := parseServiceErrToHandlerError(ctx, err, "", 0)
 		return &user.UserInfoResp{
 			Result: result,
 		}, err
@@ -812,6 +951,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 				Code:      http.StatusForbidden,
 				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
+				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
@@ -830,6 +970,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 			Code:      http.StatusOK,
 			Message:   "查询成功",
 			Timestamp: time.Now().String(),
+			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
 			UserId:   marshal,
@@ -846,7 +987,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 // GetUserInfoByOthers implements the UserServiceImpl interface.
 func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.GetUserInfoByOthersReq) (resp *user.UserInfoResp, err error) {
 
-	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId)
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
 
 	if err != nil {
 		return &user.UserInfoResp{
@@ -869,12 +1010,13 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 				Code:      http.StatusBadRequest,
 				Message:   "参数错误",
 				Timestamp: time.Now().String(),
+				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
 	}
 
 	if err != nil {
-		result, err := parseServiceErrToHandlerError(ctx, err, "")
+		result, err := parseServiceErrToHandlerError(ctx, err, "", 0)
 		return &user.UserInfoResp{
 			Result: result,
 		}, err
@@ -887,6 +1029,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 				Code:      http.StatusForbidden,
 				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
+				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
@@ -906,6 +1049,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 			Code:      http.StatusOK,
 			Message:   "查询成功",
 			Timestamp: time.Now().String(),
+			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
 			UserId:   marshal,
