@@ -369,39 +369,6 @@ func (s *ServiceImpl) CancelQrLogin(ctx context.Context, ticket string, uid util
 	return s.ConfirmOrCancelQrLogin(ctx, ticket, uid, requestId, 5)
 }
 
-func (s *ServiceImpl) ConfirmOrCancelQrLogin(
-	ctx context.Context,
-	ticket string,
-	uid util.UUID,
-	requestId string,
-	status int,
-) error {
-	//校验链路是否合法
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
-		return err
-	}
-
-	//校验上下文用户是否为同一个人
-	takeUidToken := util.TakeKey("userservice", "user", "takeUid", ticket)
-
-	result, err := s.Rds.Get(ctx, takeUidToken).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	} else if result != uid.String() || errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusBadRequest, "用户错误,不允许的操作", requestId, err)
-	}
-
-	//重置ticket状态
-	ticketToken := util.TakeKey("userservice", "user", "qrLogin", ticket)
-
-	if err = s.Rds.Set(ctx, ticketToken, status, 5*time.Minute).Err(); err != nil {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
-	}
-
-	return nil
-}
-
 func (s *ServiceImpl) Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) error {
 
 	//权限校验
@@ -658,89 +625,82 @@ func (s *ServiceImpl) StartBindEmail(ctx context.Context, targetUserId, requestU
 
 	//这里校验邮箱的合法性
 
-	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
-	if err != nil {
-		return "", err
-	}
-
-	emailToken := util.TakeKey("userserivce", "user", "StartBindEmail", newEmail, targetUserId)
-
-	if err = s.SendEmailCode(ctx, emailToken, newEmail); err != nil {
-		return "", err
-	}
-
-	return requestId, nil
+	return s.StartBindPhoneOrEmail(ctx, targetUserId, requestUserId, newEmail, EMAIL)
 }
 
 func (s *ServiceImpl) CompleteBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail, verifyCode, requestId string, version int) (v int, err error) {
-
-	//请求用户
-	usr, err := s.userRepo.GetUserByID(ctx, targetUserId)
-	if err != nil {
-		return version, ParseRepoErrorToCommonError(err, "服务器异常")
-	}
-
-	//CAS校验
-	if usr.Version != version {
-		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
-	}
-
-	//权限校验
-	// targetUserId、requestUserId、usr.Status
-
-	//校验requestId
-	if err = s.VerityRequestID(ctx, requestId); err != nil {
-		return version, err
-	}
-
-	//获取验证码
-	emailToken := util.TakeKey("userserivce", "user", "StartBindEmail", newEmail, targetUserId)
-	code, err := s.Rds.Get(ctx, emailToken).Result()
-
-	//获取验证码失败
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return version, cerrors.NewCommonError(http.StatusNotFound, "验证码过期", requestId, nil)
-		}
-		return version, cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", requestId, err)
-	}
-
-	//校验验证码
-	if code != verifyCode {
-		return version, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
-	}
-
-	defer s.Rds.Del(ctx, emailToken)
-
-	//重置邮箱
-	v, err = s.userRepo.ResetEmail(ctx, targetUserId, newEmail, version)
-
-	if err != nil {
-		return version, ParseRepoErrorToCommonError(err, "服务器错误")
-	}
-	return v, nil
+	return s.CompleteBindPhoneOrEmail(ctx, targetUserId, requestUserId, newEmail, verifyCode, requestId, version, EMAIL)
 }
 
 func (s *ServiceImpl) StartBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone string) (string, error) {
 
 	//这里校验手机号的合法性
 
+	return s.StartBindPhoneOrEmail(ctx, targetUserId, requestUserId, newPhone, PHONE)
+}
+
+func (s *ServiceImpl) CompleteBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone, verifyCode, requestId string, version int) (v int, err error) {
+	return s.CompleteBindPhoneOrEmail(ctx, targetUserId, requestUserId, newPhone, verifyCode, requestId, version, PHONE)
+}
+
+func (s *ServiceImpl) ConfirmOrCancelQrLogin(
+	ctx context.Context,
+	ticket string,
+	uid util.UUID,
+	requestId string,
+	status int,
+) error {
+	//校验链路是否合法
+	if err := s.VerityRequestID(ctx, requestId); err != nil {
+		return err
+	}
+
+	//校验上下文用户是否为同一个人
+	takeUidToken := util.TakeKey("userservice", "user", "takeUid", ticket)
+
+	result, err := s.Rds.Get(ctx, takeUidToken).Result()
+
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
+	} else if result != uid.String() || errors.Is(err, redis.Nil) {
+		return cerrors.NewCommonError(http.StatusBadRequest, "用户错误,不允许的操作", requestId, err)
+	}
+
+	//重置ticket状态
+	ticketToken := util.TakeKey("userservice", "user", "qrLogin", ticket)
+
+	if err = s.Rds.Set(ctx, ticketToken, status, 5*time.Minute).Err(); err != nil {
+		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
+	}
+
+	return nil
+}
+
+func (s *ServiceImpl) StartBindPhoneOrEmail(ctx context.Context, targetUserId, requestUserId util.UUID, sign string, form QueryType) (string, error) {
 	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
 	if err != nil {
 		return "", err
 	}
 
-	phoneToken := util.TakeKey("userserivce", "user", "StartBindPhone", newPhone, targetUserId)
-
-	if err = s.SendPhoneCode(ctx, phoneToken, newPhone); err != nil {
-		return "", err
+	switch form {
+	case PHONE:
+		phoneToken := util.TakeKey("userserivce", "user", "StartBindPhone", sign, targetUserId)
+		if err = s.SendPhoneCode(ctx, phoneToken, sign); err != nil {
+			return "", err
+		}
+	case EMAIL:
+		emailToken := util.TakeKey("userserivce", "user", "StartBindEmail", sign, targetUserId)
+		if err = s.SendEmailCode(ctx, emailToken, sign); err != nil {
+			return "", err
+		}
+	default:
+		return "", cerrors.NewCommonError(http.StatusBadRequest, "请求类型错误", "", nil)
 	}
 
 	return requestId, nil
 }
 
-func (s *ServiceImpl) CompleteBindPhone(ctx context.Context, targetUserId, requestUserId util.UUID, newPhone, verifyCode, requestId string, version int) (v int, err error) {
-
+func (s *ServiceImpl) CompleteBindPhoneOrEmail(ctx context.Context, targetUserId, requestUserId util.UUID, sign, verifyCode, requestId string, version int, form QueryType) (v int, err error) {
 	//请求用户
 	usr, err := s.userRepo.GetUserByID(ctx, targetUserId)
 	if err != nil {
@@ -752,14 +712,33 @@ func (s *ServiceImpl) CompleteBindPhone(ctx context.Context, targetUserId, reque
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
-	//鉴权部分
+	//鉴权
 
-	phoneToken := util.TakeKey("userserivce", "user", "StartBindPhone", newPhone, targetUserId)
-	code, err := s.Rds.Get(ctx, phoneToken).Result()
+	defer s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "id", targetUserId))
+	switch form {
+	case EMAIL:
+		defer s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "phone", usr.Phone))
+	case PHONE:
+		defer s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "email", usr.Email))
+	}
 
+	var Token string
+
+	switch form {
+	case EMAIL:
+		Token = util.TakeKey("userserivce", "user", "StartBindEmail", sign, targetUserId)
+	case PHONE:
+		Token = util.TakeKey("userserivce", "user", "StartBindPhone", sign, targetUserId)
+	default:
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil)
+	}
+
+	//获取验证码
+	code, err := s.Rds.Get(ctx, Token).Result()
+	//获取验证码失败
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return version, cerrors.NewCommonError(http.StatusNotFound, "验证码过期", requestId, nil)
+			return version, cerrors.NewCommonError(http.StatusNotFound, "验证码不存在", requestId, nil)
 		}
 		return version, cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", requestId, err)
 	}
@@ -769,10 +748,20 @@ func (s *ServiceImpl) CompleteBindPhone(ctx context.Context, targetUserId, reque
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
 	}
 
-	defer s.Rds.Del(ctx, phoneToken)
+	//删除临时凭证
+	defer s.Rds.Del(ctx, Token)
 
-	//重置手机号
-	v, err = s.userRepo.ResetPhone(ctx, targetUserId, newPhone, version)
+	switch form {
+	case EMAIL:
+		//重置邮箱
+		v, err = s.userRepo.ResetEmail(ctx, targetUserId, sign, version, requestUserId)
+	case PHONE:
+		//重置手机号
+		v, err = s.userRepo.ResetPhone(ctx, targetUserId, sign, version, requestUserId)
+
+	default:
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil)
+	}
 
 	if err != nil {
 		return version, ParseRepoErrorToCommonError(err, "服务器错误")

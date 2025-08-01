@@ -82,64 +82,6 @@ func (x LoginFlowType) String() string {
 	return strconv.Itoa(int(x))
 }
 
-type CodeType int32
-
-const (
-	CodeType_CODE_LOGIN          CodeType = 0
-	CodeType_CODE_BIND_EMAIL     CodeType = 1
-	CodeType_CODE_RESET_PASSWORD CodeType = 2
-	CodeType_CODE_BIND_PHONE     CodeType = 3
-)
-
-// Enum value maps for CodeType.
-var CodeType_name = map[int32]string{
-	0: "CODE_LOGIN",
-	1: "CODE_BIND_EMAIL",
-	2: "CODE_RESET_PASSWORD",
-	3: "CODE_BIND_PHONE",
-}
-
-var CodeType_value = map[string]int32{
-	"CODE_LOGIN":          0,
-	"CODE_BIND_EMAIL":     1,
-	"CODE_RESET_PASSWORD": 2,
-	"CODE_BIND_PHONE":     3,
-}
-
-func (x CodeType) String() string {
-	s, ok := CodeType_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-
-type VerificationType int32
-
-const (
-	VerificationType_VERIFY_SMS   VerificationType = 0
-	VerificationType_VERIFY_EMAIL VerificationType = 1
-)
-
-// Enum value maps for VerificationType.
-var VerificationType_name = map[int32]string{
-	0: "VERIFY_SMS",
-	1: "VERIFY_EMAIL",
-}
-
-var VerificationType_value = map[string]int32{
-	"VERIFY_SMS":   0,
-	"VERIFY_EMAIL": 1,
-}
-
-func (x VerificationType) String() string {
-	s, ok := VerificationType_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-
 type QrCodeLoginStatusResp_Status int32
 
 const (
@@ -643,7 +585,6 @@ type SmsLoginReq struct {
 	Code      string        `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`             // 验证阶段提供
 	Flow      LoginFlowType `protobuf:"varint,3,opt,name=flow" json:"flow,omitempty"`            // 流程类型
 	RequestId string        `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"` // 验证阶段携带
-	Type      uint64        `protobuf:"varint,5,opt,name=type" json:"type,omitempty"`            // 验证码发送方式 0手机号 1邮箱
 }
 
 func (x *SmsLoginReq) Reset() { *x = SmsLoginReq{} }
@@ -678,13 +619,6 @@ func (x *SmsLoginReq) GetRequestId() string {
 		return x.RequestId
 	}
 	return ""
-}
-
-func (x *SmsLoginReq) GetType() uint64 {
-	if x != nil {
-		return x.Type
-	}
-	return 0
 }
 
 type SmsLoginResp struct {
@@ -1529,6 +1463,7 @@ type CompleteBindEmailReq struct {
 	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"`
 	RequestId        string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
 	RequestUserId    []byte `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Version          uint64 `protobuf:"varint,6,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *CompleteBindEmailReq) Reset() { *x = CompleteBindEmailReq{} }
@@ -1570,6 +1505,40 @@ func (x *CompleteBindEmailReq) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *CompleteBindEmailReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type CompleteBindEmailResp struct {
+	Operation *OperationResult `protobuf:"bytes,1,opt,name=operation" json:"operation,omitempty"`
+	Version   uint64           `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
+}
+
+func (x *CompleteBindEmailResp) Reset() { *x = CompleteBindEmailResp{} }
+
+func (x *CompleteBindEmailResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *CompleteBindEmailResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CompleteBindEmailResp) GetOperation() *OperationResult {
+	if x != nil {
+		return x.Operation
+	}
+	return nil
+}
+
+func (x *CompleteBindEmailResp) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type StartChangeEmailReq struct {
@@ -1736,6 +1705,7 @@ type CompleteBindPhoneReq struct {
 	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"` // 短信验证码
 	RequestId        string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`               // 预绑定返回的请求ID
 	RequestUserId    []byte `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Version          uint64 `protobuf:"varint,6,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *CompleteBindPhoneReq) Reset() { *x = CompleteBindPhoneReq{} }
@@ -1777,6 +1747,40 @@ func (x *CompleteBindPhoneReq) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *CompleteBindPhoneReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type CompleteBindPhoneResp struct {
+	Operation *OperationResult `protobuf:"bytes,1,opt,name=operation" json:"operation,omitempty"`
+	Version   uint64           `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
+}
+
+func (x *CompleteBindPhoneResp) Reset() { *x = CompleteBindPhoneResp{} }
+
+func (x *CompleteBindPhoneResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *CompleteBindPhoneResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CompleteBindPhoneResp) GetOperation() *OperationResult {
+	if x != nil {
+		return x.Operation
+	}
+	return nil
+}
+
+func (x *CompleteBindPhoneResp) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type StartChangePhoneReq struct {
@@ -2478,90 +2482,6 @@ func (x *DeleteUserReq) GetRequestId() string {
 	return ""
 }
 
-// ---------- 安全服务 ---------- //
-type VerifyCodeReq struct {
-	Identity string   `protobuf:"bytes,1,opt,name=identity" json:"identity,omitempty"` // 邮箱或手机号
-	Code     string   `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`
-	CodeType CodeType `protobuf:"varint,3,opt,name=code_type" json:"code_type,omitempty"`
-}
-
-func (x *VerifyCodeReq) Reset() { *x = VerifyCodeReq{} }
-
-func (x *VerifyCodeReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *VerifyCodeReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *VerifyCodeReq) GetIdentity() string {
-	if x != nil {
-		return x.Identity
-	}
-	return ""
-}
-
-func (x *VerifyCodeReq) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-func (x *VerifyCodeReq) GetCodeType() CodeType {
-	if x != nil {
-		return x.CodeType
-	}
-	return CodeType_CODE_LOGIN
-}
-
-type VerifyCodeResp struct {
-	Valid bool   `protobuf:"varint,1,opt,name=valid" json:"valid,omitempty"`
-	Token string `protobuf:"bytes,2,opt,name=token" json:"token,omitempty"` // 用于后续操作
-}
-
-func (x *VerifyCodeResp) Reset() { *x = VerifyCodeResp{} }
-
-func (x *VerifyCodeResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *VerifyCodeResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *VerifyCodeResp) GetValid() bool {
-	if x != nil {
-		return x.Valid
-	}
-	return false
-}
-
-func (x *VerifyCodeResp) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-type SendVerificationReq struct {
-	Identity string           `protobuf:"bytes,1,opt,name=identity" json:"identity,omitempty"` // 邮箱或手机号
-	Type     VerificationType `protobuf:"varint,2,opt,name=type" json:"type,omitempty"`
-}
-
-func (x *SendVerificationReq) Reset() { *x = SendVerificationReq{} }
-
-func (x *SendVerificationReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SendVerificationReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SendVerificationReq) GetIdentity() string {
-	if x != nil {
-		return x.Identity
-	}
-	return ""
-}
-
-func (x *SendVerificationReq) GetType() VerificationType {
-	if x != nil {
-		return x.Type
-	}
-	return VerificationType_VERIFY_SMS
-}
-
 type UserService interface {
 	Register(ctx context.Context, req *RegisterReq) (res *OperationResult, err error)
 	EmailLogin(ctx context.Context, req *EmailLoginReq) (res *LoginResp, err error)
@@ -2581,12 +2501,12 @@ type UserService interface {
 	ForgotPassword(ctx context.Context, req *ForgotPasswordReq) (res *OperationResult, err error)
 	ResetPassword(ctx context.Context, req *ResetPasswordReq) (res *OperationResult, err error)
 	StartBindEmail(ctx context.Context, req *StartBindEmailReq) (res *OperationResult, err error)
-	CompleteBindEmail(ctx context.Context, req *CompleteBindEmailReq) (res *OperationResult, err error)
+	CompleteBindEmail(ctx context.Context, req *CompleteBindEmailReq) (res *CompleteBindEmailResp, err error)
 	StartChangeEmail(ctx context.Context, req *StartChangeEmailReq) (res *OperationResult, err error)
 	VerifyNewEmail(ctx context.Context, req *VerifyNewEmailReq) (res *OperationResult, err error)
 	CompleteChangeEmail(ctx context.Context, req *CompleteChangeEmailReq) (res *OperationResult, err error)
 	StartBindPhone(ctx context.Context, req *StartBindPhoneReq) (res *OperationResult, err error)
-	CompleteBindPhone(ctx context.Context, req *CompleteBindPhoneReq) (res *OperationResult, err error)
+	CompleteBindPhone(ctx context.Context, req *CompleteBindPhoneReq) (res *CompleteBindPhoneResp, err error)
 	StartChangePhone(ctx context.Context, req *StartChangePhoneReq) (res *OperationResult, err error)
 	VerifyNewPhone(ctx context.Context, req *VerifyNewPhoneReq) (res *OperationResult, err error)
 	CompleteChangePhone(ctx context.Context, req *CompleteChangePhoneReq) (res *OperationResult, err error)
@@ -2600,6 +2520,4 @@ type UserService interface {
 	ReactivateUser(ctx context.Context, req *ReactivateUserReq) (res *OperationResult, err error)
 	StartDeleteUser(ctx context.Context, req *StartDeleteReq) (res *OperationResult, err error)
 	DeleteUser(ctx context.Context, req *DeleteUserReq) (res *OperationResult, err error)
-	VerifySecurityCode(ctx context.Context, req *VerifyCodeReq) (res *VerifyCodeResp, err error)
-	SendVerification(ctx context.Context, req *SendVerificationReq) (res *OperationResult, err error)
 }
