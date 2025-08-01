@@ -182,9 +182,9 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 	updates["gender"] = u.Gender
 
 	// 可选字段（空值不更新）
-	if u.Phone != "" {
-		updates["phone"] = u.Phone
-	}
+	//if u.Phone != "" {
+	//	updates["phone"] = u.Phone
+	//}
 	if u.NickName != "" {
 		updates["nickname"] = u.NickName // 修正字段名
 	}

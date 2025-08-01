@@ -106,13 +106,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"SessionCheck": kitex.NewMethodInfo(
-		sessionCheckHandler,
-		newSessionCheckArgs,
-		newSessionCheckResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"ChangePassword": kitex.NewMethodInfo(
 		changePasswordHandler,
 		newChangePasswordArgs,
@@ -1780,117 +1773,6 @@ func (p *LogoutResult) IsSetSuccess() bool {
 }
 
 func (p *LogoutResult) GetResult() interface{} {
-	return p.Success
-}
-
-func sessionCheckHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(user.SessionCheckReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(user.UserService).SessionCheck(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *SessionCheckArgs:
-		success, err := handler.(user.UserService).SessionCheck(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*SessionCheckResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newSessionCheckArgs() interface{} {
-	return &SessionCheckArgs{}
-}
-
-func newSessionCheckResult() interface{} {
-	return &SessionCheckResult{}
-}
-
-type SessionCheckArgs struct {
-	Req *user.SessionCheckReq
-}
-
-func (p *SessionCheckArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *SessionCheckArgs) Unmarshal(in []byte) error {
-	msg := new(user.SessionCheckReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var SessionCheckArgs_Req_DEFAULT *user.SessionCheckReq
-
-func (p *SessionCheckArgs) GetReq() *user.SessionCheckReq {
-	if !p.IsSetReq() {
-		return SessionCheckArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *SessionCheckArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *SessionCheckArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type SessionCheckResult struct {
-	Success *user.SessionStatusResp
-}
-
-var SessionCheckResult_Success_DEFAULT *user.SessionStatusResp
-
-func (p *SessionCheckResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *SessionCheckResult) Unmarshal(in []byte) error {
-	msg := new(user.SessionStatusResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *SessionCheckResult) GetSuccess() *user.SessionStatusResp {
-	if !p.IsSetSuccess() {
-		return SessionCheckResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *SessionCheckResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.SessionStatusResp)
-}
-
-func (p *SessionCheckResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *SessionCheckResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -4582,16 +4464,6 @@ func (p *kClient) Logout(ctx context.Context, Req *user.LogoutReq) (r *user.Oper
 	_args.Req = Req
 	var _result LogoutResult
 	if err = p.c.Call(ctx, "Logout", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) SessionCheck(ctx context.Context, Req *user.SessionCheckReq) (r *user.SessionStatusResp, err error) {
-	var _args SessionCheckArgs
-	_args.Req = Req
-	var _result SessionCheckResult
-	if err = p.c.Call(ctx, "SessionCheck", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

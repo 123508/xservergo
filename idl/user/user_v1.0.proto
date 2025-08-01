@@ -18,7 +18,6 @@ service UserService {
   rpc CancelQrLogin(CancelQrLoginReq) returns (Empty);                      // 取消登录 (移动端调用)
   rpc OAuthLogin(OAuthLoginReq) returns (LoginResp) {}                      // 第三方登录
   rpc Logout(LogoutReq) returns (OperationResult) {}                        // 登出
-  rpc SessionCheck(SessionCheckReq) returns (SessionStatusResp) {}          // 会话检查
 
   // ---------- 密码管理 ---------- //
   rpc ChangePassword(ChangePasswordReq) returns (OperationResult) {}        // 修改密码
@@ -258,18 +257,6 @@ message LogoutReq {
   bytes request_user_id = 4;
 }
 
-message SessionCheckReq {
-  string access_token = 1;
-  string refresh_token = 2;
-  bytes request_user_id = 3;
-}
-
-message SessionStatusResp {
-  bool is_valid = 1;
-  uint64 last_active = 2;  // 最后活动时间戳(毫秒)
-  string device_info = 3;
-}
-
 // ---------- 密码管理 ---------- //
 message ChangePasswordReq {
   bytes target_user_id = 1;
@@ -390,11 +377,11 @@ message UserInfoResp {
 
 message UpdateUserInfoReq {
   bytes target_user_id = 1;
-  optional string nickname = 2;  // 可选更新字段
-  optional string avatar = 3;
-  optional int32 gender = 4;     // 0-未知 1-男 2-女
-  bytes last_updated_by = 5;
+  string nickname = 2;  // 可选更新字段
+  string avatar = 3;
+  uint64 gender = 4;     // 0-未知 1-男 2-女
   bytes request_user_id=6;      // 操作者ID
+  uint64 version = 7;
 }
 
 message ListUsersReq {

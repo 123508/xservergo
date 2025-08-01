@@ -24,7 +24,6 @@ type Client interface {
 	CancelQrLogin(ctx context.Context, Req *user.CancelQrLoginReq, callOptions ...callopt.Option) (r *user.Empty, err error)
 	OAuthLogin(ctx context.Context, Req *user.OAuthLoginReq, callOptions ...callopt.Option) (r *user.LoginResp, err error)
 	Logout(ctx context.Context, Req *user.LogoutReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
-	SessionCheck(ctx context.Context, Req *user.SessionCheckReq, callOptions ...callopt.Option) (r *user.SessionStatusResp, err error)
 	ChangePassword(ctx context.Context, Req *user.ChangePasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	ForgotPassword(ctx context.Context, Req *user.ForgotPasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	ResetPassword(ctx context.Context, Req *user.ResetPasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
@@ -142,11 +141,6 @@ func (p *kUserServiceClient) OAuthLogin(ctx context.Context, Req *user.OAuthLogi
 func (p *kUserServiceClient) Logout(ctx context.Context, Req *user.LogoutReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.Logout(ctx, Req)
-}
-
-func (p *kUserServiceClient) SessionCheck(ctx context.Context, Req *user.SessionCheckReq, callOptions ...callopt.Option) (r *user.SessionStatusResp, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.SessionCheck(ctx, Req)
 }
 
 func (p *kUserServiceClient) ChangePassword(ctx context.Context, Req *user.ChangePasswordReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {

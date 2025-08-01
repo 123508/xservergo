@@ -55,6 +55,7 @@ type UserService interface {
 	StartChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID) (requestId string, err error)
 	VerifyNewPhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, newPhone, RequestId string) (requestId string, err error)
 	CompleteChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error)
+	UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (v int, err error)
 }
 
 type ServiceImpl struct {
@@ -665,6 +666,28 @@ func (s *ServiceImpl) VerifyNewPhone(ctx context.Context, targetUserId, requestU
 
 func (s *ServiceImpl) CompleteChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error) {
 	return s.CompleteChangePhoneOrEmail(ctx, targetUserId, requestUserId, verifyCode, requestId, version, PHONE)
+}
+
+func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (int, error) {
+
+	usr, err := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	if err != nil {
+		return version, err
+	}
+
+	usr.NickName = nickName
+	usr.Avatar = avatar
+	usr.Gender = gender
+
+	v, err := s.userRepo.UpdateUser(ctx, usr, requestUserId)
+
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器错误")
+	}
+
+	s.CleanCache(ctx, usr)
+
+	return v, nil
 }
 
 func (s *ServiceImpl) ConfirmOrCancelQrLogin(

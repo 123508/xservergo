@@ -516,12 +516,6 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 
 }
 
-// SessionCheck implements the UserServiceImpl interface.
-func (s *UserServiceImpl) SessionCheck(ctx context.Context, req *user.SessionCheckReq) (resp *user.SessionStatusResp, err error) {
-	// TODO: Your code here...
-	return
-}
-
 // ChangePassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePasswordReq) (resp *user.OperationResult, err error) {
 	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
@@ -1065,8 +1059,31 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 // UpdateUserInfo implements the UserServiceImpl interface.
 func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUserInfoReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	v, err := s.userService.UpdateUserInfo(ctx, targetUid, requestUid, req.Nickname, req.Avatar, req.Gender, int(req.Version))
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, "", uint64(v))
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改成功",
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
+	}, nil
 }
 
 // ListUsers implements the UserServiceImpl interface.

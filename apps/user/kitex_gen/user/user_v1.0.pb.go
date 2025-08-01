@@ -1193,72 +1193,6 @@ func (x *LogoutReq) GetRequestUserId() []byte {
 	return nil
 }
 
-type SessionCheckReq struct {
-	AccessToken   string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"`
-	RefreshToken  string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
-	RequestUserId []byte `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
-}
-
-func (x *SessionCheckReq) Reset() { *x = SessionCheckReq{} }
-
-func (x *SessionCheckReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SessionCheckReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SessionCheckReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *SessionCheckReq) GetRefreshToken() string {
-	if x != nil {
-		return x.RefreshToken
-	}
-	return ""
-}
-
-func (x *SessionCheckReq) GetRequestUserId() []byte {
-	if x != nil {
-		return x.RequestUserId
-	}
-	return nil
-}
-
-type SessionStatusResp struct {
-	IsValid    bool   `protobuf:"varint,1,opt,name=is_valid" json:"is_valid,omitempty"`
-	LastActive uint64 `protobuf:"varint,2,opt,name=last_active" json:"last_active,omitempty"` // 最后活动时间戳(毫秒)
-	DeviceInfo string `protobuf:"bytes,3,opt,name=device_info" json:"device_info,omitempty"`
-}
-
-func (x *SessionStatusResp) Reset() { *x = SessionStatusResp{} }
-
-func (x *SessionStatusResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *SessionStatusResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *SessionStatusResp) GetIsValid() bool {
-	if x != nil {
-		return x.IsValid
-	}
-	return false
-}
-
-func (x *SessionStatusResp) GetLastActive() uint64 {
-	if x != nil {
-		return x.LastActive
-	}
-	return 0
-}
-
-func (x *SessionStatusResp) GetDeviceInfo() string {
-	if x != nil {
-		return x.DeviceInfo
-	}
-	return ""
-}
-
 // ---------- 密码管理 ---------- //
 type ChangePasswordReq struct {
 	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
@@ -1997,12 +1931,12 @@ func (x *UserInfoResp) GetUserInfo() *UserInfo {
 }
 
 type UpdateUserInfoReq struct {
-	TargetUserId  []byte  `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	Nickname      *string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"` // 可选更新字段
-	Avatar        *string `protobuf:"bytes,3,opt,name=avatar" json:"avatar,omitempty"`
-	Gender        *int32  `protobuf:"varint,4,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
-	LastUpdatedBy []byte  `protobuf:"bytes,5,opt,name=last_updated_by" json:"last_updated_by,omitempty"`
-	RequestUserId []byte  `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者ID
+	TargetUserId  []byte `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	Nickname      string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"` // 可选更新字段
+	Avatar        string `protobuf:"bytes,3,opt,name=avatar" json:"avatar,omitempty"`
+	Gender        uint64 `protobuf:"varint,4,opt,name=gender" json:"gender,omitempty"`                  // 0-未知 1-男 2-女
+	RequestUserId []byte `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者ID
+	Version       uint64 `protobuf:"varint,7,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *UpdateUserInfoReq) Reset() { *x = UpdateUserInfoReq{} }
@@ -2019,31 +1953,24 @@ func (x *UpdateUserInfoReq) GetTargetUserId() []byte {
 }
 
 func (x *UpdateUserInfoReq) GetNickname() string {
-	if x != nil && x.Nickname != nil {
-		return *x.Nickname
+	if x != nil {
+		return x.Nickname
 	}
 	return ""
 }
 
 func (x *UpdateUserInfoReq) GetAvatar() string {
-	if x != nil && x.Avatar != nil {
-		return *x.Avatar
+	if x != nil {
+		return x.Avatar
 	}
 	return ""
 }
 
-func (x *UpdateUserInfoReq) GetGender() int32 {
-	if x != nil && x.Gender != nil {
-		return *x.Gender
+func (x *UpdateUserInfoReq) GetGender() uint64 {
+	if x != nil {
+		return x.Gender
 	}
 	return 0
-}
-
-func (x *UpdateUserInfoReq) GetLastUpdatedBy() []byte {
-	if x != nil {
-		return x.LastUpdatedBy
-	}
-	return nil
 }
 
 func (x *UpdateUserInfoReq) GetRequestUserId() []byte {
@@ -2051,6 +1978,13 @@ func (x *UpdateUserInfoReq) GetRequestUserId() []byte {
 		return x.RequestUserId
 	}
 	return nil
+}
+
+func (x *UpdateUserInfoReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
 }
 
 type ListUsersReq struct {
@@ -2450,7 +2384,6 @@ type UserService interface {
 	CancelQrLogin(ctx context.Context, req *CancelQrLoginReq) (res *Empty, err error)
 	OAuthLogin(ctx context.Context, req *OAuthLoginReq) (res *LoginResp, err error)
 	Logout(ctx context.Context, req *LogoutReq) (res *OperationResult, err error)
-	SessionCheck(ctx context.Context, req *SessionCheckReq) (res *SessionStatusResp, err error)
 	ChangePassword(ctx context.Context, req *ChangePasswordReq) (res *OperationResult, err error)
 	ForgotPassword(ctx context.Context, req *ForgotPasswordReq) (res *OperationResult, err error)
 	ResetPassword(ctx context.Context, req *ResetPasswordReq) (res *OperationResult, err error)
