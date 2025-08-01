@@ -38,6 +38,29 @@ func permissionTypeFromString(t string) auth.Permission_Type {
 	}
 }
 
+func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
+	switch t {
+	case auth.Permission_API:
+		return models.PermissionTypeAPI
+	case auth.Permission_MENU:
+		return models.PermissionTypeMenu
+	case auth.Permission_BUTTON:
+		return models.PermissionTypeButton
+	case auth.Permission_DATA:
+		return models.PermissionTypeData
+	case auth.Permission_FILE:
+		return models.PermissionTypeFile
+	case auth.Permission_FIELD:
+		return models.PermissionTypeField
+	case auth.Permission_TASK:
+		return models.PermissionTypeTask
+	case auth.Permission_MODULE:
+		return models.PermissionTypeModule
+	default:
+		return models.PermissionTypeAPI
+	}
+}
+
 // AuthServiceImpl implements the last service interface defined in the IDL.
 type AuthServiceImpl struct {
 	authService service.AuthService
@@ -69,7 +92,7 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 		Name:        req.Permission.PermissionName,
 		Description: req.Permission.Description,
 		ParentID:    parentId,
-		Type:        models.PermissionType(req.Permission.Type),
+		Type:        permissionTypeFromInt(req.Permission.Type),
 		Resource:    req.Permission.Resource,
 		Method:      req.Permission.Method,
 		Status:      status,
@@ -77,7 +100,7 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 			CreatedBy: operatorId,
 		},
 	}
-	newPermission, err := s.authService.CreatePermission(ctx, &permission, *operatorId)
+	newPermission, err := s.authService.CreatePermission(ctx, &permission, operatorId)
 	if err != nil {
 		var com *cerrors.CommonError
 		if errors.As(err, &com) {
@@ -88,9 +111,12 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
 	}
-	parentIdMarshaled, err := newPermission.ParentID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+	var parentIdMarshaled []byte
+	if newPermission.ParentID != nil {
+		parentIdMarshaled, err = newPermission.ParentID.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+		}
 	}
 	return &auth.Permission{
 		Id:             id,

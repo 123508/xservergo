@@ -27,7 +27,7 @@ type AuthService interface {
 	VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, error)
 
 	// CreatePermission 创建权限
-	CreatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error)
+	CreatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error)
 	// UpdatePermission 更新权限
 	UpdatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error)
 	// DeletePermission 删除权限
@@ -191,12 +191,12 @@ func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (util
 	return claims.UserId, claims.Perms, claims.PVer, nil
 }
 
-func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error) {
+func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error) {
 	if permission == nil || permission.Code == "" || permission.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	permission.AuditFields.CreatedBy = &operatorId
+	permission.AuditFields.CreatedBy = operatorId
 	err := s.authRepo.CreatePermission(ctx, permission)
 	if err != nil {
 		logs.ErrorLogger.Error("创建权限错误:", zap.Error(err))
