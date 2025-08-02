@@ -126,7 +126,7 @@ func (r *RepoImpl) UpdatePermission(ctx context.Context, permission *models.Perm
 		return cerrors.NewParamError(http.StatusBadRequest, "permission cannot be nil")
 	}
 
-	if err := r.DB.WithContext(ctx).Save(permission).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("id = ?", permission.ID).Updates(permission).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update permission: ", err)
 	}
 	return nil

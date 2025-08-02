@@ -3,13 +3,14 @@ package repo
 import (
 	"context"
 	"errors"
+	"net/http"
+
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 type UserRepository interface {
@@ -208,8 +209,8 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 		logs.ErrorLogger.Error("更新用户出错",
 			zap.Error(result.Error),
 			zap.ByteString("userID", u.ID[:]),
-			zap.Int("version", u.Version))
-		return u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
+			zap.Int("version", *u.Version))
+		return *u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
 	}
 
 	// 3. 检查乐观锁冲突
@@ -217,12 +218,12 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 		err := errors.New("更新失败：用户不存在或版本不匹配")
 		logs.ErrorLogger.Error(err.Error(),
 			zap.ByteString("userID", u.ID[:]),
-			zap.Int("expected_version", u.Version))
-		return u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
+			zap.Int("expected_version", *u.Version))
+		return *u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
 	}
 
 	// 4. 获取新版本号（避免额外查询）
-	return u.Version + 1, nil
+	return *u.Version + 1, nil
 }
 
 func (r *RepoImpl) DeleteUser(ctx context.Context, userID util.UUID, requestUserId util.UUID) error {

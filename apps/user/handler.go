@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/123508/xservergo/apps/user/service"
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/component/serializer"
@@ -9,8 +12,6 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"net/http"
-	"time"
 
 	"github.com/123508/xservergo/kitex_gen/user"
 )
@@ -97,7 +98,8 @@ func NewUserServiceImpl(database *gorm.DB, rds *redis.Client) *UserServiceImpl {
 
 // Register implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.OperationResult, err error) {
-
+	timeNow := time.Now()
+	version := 1
 	u := &models.User{
 		NickName: req.Nickname,
 		UserName: req.Username,
@@ -106,16 +108,16 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Gender:   req.Gender,
 		Status:   0,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			Version:   1,
+			CreatedAt: &timeNow,
+			Version:   &version,
 		},
 	}
 
 	uLogin := &models.UserLogin{
 		Password: req.Password,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			Version:   1,
+			CreatedAt: &timeNow,
+			Version:   &version,
 		},
 	}
 

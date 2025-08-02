@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
+	"net/http"
+	"time"
+
 	"github.com/123508/xservergo/apps/user/repo"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -16,9 +20,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"math/rand"
-	"net/http"
-	"time"
 )
 
 var authClient = cli.InitAuthService()
@@ -755,7 +756,7 @@ func (s *ServiceImpl) CompleteBindPhoneOrEmail(ctx context.Context, targetUserId
 	}
 
 	//CAS校验
-	if usr.Version != version {
+	if *usr.Version != version {
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
@@ -934,7 +935,7 @@ func (s *ServiceImpl) CompleteChangePhoneOrEmail(ctx context.Context, targetUser
 	}
 
 	//CAS校验
-	if usr.Version != version {
+	if *usr.Version != version {
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
@@ -1042,7 +1043,7 @@ func (s *ServiceImpl) LoginWithResp(
 	}
 
 	//获取token部分
-	resp, err := s.RequestToken(ctx, usr.ID, usr.Version)
+	resp, err := s.RequestToken(ctx, usr.ID, *usr.Version)
 
 	if err != nil {
 		return nil, nil, err

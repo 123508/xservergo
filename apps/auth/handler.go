@@ -61,6 +61,17 @@ func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
 	}
 }
 
+func getUUIDFromBytes(b []byte) (*util.UUID, error) {
+	if len(b) == 0 {
+		return nil, nil
+	}
+	uid := &util.UUID{}
+	if err := uid.Unmarshal(b); err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	return uid, nil
+}
+
 // AuthServiceImpl implements the last service interface defined in the IDL.
 type AuthServiceImpl struct {
 	authService service.AuthService
@@ -78,8 +89,8 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
 		parentId = nil
 	}
-	operatorId := &util.UUID{}
-	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	status := int8(1)
@@ -137,8 +148,8 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
 		parentId = nil
 	}
-	operatorId := &util.UUID{}
-	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	status := int8(1)
@@ -155,7 +166,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		Name:        req.Permission.PermissionName,
 		Description: req.Permission.Description,
 		ParentID:    parentId,
-		Type:        models.PermissionType(req.Permission.Type),
+		Type:        permissionTypeFromInt(req.Permission.Type),
 		Resource:    req.Permission.Resource,
 		Method:      req.Permission.Method,
 		Status:      status,
@@ -163,7 +174,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 			UpdatedBy: operatorId,
 		},
 	}
-	newPermission, err := s.authService.UpdatePermission(ctx, &permission, *operatorId)
+	newPermission, err := s.authService.UpdatePermission(ctx, &permission, operatorId)
 	if err != nil {
 		var com *cerrors.CommonError
 		if errors.As(err, &com) {
@@ -174,9 +185,12 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
 	}
-	parentIdMarshaled, err := newPermission.ParentID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+	var parentIdMarshaled []byte
+	if newPermission.ParentID != nil {
+		parentIdMarshaled, err = newPermission.ParentID.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
+		}
 	}
 	return &auth.Permission{
 		Id:             id,
@@ -193,11 +207,11 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 
 // DeletePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeletePermission(ctx context.Context, req *auth.DeletePermissionReq) (resp *auth.OperationResult, err error) {
-	operatorId := &util.UUID{}
-	if err := operatorId.Unmarshal(req.RequestUserId); err != nil {
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	err = s.authService.DeletePermission(ctx, req.PermissionCode, *operatorId)
+	err = s.authService.DeletePermission(ctx, req.PermissionCode, operatorId)
 	if err != nil {
 		var com *cerrors.CommonError
 		if errors.As(err, &com) {

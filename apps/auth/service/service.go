@@ -29,58 +29,58 @@ type AuthService interface {
 	// CreatePermission 创建权限
 	CreatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error)
 	// UpdatePermission 更新权限
-	UpdatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error)
+	UpdatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error)
 	// DeletePermission 删除权限
-	DeletePermission(ctx context.Context, permissionCode string, operatorId util.UUID) error
+	DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error
 	// GetPermissionByCode 获取权限
 	GetPermissionByCode(ctx context.Context, permissionCode string) (*models.Permission, error)
 	// GetPermissionByID 获取权限
 	GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error)
 
 	// CreateRole 创建角色
-	CreateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error)
+	CreateRole(ctx context.Context, role *models.Role, operatorId *util.UUID) (*models.Role, error)
 	// UpdateRole 更新角色
-	UpdateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error)
+	UpdateRole(ctx context.Context, role *models.Role, operatorId *util.UUID) (*models.Role, error)
 	// DeleteRole 删除角色
-	DeleteRole(ctx context.Context, roleCode string, operatorId util.UUID) error
+	DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error
 	// GetRoleByCode 获取角色
 	GetRoleByCode(ctx context.Context, roleCode string) (*models.Role, error)
 
 	// GrantPermissionToRole 授权权限到角色
-	GrantPermissionToRole(ctx context.Context, permissionCode, roleCode string, operatorId util.UUID) error
+	GrantPermissionToRole(ctx context.Context, permissionCode, roleCode string, operatorId *util.UUID) error
 	// RevokePermissionFromRole 从角色撤销权限
-	RevokePermissionFromRole(ctx context.Context, permissionCode, roleCode string, operatorId util.UUID) error
+	RevokePermissionFromRole(ctx context.Context, permissionCode, roleCode string, operatorId *util.UUID) error
 	// GetRolePermissions 获取角色权限
 	GetRolePermissions(ctx context.Context, roleCode string) ([]string, error)
 
 	// AssignRoleToUser 分配角色到用户
-	AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId util.UUID) error
+	AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
 	// RevokeRoleFromUser 从用户撤销角色
-	RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId util.UUID) error
+	RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
 	// GetUserRoles 获取用户角色
 	GetUserRoles(ctx context.Context, userID util.UUID) ([]string, error)
 
 	// CreateUserGroup 创建用户组
-	CreateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId util.UUID) (*models.UserGroup, error)
+	CreateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error)
 	// UpdateUserGroup 更新用户组
-	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId util.UUID) (*models.UserGroup, error)
+	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error)
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(ctx context.Context, groupName string, operatorId util.UUID) error
+	DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error
 	// GetUserGroupByName 获取用户组
 	GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
-	AssignRoleToUserGroup(ctx context.Context, roleCode, groupName string, operatorId util.UUID) error
+	AssignRoleToUserGroup(ctx context.Context, roleCode, groupName string, operatorId *util.UUID) error
 	// RemoveRoleFromUserGroup 从用户组撤销角色
-	RemoveRoleFromUserGroup(ctx context.Context, roleCode, groupName string, operatorId util.UUID) error
+	RemoveRoleFromUserGroup(ctx context.Context, roleCode, groupName string, operatorId *util.UUID) error
 	// GetUserGroupPermissions 获取用户组权限
 	GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error)
 
 	// AssignUserToGroup 分配用户到用户组
-	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId util.UUID) error
+	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
 	// RevokeUserFromGroup 从用户组撤销用户
-	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId util.UUID) error
+	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
 	// GetUserGroups 获取用户组
 	GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error)
 
@@ -207,21 +207,23 @@ func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.P
 	return newPermission, err
 }
 
-func (s *ServiceImpl) UpdatePermission(ctx context.Context, permission *models.Permission, operatorId util.UUID) (*models.Permission, error) {
+func (s *ServiceImpl) UpdatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error) {
 	if permission == nil || permission.Code == "" || permission.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	existingPermission, err := s.authRepo.GetPermissionByCode(ctx, permission.Code)
-	if err != nil {
-		logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
-		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
+	if permission.ID.IsZero() {
+		existingPermission, err := s.authRepo.GetPermissionByCode(ctx, permission.Code)
+		if err != nil {
+			logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
+			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
+		}
+
+		permission.ID = existingPermission.ID
 	}
+	permission.AuditFields.UpdatedBy = operatorId
 
-	permission.ID = existingPermission.ID
-	permission.AuditFields.UpdatedBy = &operatorId
-
-	err = s.authRepo.UpdatePermission(ctx, permission)
+	err := s.authRepo.UpdatePermission(ctx, permission)
 	if err != nil {
 		logs.ErrorLogger.Error("更新权限错误:", zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "更新权限错误", "", err)
@@ -230,12 +232,12 @@ func (s *ServiceImpl) UpdatePermission(ctx context.Context, permission *models.P
 	return permission, nil
 }
 
-func (s *ServiceImpl) DeletePermission(ctx context.Context, permissionCode string, operatorId util.UUID) error {
+func (s *ServiceImpl) DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error {
 	if permissionCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeletePermission(ctx, permissionCode, &operatorId)
+	err := s.authRepo.DeletePermission(ctx, permissionCode, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除权限错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除权限错误", "", err)
@@ -272,12 +274,12 @@ func (s *ServiceImpl) GetPermissionByID(ctx context.Context, permissionID util.U
 	return permission, nil
 }
 
-func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error) {
+func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operatorId *util.UUID) (*models.Role, error) {
 	if role == nil || role.Code == "" || role.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	role.AuditFields.CreatedBy = &operatorId
+	role.AuditFields.CreatedBy = operatorId
 	err := s.authRepo.CreateRole(ctx, role)
 	if err != nil {
 		logs.ErrorLogger.Error("创建角色错误:", zap.Error(err))
@@ -288,7 +290,7 @@ func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operato
 	return newRole, err
 }
 
-func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operatorId util.UUID) (*models.Role, error) {
+func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operatorId *util.UUID) (*models.Role, error) {
 	if role == nil || role.Code == "" || role.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -300,7 +302,7 @@ func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operato
 	}
 
 	role.ID = existingRole.ID
-	role.AuditFields.UpdatedBy = &operatorId
+	role.AuditFields.UpdatedBy = operatorId
 
 	err = s.authRepo.UpdateRole(ctx, role)
 	if err != nil {
@@ -311,12 +313,12 @@ func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operato
 	return role, nil
 }
 
-func (s *ServiceImpl) DeleteRole(ctx context.Context, roleCode string, operatorId util.UUID) error {
+func (s *ServiceImpl) DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error {
 	if roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeleteRole(ctx, roleCode, &operatorId)
+	err := s.authRepo.DeleteRole(ctx, roleCode, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除角色错误", "", err)
@@ -339,12 +341,12 @@ func (s *ServiceImpl) GetRoleByCode(ctx context.Context, roleCode string) (*mode
 	return role, nil
 }
 
-func (s *ServiceImpl) GrantPermissionToRole(ctx context.Context, permissionCode, roleCode string, operatorId util.UUID) error {
+func (s *ServiceImpl) GrantPermissionToRole(ctx context.Context, permissionCode, roleCode string, operatorId *util.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.GrantPermissionToRole(ctx, permissionCode, roleCode, &operatorId)
+	err := s.authRepo.GrantPermissionToRole(ctx, permissionCode, roleCode, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("授权权限到角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "授权权限到角色错误", "", err)
@@ -353,12 +355,12 @@ func (s *ServiceImpl) GrantPermissionToRole(ctx context.Context, permissionCode,
 	return nil
 }
 
-func (s *ServiceImpl) RevokePermissionFromRole(ctx context.Context, permissionCode, roleCode string, operatorId util.UUID) error {
+func (s *ServiceImpl) RevokePermissionFromRole(ctx context.Context, permissionCode, roleCode string, operatorId *util.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokePermissionFromRole(ctx, permissionCode, roleCode, &operatorId)
+	err := s.authRepo.RevokePermissionFromRole(ctx, permissionCode, roleCode, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("撤销权限从角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "撤销权限从角色错误", "", err)
@@ -381,12 +383,12 @@ func (s *ServiceImpl) GetRolePermissions(ctx context.Context, roleCode string) (
 	return permissions, nil
 }
 
-func (s *ServiceImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId util.UUID) error {
+func (s *ServiceImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
 	if roleCode == "" || userID.IsZero() {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignRoleToUser(ctx, roleCode, userID, &operatorId)
+	err := s.authRepo.AssignRoleToUser(ctx, roleCode, userID, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配角色到用户错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配角色到用户错误", "", err)
@@ -395,12 +397,12 @@ func (s *ServiceImpl) AssignRoleToUser(ctx context.Context, roleCode string, use
 	return nil
 }
 
-func (s *ServiceImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId util.UUID) error {
+func (s *ServiceImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
 	if roleCode == "" || userID.IsZero() {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokeRoleFromUser(ctx, roleCode, userID, &operatorId)
+	err := s.authRepo.RevokeRoleFromUser(ctx, roleCode, userID, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户撤销角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户撤销角色错误", "", err)
@@ -423,12 +425,12 @@ func (s *ServiceImpl) GetUserRoles(ctx context.Context, userID util.UUID) ([]str
 	return roles, nil
 }
 
-func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId util.UUID) (*models.UserGroup, error) {
+func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error) {
 	if userGroup == nil || userGroup.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	userGroup.AuditFields.CreatedBy = &operatorId
+	userGroup.AuditFields.CreatedBy = operatorId
 	err := s.authRepo.CreateUserGroup(ctx, userGroup)
 	if err != nil {
 		logs.ErrorLogger.Error("创建用户组错误:", zap.Error(err))
@@ -439,7 +441,7 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 	return newUserGroup, err
 }
 
-func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId util.UUID) (*models.UserGroup, error) {
+func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error) {
 	if userGroup == nil || userGroup.Name == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -451,7 +453,7 @@ func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.Use
 	}
 
 	userGroup.ID = existingGroup.ID
-	userGroup.AuditFields.UpdatedBy = &operatorId
+	userGroup.AuditFields.UpdatedBy = operatorId
 
 	err = s.authRepo.UpdateUserGroup(ctx, userGroup)
 	if err != nil {
@@ -462,12 +464,12 @@ func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.Use
 	return userGroup, nil
 }
 
-func (s *ServiceImpl) DeleteUserGroup(ctx context.Context, groupName string, operatorId util.UUID) error {
+func (s *ServiceImpl) DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error {
 	if groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.DeleteUserGroup(ctx, groupName, &operatorId)
+	err := s.authRepo.DeleteUserGroup(ctx, groupName, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("删除用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "删除用户组错误", "", err)
@@ -504,12 +506,12 @@ func (s *ServiceImpl) GetUserGroupMembers(ctx context.Context, groupName string)
 	return members, nil
 }
 
-func (s *ServiceImpl) AssignRoleToUserGroup(ctx context.Context, roleCode, groupName string, operatorId util.UUID) error {
+func (s *ServiceImpl) AssignRoleToUserGroup(ctx context.Context, roleCode, groupName string, operatorId *util.UUID) error {
 	if roleCode == "" || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignRoleToUserGroup(ctx, roleCode, groupName, &operatorId)
+	err := s.authRepo.AssignRoleToUserGroup(ctx, roleCode, groupName, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配角色到用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配角色到用户组错误", "", err)
@@ -518,12 +520,12 @@ func (s *ServiceImpl) AssignRoleToUserGroup(ctx context.Context, roleCode, group
 	return nil
 }
 
-func (s *ServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode, groupName string, operatorId util.UUID) error {
+func (s *ServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode, groupName string, operatorId *util.UUID) error {
 	if roleCode == "" || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RemoveRoleFromUserGroup(ctx, roleCode, groupName, &operatorId)
+	err := s.authRepo.RemoveRoleFromUserGroup(ctx, roleCode, groupName, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户组撤销角色错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户组撤销角色错误", "", err)
@@ -546,12 +548,12 @@ func (s *ServiceImpl) GetUserGroupPermissions(ctx context.Context, groupName str
 	return permissions, nil
 }
 
-func (s *ServiceImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId util.UUID) error {
+func (s *ServiceImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
 	if userID.IsZero() || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.AssignUserToGroup(ctx, userID, groupName, &operatorId)
+	err := s.authRepo.AssignUserToGroup(ctx, userID, groupName, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("分配用户到用户组错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "分配用户到用户组错误", "", err)
@@ -560,12 +562,12 @@ func (s *ServiceImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, g
 	return nil
 }
 
-func (s *ServiceImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId util.UUID) error {
+func (s *ServiceImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
 	if userID.IsZero() || groupName == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	err := s.authRepo.RevokeUserFromGroup(ctx, userID, groupName, &operatorId)
+	err := s.authRepo.RevokeUserFromGroup(ctx, userID, groupName, operatorId)
 	if err != nil {
 		logs.ErrorLogger.Error("从用户组撤销用户错误:", zap.Error(err))
 		return cerrors.NewCommonError(http.StatusInternalServerError, "从用户组撤销用户错误", "", err)

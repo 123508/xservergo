@@ -12,6 +12,8 @@ import (
 
 var testRepo AuthRepository
 var testUserId, _ = util.FromString("01983738-ba08-73f7-97a4-9c9972075337")
+var timeNow = time.Now()
+var version = 1
 
 func setupTestDB(t *testing.T) AuthRepository {
 	if testRepo != nil {
@@ -41,10 +43,10 @@ func TestCreatePermission(t *testing.T) {
 		Method:      "POST",
 		Status:      1,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: &timeNow,
+			UpdatedAt: &timeNow,
 			DeletedAt: nil,
-			Version:   1,
+			Version:   &version,
 			CreatedBy: &uid,
 			UpdatedBy: nil,
 		},
@@ -67,10 +69,10 @@ func TestCreatePermission(t *testing.T) {
 		Method:      "POST",
 		Status:      1,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: &timeNow,
+			UpdatedAt: &timeNow,
 			DeletedAt: nil,
-			Version:   1,
+			Version:   &version,
 			CreatedBy: &uid,
 			UpdatedBy: nil,
 		},
@@ -99,10 +101,10 @@ func TestUpdatePermission(t *testing.T) {
 		Method:      "PUT",
 		Status:      1,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: &timeNow,
+			UpdatedAt: &timeNow,
 			DeletedAt: nil,
-			Version:   1,
+			Version:   &version,
 			CreatedBy: &uid,
 			UpdatedBy: nil,
 		},
@@ -116,8 +118,8 @@ func TestUpdatePermission(t *testing.T) {
 	// 更新权限
 	permission.Name = "Updated Test Permission"
 	permission.Description = "Updated description"
-	permission.UpdatedAt = time.Now()
-	permission.Version = 2
+	permission.UpdatedAt = &timeNow
+	permission.Version = &version
 
 	err = repo.UpdatePermission(context.Background(), permission)
 	if err != nil {
@@ -178,6 +180,8 @@ func TestCreateRole(t *testing.T) {
 	repo := setupTestDB(t)
 	uid := util.NewUUID()
 
+	timeNow := time.Now()
+
 	role := &models.Role{
 		ID:          util.NewUUID(),
 		Code:        "test_role_admin",
@@ -185,10 +189,10 @@ func TestCreateRole(t *testing.T) {
 		Description: "Role for testing admin purposes",
 		Status:      1,
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: &timeNow,
+			UpdatedAt: &timeNow,
 			DeletedAt: nil,
-			Version:   1,
+			Version:   &version,
 			CreatedBy: &uid,
 			UpdatedBy: nil,
 		},
@@ -218,8 +222,8 @@ func TestUpdateRole(t *testing.T) {
 	// 更新角色
 	role.Name = "Updated Test Admin Role"
 	role.Description = "Updated description"
-	role.UpdatedAt = time.Now()
-	role.Version = 2
+	role.UpdatedAt = &timeNow
+	role.Version = &version
 
 	err = repo.UpdateRole(context.Background(), role)
 	if err != nil {
@@ -286,10 +290,10 @@ func TestCreateUserGroup(t *testing.T) {
 		Status: 1,
 		Path:   "/admin",
 		AuditFields: models.AuditFields{
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			CreatedAt: &timeNow,
+			UpdatedAt: &timeNow,
 			DeletedAt: nil,
-			Version:   1,
+			Version:   &version,
 			CreatedBy: &uid,
 			UpdatedBy: nil,
 		},
