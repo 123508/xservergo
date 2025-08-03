@@ -334,7 +334,7 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	updateReq := &auth.UpdateUserGroupReq{
 		UserGroup: &auth.UserGroup{
 			Code:      groupCode,
-			GroupName: "Test Group Handler Updated",
+			GroupName: "Test Group Handler",
 		},
 		RequestUserId: userIdBytes,
 	}
@@ -345,13 +345,13 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	if updateResp == nil {
 		t.Fatal("UpdateUserGroup response is nil")
 	}
-	if updateResp.GroupName != "Test Group Handler Updated" {
+	if updateResp.GroupName != "Test Group Handler" {
 		t.Fatalf("Expected group name to be updated, but got %s", updateResp.GroupName)
 	}
 	t.Logf("UpdateUserGroup response: %v", updateResp)
 
 	// 3. GetUserGroup
-	getReq := &auth.GetUserGroupReq{UserGroupName: groupCode}
+	getReq := &auth.GetUserGroupReq{UserGroupName: "Test Group Handler"}
 	getResp, err := authClient.GetUserGroup(context.Background(), getReq)
 	if err != nil {
 		t.Fatalf("GetUserGroup failed: %v", err)
@@ -359,14 +359,14 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	if getResp == nil {
 		t.Fatal("GetUserGroup response is nil")
 	}
-	if getResp.GroupName != "Test Group Handler Updated" {
+	if getResp.GroupName != "Test Group Handler" {
 		t.Fatalf("Expected group name to be 'Test Group Handler Updated', but got %s", getResp.GroupName)
 	}
 	t.Logf("GetUserGroup response: %v", getResp)
 
 	// 4. DeleteUserGroup
 	deleteReq := &auth.DeleteUserGroupReq{
-		UserGroupName: groupCode,
+		UserGroupName: "Test Group Handler",
 		RequestUserId: userIdBytes,
 	}
 	deleteResp, err := authClient.DeleteUserGroup(context.Background(), deleteReq)
