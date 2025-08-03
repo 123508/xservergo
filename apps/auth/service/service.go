@@ -281,7 +281,10 @@ func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operato
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	role.AuditFields.CreatedBy = operatorId
+	role.AuditFields = models.AuditFields{
+		Version:   &s.Version,
+		CreatedBy: operatorId,
+	}
 	err := s.authRepo.CreateRole(ctx, role)
 	if err != nil {
 		logs.ErrorLogger.Error("创建角色错误:", zap.Error(err))
@@ -305,7 +308,10 @@ func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operato
 		}
 		role.ID = existingRole.ID
 	}
-	role.AuditFields.UpdatedBy = operatorId
+	role.AuditFields = models.AuditFields{
+		UpdatedBy: operatorId,
+		Version:   &s.Version,
+	}
 
 	err := s.authRepo.UpdateRole(ctx, role)
 	if err != nil {
@@ -433,7 +439,10 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	userGroup.AuditFields.CreatedBy = operatorId
+	userGroup.AuditFields = models.AuditFields{
+		Version:   &s.Version,
+		CreatedBy: operatorId,
+	}
 	err := s.authRepo.CreateUserGroup(ctx, userGroup)
 	if err != nil {
 		logs.ErrorLogger.Error("创建用户组错误:", zap.Error(err))
@@ -458,7 +467,10 @@ func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.Use
 		userGroup.ID = existingGroup.ID
 	}
 
-	userGroup.AuditFields.UpdatedBy = operatorId
+	userGroup.AuditFields = models.AuditFields{
+		UpdatedBy: operatorId,
+		Version:   &s.Version,
+	}
 	err := s.authRepo.UpdateUserGroup(ctx, userGroup)
 	if err != nil {
 		logs.ErrorLogger.Error("更新用户组错误:", zap.Error(err))
