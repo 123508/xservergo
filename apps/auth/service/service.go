@@ -102,12 +102,14 @@ type AuthService interface {
 type ServiceImpl struct {
 	authRepo repo.AuthRepository
 	Rds      *redis.Client
+	Version  int
 }
 
 func NewService(database *gorm.DB, rds *redis.Client) AuthService {
 	return &ServiceImpl{
 		authRepo: repo.NewAuthRepository(database),
 		Rds:      rds,
+		Version:  1,
 	}
 }
 
@@ -197,6 +199,7 @@ func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.P
 	}
 
 	permission.AuditFields.CreatedBy = operatorId
+	permission.AuditFields.Version = &s.Version
 	err := s.authRepo.CreatePermission(ctx, permission)
 	if err != nil {
 		logs.ErrorLogger.Error("创建权限错误:", zap.Error(err))
@@ -208,17 +211,16 @@ func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.P
 }
 
 func (s *ServiceImpl) UpdatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error) {
-	if permission == nil || permission.Code == "" || permission.Name == "" {
+	if permission == nil || (permission.Code == "" && permission.ID.IsZero()) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	if permission.ID.IsZero() {
+	if permission.ID.IsZero() { // 如果没有提供ID，则尝试根据Code获取现有权限
 		existingPermission, err := s.authRepo.GetPermissionByCode(ctx, permission.Code)
 		if err != nil {
 			logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
 			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
 		}
-
 		permission.ID = existingPermission.ID
 	}
 	permission.AuditFields.UpdatedBy = operatorId
@@ -291,20 +293,21 @@ func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operato
 }
 
 func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operatorId *util.UUID) (*models.Role, error) {
-	if role == nil || role.Code == "" || role.Name == "" {
+	if role == nil || (role.Code == "" && role.ID.IsZero()) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	existingRole, err := s.authRepo.GetRoleByCode(ctx, role.Code)
-	if err != nil {
-		logs.ErrorLogger.Error("获取角色错误:", zap.Error(err))
-		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取角色错误", "", err)
+	if role.ID.IsZero() { // 如果没有提供ID，则尝试根据Code获取现有角色
+		existingRole, err := s.authRepo.GetRoleByCode(ctx, role.Code)
+		if err != nil {
+			logs.ErrorLogger.Error("获取角色错误:", zap.Error(err))
+			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取角色错误", "", err)
+		}
+		role.ID = existingRole.ID
 	}
-
-	role.ID = existingRole.ID
 	role.AuditFields.UpdatedBy = operatorId
 
-	err = s.authRepo.UpdateRole(ctx, role)
+	err := s.authRepo.UpdateRole(ctx, role)
 	if err != nil {
 		logs.ErrorLogger.Error("更新角色错误:", zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "更新角色错误", "", err)
@@ -442,20 +445,21 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 }
 
 func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error) {
-	if userGroup == nil || userGroup.Name == "" {
+	if userGroup == nil || (userGroup.ID.IsZero() && userGroup.Name == "") {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	existingGroup, err := s.authRepo.GetUserGroupByName(ctx, userGroup.Name)
-	if err != nil {
-		logs.ErrorLogger.Error("获取用户组错误:", zap.Error(err))
-		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取用户组错误", "", err)
+	if userGroup.ID.IsZero() { // 如果没有提供ID，则尝试根据Name获取现有用户组
+		existingGroup, err := s.authRepo.GetUserGroupByName(ctx, userGroup.Name)
+		if err != nil {
+			logs.ErrorLogger.Error("获取用户组错误:", zap.Error(err))
+			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取用户组错误", "", err)
+		}
+		userGroup.ID = existingGroup.ID
 	}
 
-	userGroup.ID = existingGroup.ID
 	userGroup.AuditFields.UpdatedBy = operatorId
-
-	err = s.authRepo.UpdateUserGroup(ctx, userGroup)
+	err := s.authRepo.UpdateUserGroup(ctx, userGroup)
 	if err != nil {
 		logs.ErrorLogger.Error("更新用户组错误:", zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "更新用户组错误", "", err)

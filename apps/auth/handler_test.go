@@ -46,16 +46,16 @@ func TestAuthServiceImpl_CreatePermission(t *testing.T) {
 
 func TestAuthServiceImpl_UpdatePermission(t *testing.T) {
 	userIdBytes, _ := userId.Marshal()
-	permissionId, _ := util.FromString("01986885-58cb-7aea-9a51-2d98ebe63997")
-	permissionIdBytes, _ := permissionId.Marshal()
+	//permissionId, _ := util.FromString("01986b50-f353-7da5-9397-eec56a4cea76")
+	//permissionIdBytes, _ := permissionId.Marshal()
 	updatePermissionReq := &auth.UpdatePermissionReq{
 		Permission: &auth.Permission{
-			Id:             permissionIdBytes,
-			Code:           "test_permission_create_handler_update",
+			//Id:             permissionIdBytes, // Code不为空时可以不填写ID
+			Code:           "test_permission_create_handler",
 			PermissionName: "test_permission_create_handler_update",
 			Description:    "test_permission_create_handler_update",
 			ParentId:       nil,
-			Type:           auth.Permission_API,
+			Type:           auth.Permission_FILE,
 			Resource:       "test/resource",
 			Method:         "GET",
 			Status:         true,

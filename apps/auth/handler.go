@@ -57,7 +57,7 @@ func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
 	case auth.Permission_MODULE:
 		return models.PermissionTypeModule
 	default:
-		return models.PermissionTypeAPI
+		return ""
 	}
 }
 
@@ -157,8 +157,10 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		status = 0
 	}
 	permissionId := util.UUID{}
-	if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	if req.Permission.Id != nil {
+		if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+		}
 	}
 	permission := models.Permission{
 		ID:          permissionId,
