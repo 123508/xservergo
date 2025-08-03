@@ -72,6 +72,17 @@ func getUUIDFromBytes(b []byte) (*util.UUID, error) {
 	return uid, nil
 }
 
+func getIDBytes(id *util.UUID) []byte {
+	if id == nil {
+		return nil
+	}
+	idBytes, err := id.Marshal()
+	if err != nil {
+		return nil
+	}
+	return idBytes
+}
+
 // AuthServiceImpl implements the last service interface defined in the IDL.
 type AuthServiceImpl struct {
 	authService service.AuthService
@@ -236,10 +247,7 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
 	}
-	parentIdMarshaled, err := permission.ParentID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
-	}
+	parentIdMarshaled := getIDBytes(permission.ParentID)
 	return &auth.Permission{
 		Id:             id,
 		Code:           permission.Code,
