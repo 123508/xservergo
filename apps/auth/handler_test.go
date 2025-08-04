@@ -229,6 +229,20 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 	t.Logf("GetRole response: %v", getResp)
 
 	// 4. GrantPermissionToRole
+	createPermReq := &auth.CreatePermissionReq{
+		Permission: &auth.Permission{
+			Code:           "test_permission_create_handler",
+			PermissionName: "Test Permission for Role Handler",
+			Description:    "This is a test permission for role handler",
+			Type:           auth.Permission_API,
+			Resource:       "/test/role_handler",
+			Method:         "POST",
+		},
+	}
+	_, err = authClient.CreatePermission(context.Background(), createPermReq)
+	if err != nil {
+		t.Fatalf("CreatePermission for role failed: %v", err)
+	}
 	permissionCode := "test_permission_create_handler"
 	grantReq := &auth.GrantPermissionToRoleReq{
 		RoleCode:       roleCode,
@@ -377,6 +391,11 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 		t.Fatal("Expected error when getting deleted group, but got nil")
 	}
 	t.Logf("Successfully verified group deletion: %v", err)
+
+	// Delete Permission
+	_, err = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{
+		PermissionCode: "test_permission_create_handler",
+	})
 }
 
 func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
