@@ -493,6 +493,7 @@ func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateU
 	}
 	userGroup := models.UserGroup{
 		ID:   util.NewUUID(),
+		Code: req.GetUserGroup().GetCode(),
 		Name: req.GetUserGroup().GetGroupName(),
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
@@ -523,7 +524,8 @@ func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateU
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	userGroup := models.UserGroup{
-		Name: req.GetUserGroup().GetGroupName(),
+		Code: req.UserGroup.Code,
+		Name: req.UserGroup.GroupName,
 	}
 	updatedUserGroup, err := s.authService.UpdateUserGroup(ctx, &userGroup, operatorId)
 	if err != nil {
@@ -539,6 +541,7 @@ func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateU
 	}
 	return &auth.UserGroup{
 		Id:        id,
+		Code:      updatedUserGroup.Code,
 		GroupName: updatedUserGroup.Name,
 	}, nil
 }
@@ -549,7 +552,7 @@ func (s *AuthServiceImpl) DeleteUserGroup(ctx context.Context, req *auth.DeleteU
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	err = s.authService.DeleteUserGroup(ctx, req.GetUserGroupName(), operatorId)
+	err = s.authService.DeleteUserGroup(ctx, req.UserGroupCode, operatorId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "删除用户组失败")
 	}
@@ -560,7 +563,7 @@ func (s *AuthServiceImpl) DeleteUserGroup(ctx context.Context, req *auth.DeleteU
 
 // GetUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroup(ctx context.Context, req *auth.GetUserGroupReq) (resp *auth.UserGroup, err error) {
-	userGroup, err := s.authService.GetUserGroupByName(ctx, req.GetUserGroupName())
+	userGroup, err := s.authService.GetUserGroupByCode(ctx, req.UserGroupCode)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组失败")
 	}
@@ -570,13 +573,14 @@ func (s *AuthServiceImpl) GetUserGroup(ctx context.Context, req *auth.GetUserGro
 	}
 	return &auth.UserGroup{
 		Id:        id,
+		Code:      req.UserGroupCode,
 		GroupName: userGroup.Name,
 	}, nil
 }
 
 // GetUserGroupMembers implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroupMembers(ctx context.Context, req *auth.GetUserGroupMembersReq) (resp *auth.GetUserGroupMembersResp, err error) {
-	members, err := s.authService.GetUserGroupMembers(ctx, req.GetUserGroupName())
+	members, err := s.authService.GetUserGroupMembers(ctx, req.UserGroupCode)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组成员失败")
 	}
@@ -598,7 +602,7 @@ func (s *AuthServiceImpl) GetUserGroupMembers(ctx context.Context, req *auth.Get
 
 // GetUserGroupPermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroupPermissions(ctx context.Context, req *auth.GetUserGroupPermissionsReq) (resp *auth.GetUserGroupPermissionsResp, err error) {
-	permissions, err := s.authService.GetUserGroupPermissions(ctx, req.GetUserGroupName())
+	permissions, err := s.authService.GetUserGroupPermissions(ctx, req.UserGroupCode)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组权限失败")
 	}
@@ -621,7 +625,7 @@ func (s *AuthServiceImpl) AssignUserToGroup(ctx context.Context, req *auth.Assig
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
 	}
-	err = s.authService.AssignUserToGroup(ctx, *targetUserId, req.UserGroupName, operatorId)
+	err = s.authService.AssignUserToGroup(ctx, *targetUserId, req.UserGroupCode, operatorId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "分配用户到组失败")
 	}
@@ -640,7 +644,7 @@ func (s *AuthServiceImpl) RemoveUserFromGroup(ctx context.Context, req *auth.Rem
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
 	}
-	err = s.authService.RevokeUserFromGroup(ctx, *targetUserId, req.UserGroupName, operatorId)
+	err = s.authService.RevokeUserFromGroup(ctx, *targetUserId, req.UserGroupCode, operatorId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "从组中移除用户失败")
 	}
@@ -874,7 +878,7 @@ func (s *AuthServiceImpl) AssignRoleToUserGroup(ctx context.Context, req *auth.A
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	err = s.authService.AssignRoleToUserGroup(ctx, req.GetRoleCode(), req.GetUserGroupName(), operatorId)
+	err = s.authService.AssignRoleToUserGroup(ctx, req.GetRoleCode(), req.UserGroupCode, operatorId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "分配角色到用户组失败")
 	}
@@ -889,7 +893,7 @@ func (s *AuthServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, req *auth
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	err = s.authService.RemoveRoleFromUserGroup(ctx, req.GetRoleCode(), req.GetUserGroupName(), operatorId)
+	err = s.authService.RemoveRoleFromUserGroup(ctx, req.GetRoleCode(), req.UserGroupCode, operatorId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "从用户组移除角色失败")
 	}

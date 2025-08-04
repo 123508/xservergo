@@ -57,25 +57,25 @@ type AuthRepository interface {
 	// UpdateUserGroup 更新用户组
 	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup) error
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error
+	DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error
 	// GetUserGroupByID 根据用户组ID获取用户组
 	GetUserGroupByID(ctx context.Context, groupID []byte) (*models.UserGroup, error)
-	// GetUserGroupByName 根据用户组名称获取用户组
-	GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error)
+	// GetUserGroupByCode 根据用户组代码获取用户组
+	GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	// 返回成员用户名列表
-	GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error)
+	GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
-	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
+	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
 	// RemoveRoleFromUserGroup 从用户组中移除角色
-	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
+	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
 	// GetUserGroupPermissions 获取用户组的权限
-	GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error)
+	GetUserGroupPermissions(ctx context.Context, groupCode string) ([]string, error)
 
 	// AssignUserToGroup 分配用户到用户组
-	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
+	AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
 	// RevokeUserFromGroup 撤销用户组中的用户
-	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
+	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
 	// GetUserGroups 获取用户所属的用户组
 	// 返回用户组名称列表
 	GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error)
@@ -482,17 +482,17 @@ func (r *RepoImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGr
 	return nil
 }
 
-func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error {
-	if groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error {
+	if groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	// 软删除：设置 deleted_at 字段为当前时间
-	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("name = ? and is_deleted = false", groupName).Updates(map[string]interface{}{
+	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("code = ? and is_deleted = false", groupCode).Updates(map[string]interface{}{
 		"deleted_at": time.Now(),
 		"updated_by": operatorId,
 	}).Error; err != nil {
-		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to delete user group: ", err)
 	}
 
 	return nil
@@ -513,40 +513,40 @@ func (r *RepoImpl) GetUserGroupByID(ctx context.Context, groupID []byte) (*model
 	return &userGroup, nil
 }
 
-func (r *RepoImpl) GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error) {
-	if groupName == "" {
-		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error) {
+	if groupCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	var userGroup models.UserGroup
-	if err := r.DB.WithContext(ctx).Where("name = ? and is_deleted = false", groupName).First(&userGroup).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", groupCode).First(&userGroup).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by name: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by code: ", err)
 	}
 	return &userGroup, nil
 }
 
-func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error) {
-	if groupName == "" {
-		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error) {
+	if groupCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	var userIDList []util.UUID
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
 		Select("user_group_relation.user_id").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
-		Where("user_group.name = ? AND user_group_relation.status = 1 AND user_group.is_deleted = false", groupName).
+		Where("user_group.code = ? AND user_group_relation.status = 1 AND user_group.is_deleted = false", groupCode).
 		Pluck("user_group_relation.user_id", &userIDList).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group members: ", err)
 	}
 	return userIDList, nil
 }
 
-func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
-	if roleCode == "" || groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
+func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+	if roleCode == "" || groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and group code cannot be empty")
 	}
 
 	// 获取角色
@@ -559,7 +559,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -599,8 +599,8 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	return nil
 }
 
-func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
-	if roleCode == "" || groupName == "" {
+func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+	if roleCode == "" || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
 
@@ -614,7 +614,7 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string,
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -634,8 +634,8 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string,
 	return nil
 }
 
-func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error) {
-	if groupName == "" {
+func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupCode string) ([]string, error) {
+	if groupCode == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
@@ -645,20 +645,20 @@ func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupName string
 		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
 		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
 		Joins("JOIN user_group ON role_group.group_id = user_group.id").
-		Where("user_group.name = ? AND role_permission.status = 1 AND role_group.status = 1", groupName).
+		Where("user_group.code = ? AND role_permission.status = 1 AND role_group.status = 1", groupCode).
 		Pluck("permission.code", &permissionCodes).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group permissions: ", err)
 	}
 	return permissionCodes, nil
 }
 
-func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupName == "" {
+func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
+	if userID == (util.UUID{}) || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -698,13 +698,13 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 	return nil
 }
 
-func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
+func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
+	if userID == (util.UUID{}) || groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "userID and group code cannot be empty")
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -729,15 +729,15 @@ func (r *RepoImpl) GetUserGroups(ctx context.Context, userID util.UUID) ([]strin
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
-	var groupNames []string
+	var groupCodes []string
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
 		Select("user_group.name").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
-		Pluck("user_group.name", &groupNames).Error; err != nil {
+		Pluck("user_group.code", &groupCodes).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user groups: ", err)
 	}
-	return groupNames, nil
+	return groupCodes, nil
 }
 
 func (r *RepoImpl) GetUserPermissions(ctx context.Context, userID util.UUID) ([]string, error) {

@@ -334,7 +334,7 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	updateReq := &auth.UpdateUserGroupReq{
 		UserGroup: &auth.UserGroup{
 			Code:      groupCode,
-			GroupName: "Test Group Handler",
+			GroupName: "Test Group Handler Updated",
 		},
 		RequestUserId: userIdBytes,
 	}
@@ -345,13 +345,13 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	if updateResp == nil {
 		t.Fatal("UpdateUserGroup response is nil")
 	}
-	if updateResp.GroupName != "Test Group Handler" {
+	if updateResp.GroupName != "Test Group Handler Updated" {
 		t.Fatalf("Expected group name to be updated, but got %s", updateResp.GroupName)
 	}
 	t.Logf("UpdateUserGroup response: %v", updateResp)
 
 	// 3. GetUserGroup
-	getReq := &auth.GetUserGroupReq{UserGroupName: "Test Group Handler"}
+	getReq := &auth.GetUserGroupReq{UserGroupCode: groupCode}
 	getResp, err := authClient.GetUserGroup(context.Background(), getReq)
 	if err != nil {
 		t.Fatalf("GetUserGroup failed: %v", err)
@@ -359,14 +359,14 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	if getResp == nil {
 		t.Fatal("GetUserGroup response is nil")
 	}
-	if getResp.GroupName != "Test Group Handler" {
+	if getResp.GroupName != "Test Group Handler Updated" {
 		t.Fatalf("Expected group name to be 'Test Group Handler Updated', but got %s", getResp.GroupName)
 	}
 	t.Logf("GetUserGroup response: %v", getResp)
 
 	// 4. DeleteUserGroup
 	deleteReq := &auth.DeleteUserGroupReq{
-		UserGroupName: "Test Group Handler",
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	deleteResp, err := authClient.DeleteUserGroup(context.Background(), deleteReq)
@@ -406,7 +406,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	// 1. AssignUserToGroup
 	assignReq := &auth.AssignUserToGroupReq{
 		TargetUserId:  userIdBytes,
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	assignResp, err := authClient.AssignUserToGroup(context.Background(), assignReq)
@@ -419,7 +419,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	t.Log("AssignUserToGroup successful")
 
 	// 2. GetUserGroupMembers
-	getMembersReq := &auth.GetUserGroupMembersReq{UserGroupName: groupCode}
+	getMembersReq := &auth.GetUserGroupMembersReq{UserGroupCode: groupCode}
 	getMembersResp, err := authClient.GetUserGroupMembers(context.Background(), getMembersReq)
 	if err != nil {
 		t.Fatalf("GetUserGroupMembers failed: %v", err)
@@ -465,7 +465,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	// 3. RemoveUserFromGroup
 	removeReq := &auth.RemoveUserFromGroupReq{
 		TargetUserId:  userIdBytes,
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	removeResp, err := authClient.RemoveUserFromGroup(context.Background(), removeReq)
@@ -498,7 +498,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 
 	// Teardown: Delete the group
 	deleteReq := &auth.DeleteUserGroupReq{
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	_, err = authClient.DeleteUserGroup(context.Background(), deleteReq)
@@ -571,7 +571,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	// 1. AssignRoleToUserGroup
 	assignReq := &auth.AssignRoleToUserGroupReq{
 		RoleCode:      roleCode,
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	assignResp, err := authClient.AssignRoleToUserGroup(context.Background(), assignReq)
@@ -586,7 +586,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	// 2. Assign user to group to check permissions
 	assignUserReq := &auth.AssignUserToGroupReq{
 		TargetUserId:  userIdBytes,
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	_, err = authClient.AssignUserToGroup(context.Background(), assignUserReq)
@@ -618,7 +618,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	// 4. RemoveRoleFromUserGroup
 	removeReq := &auth.RemoveRoleFromUserGroupReq{
 		RoleCode:      roleCode,
-		UserGroupName: groupCode,
+		UserGroupCode: groupCode,
 		RequestUserId: userIdBytes,
 	}
 	removeResp, err := authClient.RemoveRoleFromUserGroup(context.Background(), removeReq)
@@ -648,8 +648,8 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	t.Log("Successfully verified role removal from group")
 
 	// Teardown
-	_, _ = authClient.RemoveUserFromGroup(context.Background(), &auth.RemoveUserFromGroupReq{TargetUserId: userIdBytes, UserGroupName: groupCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeleteUserGroup(context.Background(), &auth.DeleteUserGroupReq{UserGroupName: groupCode, RequestUserId: userIdBytes})
+	_, _ = authClient.RemoveUserFromGroup(context.Background(), &auth.RemoveUserFromGroupReq{TargetUserId: userIdBytes, UserGroupCode: groupCode, RequestUserId: userIdBytes})
+	_, _ = authClient.DeleteUserGroup(context.Background(), &auth.DeleteUserGroupReq{UserGroupCode: groupCode, RequestUserId: userIdBytes})
 	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBytes})
 	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBytes})
 }

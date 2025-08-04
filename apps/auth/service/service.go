@@ -67,7 +67,7 @@ type AuthService interface {
 	// DeleteUserGroup 删除用户组
 	DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error
 	// GetUserGroupByName 获取用户组
-	GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error)
+	GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
@@ -449,7 +449,7 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "创建用户组错误", "", err)
 	}
 
-	newUserGroup, err := s.authRepo.GetUserGroupByName(ctx, userGroup.Name)
+	newUserGroup, err := s.authRepo.GetUserGroupByCode(ctx, userGroup.Code)
 	return newUserGroup, err
 }
 
@@ -458,8 +458,8 @@ func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.Use
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	if userGroup.ID.IsZero() { // 如果没有提供ID，则尝试根据Name获取现有用户组
-		existingGroup, err := s.authRepo.GetUserGroupByName(ctx, userGroup.Name)
+	if userGroup.ID.IsZero() { // 如果没有提供ID，则尝试根据Code获取现有用户组
+		existingGroup, err := s.authRepo.GetUserGroupByCode(ctx, userGroup.Code)
 		if err != nil {
 			logs.ErrorLogger.Error("获取用户组错误:", zap.Error(err))
 			return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取用户组错误", "", err)
@@ -494,12 +494,12 @@ func (s *ServiceImpl) DeleteUserGroup(ctx context.Context, groupName string, ope
 	return nil
 }
 
-func (s *ServiceImpl) GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error) {
-	if groupName == "" {
+func (s *ServiceImpl) GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error) {
+	if groupCode == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	userGroup, err := s.authRepo.GetUserGroupByName(ctx, groupName)
+	userGroup, err := s.authRepo.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		logs.ErrorLogger.Error("获取用户组错误:", zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取用户组错误", "", err)
