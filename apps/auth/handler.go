@@ -57,7 +57,7 @@ func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
 	case auth.Permission_MODULE:
 		return models.PermissionTypeModule
 	default:
-		return models.PermissionTypeAPI
+		return ""
 	}
 }
 
@@ -70,6 +70,17 @@ func getUUIDFromBytes(b []byte) (*util.UUID, error) {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	return uid, nil
+}
+
+func getIDBytes(id *util.UUID) []byte {
+	if id == nil {
+		return nil
+	}
+	idBytes, err := id.Marshal()
+	if err != nil {
+		return nil
+	}
+	return idBytes
 }
 
 // AuthServiceImpl implements the last service interface defined in the IDL.
@@ -157,8 +168,10 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		status = 0
 	}
 	permissionId := util.UUID{}
-	if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	if req.Permission.Id != nil {
+		if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+		}
 	}
 	permission := models.Permission{
 		ID:          permissionId,
@@ -234,10 +247,7 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
 	}
-	parentIdMarshaled, err := permission.ParentID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
-	}
+	parentIdMarshaled := getIDBytes(permission.ParentID)
 	return &auth.Permission{
 		Id:             id,
 		Code:           permission.Code,
@@ -253,152 +263,537 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 
 // CreateRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleReq) (resp *auth.Role, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	role := models.Role{
+		ID:          util.NewUUID(),
+		Code:        req.Role.Code,
+		Name:        req.Role.RoleName,
+		Description: req.Role.Description,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
+	}
+	newRole, err := s.authService.CreateRole(ctx, &role, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	id, err := newRole.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
+	}
+	return &auth.Role{
+		Id:          id,
+		Code:        newRole.Code,
+		RoleName:    newRole.Name,
+		Description: newRole.Description,
+	}, nil
 }
 
 // UpdateRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdateRole(ctx context.Context, req *auth.UpdateRoleReq) (resp *auth.Role, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	role := models.Role{
+		Code:        req.Role.Code,
+		Name:        req.Role.RoleName,
+		Description: req.Role.Description,
+		AuditFields: models.AuditFields{
+			UpdatedBy: operatorId,
+		},
+	}
+	updatedRole, err := s.authService.UpdateRole(ctx, &role, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	id, err := updatedRole.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
+	}
+	return &auth.Role{
+		Id:          id,
+		Code:        updatedRole.Code,
+		RoleName:    updatedRole.Name,
+		Description: updatedRole.Description,
+	}, nil
 }
 
 // DeleteRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeleteRole(ctx context.Context, req *auth.DeleteRoleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.DeleteRole(ctx, req.RoleCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetRole(ctx context.Context, req *auth.GetRoleReq) (resp *auth.Role, err error) {
-	// TODO: Your code here...
-	return
+	role, err := s.authService.GetRoleByCode(ctx, req.RoleCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusNotFound, "角色不存在")
+	}
+	id, err := role.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
+	}
+	return &auth.Role{
+		Id:          id,
+		Code:        role.Code,
+		RoleName:    role.Name,
+		Description: role.Description,
+	}, nil
 }
 
 // GrantPermissionToRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GrantPermissionToRole(ctx context.Context, req *auth.GrantPermissionToRoleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.GrantPermissionToRole(ctx, req.PermissionCode, req.RoleCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // RevokePermissionFromRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RevokePermissionFromRole(ctx context.Context, req *auth.RevokePermissionFromRoleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.RevokePermissionFromRole(ctx, req.PermissionCode, req.RoleCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetRolePermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetRolePermissions(ctx context.Context, req *auth.GetRolePermissionsReq) (resp *auth.GetRolePermissionsResp, err error) {
-	// TODO: Your code here...
-	return
+	permissions, err := s.authService.GetRolePermissions(ctx, req.RoleCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取角色权限失败")
+	}
+	var authPermissions []*auth.Permission
+	for _, p := range permissions {
+		authPermissions = append(authPermissions, &auth.Permission{Code: p})
+	}
+	return &auth.GetRolePermissionsResp{
+		Permissions: authPermissions,
+	}, nil
 }
 
 // AssignRoleToUser implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignRoleToUser(ctx context.Context, req *auth.AssignRoleToUserReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	userId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.AssignRoleToUser(ctx, req.GetRoleCode(), *userId, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // RemoveRoleFromUser implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveRoleFromUser(ctx context.Context, req *auth.RemoveRoleFromUserReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	userId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.RevokeRoleFromUser(ctx, req.GetRoleCode(), *userId, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetUserRoles implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserRoles(ctx context.Context, req *auth.GetUserRolesReq) (resp *auth.GetUserRolesResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	roles, err := s.authService.GetUserRoles(ctx, *targetUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户角色失败")
+	}
+	var authRoles []*auth.Role
+	for _, roleCode := range roles {
+		authRoles = append(authRoles, &auth.Role{Code: roleCode})
+	}
+	return &auth.GetUserRolesResp{
+		Roles: authRoles,
+	}, nil
 }
 
 // CreateUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateUserGroupReq) (resp *auth.UserGroup, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	userGroup := models.UserGroup{
+		ID:   util.NewUUID(),
+		Code: req.GetUserGroup().GetCode(),
+		Name: req.GetUserGroup().GetGroupName(),
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+		},
+	}
+	newUserGroup, err := s.authService.CreateUserGroup(ctx, &userGroup, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	id, err := newUserGroup.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
+	}
+	return &auth.UserGroup{
+		Id:        id,
+		GroupName: newUserGroup.Name,
+	}, nil
 }
 
 // UpdateUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateUserGroupReq) (resp *auth.UserGroup, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	userGroup := models.UserGroup{
+		Code: req.UserGroup.Code,
+		Name: req.UserGroup.GroupName,
+	}
+	updatedUserGroup, err := s.authService.UpdateUserGroup(ctx, &userGroup, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	id, err := updatedUserGroup.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
+	}
+	return &auth.UserGroup{
+		Id:        id,
+		Code:      updatedUserGroup.Code,
+		GroupName: updatedUserGroup.Name,
+	}, nil
 }
 
 // DeleteUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeleteUserGroup(ctx context.Context, req *auth.DeleteUserGroupReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.DeleteUserGroup(ctx, req.UserGroupCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "删除用户组失败")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroup(ctx context.Context, req *auth.GetUserGroupReq) (resp *auth.UserGroup, err error) {
-	// TODO: Your code here...
-	return
+	userGroup, err := s.authService.GetUserGroupByCode(ctx, req.UserGroupCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组失败")
+	}
+	id, err := userGroup.ID.Marshal()
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
+	}
+	return &auth.UserGroup{
+		Id:        id,
+		Code:      req.UserGroupCode,
+		GroupName: userGroup.Name,
+	}, nil
 }
 
 // GetUserGroupMembers implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroupMembers(ctx context.Context, req *auth.GetUserGroupMembersReq) (resp *auth.GetUserGroupMembersResp, err error) {
-	// TODO: Your code here...
-	return
+	members, err := s.authService.GetUserGroupMembers(ctx, req.UserGroupCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组成员失败")
+	}
+	var users []*auth.UserInfo
+	for _, member := range members {
+		idBytes, err := member.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化成员ID失败")
+		}
+		users = append(users, &auth.UserInfo{
+			UserId: idBytes,
+		})
+	}
+	return &auth.GetUserGroupMembersResp{
+		Users:      users,
+		TotalCount: uint32(len(users)),
+	}, nil
 }
 
 // GetUserGroupPermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroupPermissions(ctx context.Context, req *auth.GetUserGroupPermissionsReq) (resp *auth.GetUserGroupPermissionsResp, err error) {
-	// TODO: Your code here...
-	return
+	permissions, err := s.authService.GetUserGroupPermissions(ctx, req.UserGroupCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组权限失败")
+	}
+	var authPermissions []*auth.Permission
+	for _, p := range permissions {
+		authPermissions = append(authPermissions, &auth.Permission{Code: p})
+	}
+	return &auth.GetUserGroupPermissionsResp{
+		Permissions: authPermissions,
+	}, nil
 }
 
 // AssignUserToGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignUserToGroup(ctx context.Context, req *auth.AssignUserToGroupReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
+	}
+	err = s.authService.AssignUserToGroup(ctx, *targetUserId, req.UserGroupCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "分配用户到组失败")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // RemoveUserFromGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveUserFromGroup(ctx context.Context, req *auth.RemoveUserFromGroupReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
+	}
+	err = s.authService.RevokeUserFromGroup(ctx, *targetUserId, req.UserGroupCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "从组中移除用户失败")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetUserGroups implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroups(ctx context.Context, req *auth.GetUserGroupsReq) (resp *auth.GetUserGroupsResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUserId, err := getUUIDFromBytes(req.TargetUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
+	}
+	groups, err := s.authService.GetUserGroups(ctx, *targetUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组失败")
+	}
+	var authGroups []*auth.UserGroup
+	for _, group := range groups {
+		authGroups = append(authGroups, &auth.UserGroup{Code: group})
+	}
+	return &auth.GetUserGroupsResp{
+		UserGroups: authGroups,
+	}, nil
 }
 
 // GetUserPermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserPermissions(ctx context.Context, req *auth.GetUserPermissionsReq) (resp *auth.GetUserPermissionsResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	permissions, err := s.authService.GetUserPermissions(ctx, *targetUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户权限失败")
+	}
+	var authPermissions []*auth.Permission
+	for _, p := range permissions {
+		authPermissions = append(authPermissions, &auth.Permission{Code: p})
+	}
+	return &auth.GetUserPermissionsResp{
+		Permissions: authPermissions,
+	}, nil
 }
 
 // HasPermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) HasPermission(ctx context.Context, req *auth.HasPermissionReq) (resp *auth.HasPermissionResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	hasPermission := s.authService.HasPermission(ctx, *targetUserId, req.GetPermissionCode())
+	return &auth.HasPermissionResp{
+		Ok: hasPermission,
+	}, nil
 }
 
 // CanAccess implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CanAccess(ctx context.Context, req *auth.CanAccessReq) (resp *auth.CanAccessResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	canAccess := s.authService.CanAccess(ctx, *targetUserId, req.GetResource(), req.GetMethod())
+	return &auth.CanAccessResp{
+		Ok: canAccess,
+	}, nil
 }
 
 // ListRoles implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) ListRoles(ctx context.Context, req *auth.ListRolesReq) (resp *auth.ListRolesResp, err error) {
-	// TODO: Your code here...
-	return
+	roles, err := s.authService.GetRoleList(ctx, req.Page, req.PageSize)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取角色列表失败")
+	}
+
+	var authRoles []*auth.Role
+	for _, role := range roles {
+		id, err := role.ID.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
+		}
+		authRoles = append(authRoles, &auth.Role{
+			Id:          id,
+			Code:        role.Code,
+			RoleName:    role.Name,
+			Description: role.Description,
+		})
+	}
+
+	return &auth.ListRolesResp{
+		Roles: authRoles,
+	}, nil
 }
 
 // ListUserGroups implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) ListUserGroups(ctx context.Context, req *auth.ListUserGroupsReq) (resp *auth.ListUserGroupsResp, err error) {
-	// TODO: Your code here...
-	return
+	userGroups, err := s.authService.GetUserGroupList(ctx, req.Page, req.PageSize)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组失败")
+	}
+
+	var authUserGroups []*auth.UserGroup
+	for _, group := range userGroups {
+		id, err := group.ID.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
+		}
+		authUserGroups = append(authUserGroups, &auth.UserGroup{
+			Id:        id,
+			GroupName: group.Name,
+		})
+	}
+
+	return &auth.ListUserGroupsResp{
+		UserGroups: authUserGroups,
+	}, nil
 }
 
 // ListPermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPermissionsReq) (resp *auth.ListPermissionsResp, err error) {
-	// TODO: Your code here...
-	return
+	permissions, err := s.authService.GetPermissionList(ctx, req.Page, req.PageSize)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取权限列表失败")
+	}
+
+	var authPermissions []*auth.Permission
+	for _, perm := range permissions {
+		id, err := perm.ID.Marshal()
+		if err != nil {
+			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
+		}
+		authPermissions = append(authPermissions, &auth.Permission{
+			Id:             id,
+			Code:           perm.Code,
+			PermissionName: perm.Name,
+			Description:    perm.Description,
+			ParentId:       getIDBytes(perm.ParentID),
+			Type:           permissionTypeFromString(string(perm.Type)),
+			Resource:       perm.Resource,
+			Method:         perm.Method,
+			Status:         perm.Status == 1,
+		})
+	}
+
+	return &auth.ListPermissionsResp{
+		Perms: authPermissions,
+	}, nil
 }
 
 // IssueToken implements the AuthServiceImpl interface.
@@ -479,12 +874,30 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 
 // AssignRoleToUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignRoleToUserGroup(ctx context.Context, req *auth.AssignRoleToUserGroupReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.AssignRoleToUserGroup(ctx, req.GetRoleCode(), req.UserGroupCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "分配角色到用户组失败")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // RemoveRoleFromUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, req *auth.RemoveRoleFromUserGroupReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.RemoveRoleFromUserGroup(ctx, req.GetRoleCode(), req.UserGroupCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "从用户组移除角色失败")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }

@@ -57,25 +57,25 @@ type AuthRepository interface {
 	// UpdateUserGroup 更新用户组
 	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup) error
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error
+	DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error
 	// GetUserGroupByID 根据用户组ID获取用户组
 	GetUserGroupByID(ctx context.Context, groupID []byte) (*models.UserGroup, error)
-	// GetUserGroupByName 根据用户组名称获取用户组
-	GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error)
+	// GetUserGroupByCode 根据用户组代码获取用户组
+	GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	// 返回成员用户名列表
-	GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error)
+	GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error)
 	// AssignRoleToUserGroup 分配角色到用户组
-	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
+	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
 	// RemoveRoleFromUserGroup 从用户组中移除角色
-	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error
+	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
 	// GetUserGroupPermissions 获取用户组的权限
-	GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error)
+	GetUserGroupPermissions(ctx context.Context, groupCode string) ([]string, error)
 
 	// AssignUserToGroup 分配用户到用户组
-	AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
+	AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
 	// RevokeUserFromGroup 撤销用户组中的用户
-	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error
+	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
 	// GetUserGroups 获取用户所属的用户组
 	// 返回用户组名称列表
 	GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error)
@@ -97,12 +97,14 @@ type AuthRepository interface {
 }
 
 type RepoImpl struct {
-	DB *gorm.DB
+	DB      *gorm.DB
+	Version int
 }
 
 func NewAuthRepository(db *gorm.DB) AuthRepository {
 	return &RepoImpl{
-		DB: db,
+		DB:      db,
+		Version: 1,
 	}
 }
 
@@ -126,7 +128,7 @@ func (r *RepoImpl) UpdatePermission(ctx context.Context, permission *models.Perm
 		return cerrors.NewParamError(http.StatusBadRequest, "permission cannot be nil")
 	}
 
-	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("id = ?", permission.ID).Updates(permission).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("id = ? and is_deleted = false", permission.ID).Updates(permission).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update permission: ", err)
 	}
 	return nil
@@ -137,7 +139,7 @@ func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, 
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
 	}
 
-	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("code = ?", permissionCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Permission{}).Where("code = ? and is_deleted = false", permissionCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete permission: ", err)
 	}
 	return nil
@@ -149,7 +151,7 @@ func (r *RepoImpl) GetPermissionByID(ctx context.Context, permissionID util.UUID
 	}
 
 	var permission models.Permission
-	if err := r.DB.WithContext(ctx).Where("id = ?", permissionID).First(&permission).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", permissionID).First(&permission).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission by ID: ", err)
 	}
 	return &permission, nil
@@ -161,7 +163,7 @@ func (r *RepoImpl) GetPermissionByCode(ctx context.Context, permissionCode strin
 	}
 
 	var permission models.Permission
-	if err := r.DB.WithContext(ctx).Where("code = ?", permissionCode).First(&permission).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", permissionCode).First(&permission).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
@@ -186,7 +188,7 @@ func (r *RepoImpl) UpdateRole(ctx context.Context, role *models.Role) error {
 		return cerrors.NewParamError(http.StatusBadRequest, "role cannot be nil")
 	}
 
-	if err := r.DB.WithContext(ctx).Save(role).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Role{}).Where("id = ? and is_deleted = false", role.ID).Updates(role).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update role: ", err)
 	}
 	return nil
@@ -197,7 +199,7 @@ func (r *RepoImpl) DeleteRole(ctx context.Context, roleCode string, operatorId *
 		return cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
 
-	if err := r.DB.WithContext(ctx).Model(&models.Role{}).Where("code = ?", roleCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.Role{}).Where("code = ? and is_deleted = false", roleCode).Update("deleted_at", time.Now()).Update("updated_by", operatorId).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete role: ", err)
 	}
 	return nil
@@ -209,7 +211,7 @@ func (r *RepoImpl) GetRoleByID(ctx context.Context, roleID []byte) (*models.Role
 	}
 
 	var role models.Role
-	if err := r.DB.WithContext(ctx).Where("id = ?", roleID).First(&role).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", roleID).First(&role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
@@ -224,7 +226,7 @@ func (r *RepoImpl) GetRoleByCode(ctx context.Context, roleCode string) (*models.
 	}
 
 	var role models.Role
-	if err := r.DB.WithContext(ctx).Where("code = ?", roleCode).First(&role).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", roleCode).First(&role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
@@ -257,7 +259,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 
 	// 检查是否已存在关联
 	var existing models.RolePermission
-	err = r.DB.WithContext(ctx).Where("role_id = ? AND permission_id = ?", role.ID, permission.ID).First(&existing).Error
+	err = r.DB.WithContext(ctx).Where("role_id = ? AND permission_id = ? and is_deleted = false", role.ID, permission.ID).First(&existing).Error
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
@@ -277,6 +279,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 		Status:       1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
+			Version:   &r.Version,
 		},
 	}
 
@@ -385,7 +388,7 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 
 	// 检查是否已存在关联
 	var existing models.UserRole
-	err = r.DB.WithContext(ctx).Where("user_id = ? AND role_id = ?", userID, role.ID).First(&existing).Error
+	err = r.DB.WithContext(ctx).Where("user_id = ? AND role_id = ? and is_deleted = false", userID, role.ID).First(&existing).Error
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
@@ -405,6 +408,7 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 		Status: 1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
+			Version:   &r.Version,
 		},
 	}
 
@@ -472,23 +476,23 @@ func (r *RepoImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGr
 		return cerrors.NewParamError(http.StatusBadRequest, "user group cannot be nil")
 	}
 
-	if err := r.DB.WithContext(ctx).Save(userGroup).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("id = ? and is_deleted = false", userGroup.ID).Updates(userGroup).Error; err != nil {
 		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update user group: ", err)
 	}
 	return nil
 }
 
-func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupName string, operatorId *util.UUID) error {
-	if groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error {
+	if groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	// 软删除：设置 deleted_at 字段为当前时间
-	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("name = ?", groupName).Updates(map[string]interface{}{
+	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).Where("code = ? and is_deleted = false", groupCode).Updates(map[string]interface{}{
 		"deleted_at": time.Now(),
 		"updated_by": operatorId,
 	}).Error; err != nil {
-		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to soft delete user group: ", err)
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to delete user group: ", err)
 	}
 
 	return nil
@@ -500,7 +504,7 @@ func (r *RepoImpl) GetUserGroupByID(ctx context.Context, groupID []byte) (*model
 	}
 
 	var userGroup models.UserGroup
-	if err := r.DB.WithContext(ctx).Where("id = ?", groupID).First(&userGroup).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", groupID).First(&userGroup).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
@@ -509,40 +513,40 @@ func (r *RepoImpl) GetUserGroupByID(ctx context.Context, groupID []byte) (*model
 	return &userGroup, nil
 }
 
-func (r *RepoImpl) GetUserGroupByName(ctx context.Context, groupName string) (*models.UserGroup, error) {
-	if groupName == "" {
-		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error) {
+	if groupCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	var userGroup models.UserGroup
-	if err := r.DB.WithContext(ctx).Where("name = ?", groupName).First(&userGroup).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", groupCode).First(&userGroup).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil // 记录未找到返回nil
 		}
-		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by name: ", err)
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by code: ", err)
 	}
 	return &userGroup, nil
 }
 
-func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupName string) ([]util.UUID, error) {
-	if groupName == "" {
-		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
+func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error) {
+	if groupCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
 	var userIDList []util.UUID
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
 		Select("user_group_relation.user_id").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
-		Where("user_group.name = ? AND user_group_relation.status = 1", groupName).
+		Where("user_group.code = ? AND user_group_relation.status = 1 AND user_group.is_deleted = false", groupCode).
 		Pluck("user_group_relation.user_id", &userIDList).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group members: ", err)
 	}
 	return userIDList, nil
 }
 
-func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
-	if roleCode == "" || groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
+func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+	if roleCode == "" || groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "role code and group code cannot be empty")
 	}
 
 	// 获取角色
@@ -555,7 +559,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -565,7 +569,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 
 	// 检查是否已存在关联
 	var existing models.RoleGroup
-	err = r.DB.WithContext(ctx).Where("role_id = ? AND group_id = ?", role.ID, userGroup.ID).First(&existing).Error
+	err = r.DB.WithContext(ctx).Where("role_id = ? AND group_id = ? and is_deleted = false", role.ID, userGroup.ID).First(&existing).Error
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
@@ -585,6 +589,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 		Status:  1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
+			Version:   &r.Version,
 		},
 	}
 
@@ -594,8 +599,8 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	return nil
 }
 
-func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupName string, operatorId *util.UUID) error {
-	if roleCode == "" || groupName == "" {
+func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+	if roleCode == "" || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
 
@@ -609,7 +614,7 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string,
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -629,8 +634,8 @@ func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string,
 	return nil
 }
 
-func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupName string) ([]string, error) {
-	if groupName == "" {
+func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupCode string) ([]string, error) {
+	if groupCode == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "group name cannot be empty")
 	}
 
@@ -640,20 +645,20 @@ func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupName string
 		Joins("JOIN role_permission ON permission.id = role_permission.permission_id").
 		Joins("JOIN role_group ON role_permission.role_id = role_group.role_id").
 		Joins("JOIN user_group ON role_group.group_id = user_group.id").
-		Where("user_group.name = ? AND role_permission.status = 1 AND role_group.status = 1", groupName).
+		Where("user_group.code = ? AND role_permission.status = 1 AND role_group.status = 1", groupCode).
 		Pluck("permission.code", &permissionCodes).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group permissions: ", err)
 	}
 	return permissionCodes, nil
 }
 
-func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupName == "" {
+func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
+	if userID == (util.UUID{}) || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -663,7 +668,7 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 
 	// 检查是否已存在关联
 	var existing models.UserGroupRelation
-	err = r.DB.WithContext(ctx).Where("user_id = ? AND group_id = ?", userID, userGroup.ID).First(&existing).Error
+	err = r.DB.WithContext(ctx).Where("user_id = ? AND group_id = ? and is_deleted = false", userID, userGroup.ID).First(&existing).Error
 	if err == nil {
 		// 如果已存在，更新状态为启用
 		existing.Status = 1
@@ -683,6 +688,7 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 		Status:  1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
+			Version:   &r.Version,
 		},
 	}
 
@@ -692,13 +698,13 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 	return nil
 }
 
-func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupName string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupName == "" {
-		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
+func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
+	if userID == (util.UUID{}) || groupCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "userID and group code cannot be empty")
 	}
 
 	// 获取用户组
-	userGroup, err := r.GetUserGroupByName(ctx, groupName)
+	userGroup, err := r.GetUserGroupByCode(ctx, groupCode)
 	if err != nil {
 		return err
 	}
@@ -723,15 +729,15 @@ func (r *RepoImpl) GetUserGroups(ctx context.Context, userID util.UUID) ([]strin
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
-	var groupNames []string
+	var groupCodes []string
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
-		Select("user_group.name").
+		Select("user_group.code").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
-		Pluck("user_group.name", &groupNames).Error; err != nil {
+		Pluck("user_group.code", &groupCodes).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user groups: ", err)
 	}
-	return groupNames, nil
+	return groupCodes, nil
 }
 
 func (r *RepoImpl) GetUserPermissions(ctx context.Context, userID util.UUID) ([]string, error) {

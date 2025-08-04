@@ -307,13 +307,13 @@ func TestCreateUserGroup(t *testing.T) {
 	}
 }
 
-func TestGetUserGroupByName(t *testing.T) {
+func TestGetUserGroupByCode(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 测试获取存在的用户组
-	userGroup, err := repo.GetUserGroupByName(context.Background(), "test_admin_group")
+	userGroup, err := repo.GetUserGroupByCode(context.Background(), "test_admin_group_code")
 	if err != nil {
-		t.Errorf("failed to get user group by name: %v", err)
+		t.Errorf("failed to get user group by code: %v", err)
 	} else if userGroup != nil {
 		t.Logf("user group found: %+v", userGroup)
 	} else {
@@ -346,7 +346,7 @@ func TestGetUserRoles(t *testing.T) {
 func TestAssignUserToGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignUserToGroup(context.Background(), testUserId, "test_admin_group", &testUserId)
+	err := repo.AssignUserToGroup(context.Background(), testUserId, "test_admin_group_code", &testUserId)
 	if err != nil {
 		t.Errorf("failed to assign user to group: %v", err)
 	} else {
@@ -379,7 +379,7 @@ func TestGetUserGroupMembers(t *testing.T) {
 func TestAssignRoleToUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.AssignRoleToUserGroup(context.Background(), "test_role_admin", "test_admin_group", &testUserId)
+	err := repo.AssignRoleToUserGroup(context.Background(), "test_role_admin", "test_admin_group_code", &testUserId)
 	if err != nil {
 		t.Errorf("failed to assign role to user group: %v", err)
 	} else {
@@ -390,7 +390,7 @@ func TestAssignRoleToUserGroup(t *testing.T) {
 func TestRemoveRoleFromUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RemoveRoleFromUserGroup(context.Background(), "test_role_admin", "test_admin_group", &testUserId)
+	err := repo.RemoveRoleFromUserGroup(context.Background(), "test_role_admin", "test_admin_group_code", &testUserId)
 	if err != nil {
 		t.Errorf("failed to remove role from user group: %v", err)
 	} else {
@@ -496,7 +496,7 @@ func TestRevokeRoleFromUser(t *testing.T) {
 func TestRevokeUserFromGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
-	err := repo.RevokeUserFromGroup(context.Background(), testUserId, "test_admin_group", &testUserId)
+	err := repo.RevokeUserFromGroup(context.Background(), testUserId, "test_admin_group_code", &testUserId)
 	if err != nil {
 		t.Errorf("failed to revoke user from group: %v", err)
 	} else {
@@ -530,7 +530,7 @@ func TestDeleteUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
 
 	// 先获取用户组ID
-	userGroup, err := repo.GetUserGroupByName(context.Background(), "test_admin_group")
+	userGroup, err := repo.GetUserGroupByCode(context.Background(), "test_admin_group")
 	if err != nil {
 		t.Errorf("failed to get user group for deletion: %v", err)
 		return
