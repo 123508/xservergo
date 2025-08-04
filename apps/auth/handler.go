@@ -665,7 +665,7 @@ func (s *AuthServiceImpl) GetUserGroups(ctx context.Context, req *auth.GetUserGr
 	}
 	var authGroups []*auth.UserGroup
 	for _, group := range groups {
-		authGroups = append(authGroups, &auth.UserGroup{GroupName: group})
+		authGroups = append(authGroups, &auth.UserGroup{Code: group})
 	}
 	return &auth.GetUserGroupsResp{
 		UserGroups: authGroups,

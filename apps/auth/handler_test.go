@@ -18,7 +18,8 @@ func init() {
 	userId, _ = util.FromString("01981dbf-1b8a-7039-8d55-f26e2e525c26")
 }
 
-func TestAuthServiceImpl_CreatePermission(t *testing.T) {
+func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
+	// 1. CreatePermission
 	userIdBytes, _ := userId.Marshal()
 	createPermissionReq := &auth.CreatePermissionReq{
 		Permission: &auth.Permission{
@@ -35,18 +36,16 @@ func TestAuthServiceImpl_CreatePermission(t *testing.T) {
 		RequestUserId: userIdBytes,
 	}
 
-	resp, err := authClient.CreatePermission(context.Background(), createPermissionReq)
+	createResp, err := authClient.CreatePermission(context.Background(), createPermissionReq)
 	if err != nil {
 		t.Fatalf("CreatePermission failed: %v", err)
 	}
-	if resp == nil {
+	if createResp == nil {
 		t.Fatal("CreatePermission response is nil")
 	}
-	t.Logf("CreatePermission response: %v", resp)
-}
+	t.Logf("CreatePermission response: %v", createResp)
 
-func TestAuthServiceImpl_UpdatePermission(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
+	// 2. UpdatePermission
 	//permissionId, _ := util.FromString("01986b50-f353-7da5-9397-eec56a4cea76")
 	//permissionIdBytes, _ := permissionId.Marshal()
 	updatePermissionReq := &auth.UpdatePermissionReq{
@@ -63,35 +62,32 @@ func TestAuthServiceImpl_UpdatePermission(t *testing.T) {
 		},
 		RequestUserId: userIdBytes,
 	}
-	resp, err := authClient.UpdatePermission(context.Background(), updatePermissionReq)
+	updateResp, err := authClient.UpdatePermission(context.Background(), updatePermissionReq)
 	if err != nil {
 		t.Fatalf("UpdatePermission failed: %v", err)
 	}
-	if resp == nil {
+	if updateResp == nil {
 		t.Fatal("UpdatePermission response is nil")
 	}
-	t.Logf("UpdatePermission response: %v", resp)
-}
+	t.Logf("UpdatePermission response: %v", updateResp)
 
-func TestAuthServiceImpl_GetPermission(t *testing.T) {
+	// 3. GetPermission
 	getPermissionReq := &auth.GetPermissionReq{
 		PermissionCode: "test_permission_create_handler",
 	}
-	resp, err := authClient.GetPermission(context.Background(), getPermissionReq)
+	getResp, err := authClient.GetPermission(context.Background(), getPermissionReq)
 	if err != nil {
 		t.Fatalf("GetPermission failed: %v", err)
 	}
-	if resp == nil {
+	if getResp == nil {
 		t.Fatal("GetPermission response is nil")
 	}
-	if resp.PermissionName != "test_permission_create_handler_update" {
-		t.Fatalf("Expected permission name to be updated, but got %s", resp.PermissionName)
+	if getResp.PermissionName != "test_permission_create_handler_update" {
+		t.Fatalf("Expected permission name to be updated, but got %s", getResp.PermissionName)
 	}
-	t.Logf("GetPermission response: %v", resp)
-}
+	t.Logf("GetPermission response: %v", getResp)
 
-func TestAuthServiceImpl_DeletePermission(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
+	// 4. DeletePermission
 	deletePermissionReq := &auth.DeletePermissionReq{
 		PermissionCode: "test_permission_create_handler",
 		RequestUserId:  userIdBytes,
@@ -105,10 +101,7 @@ func TestAuthServiceImpl_DeletePermission(t *testing.T) {
 	}
 	t.Logf("DeletePermission response: %v", resp)
 
-	// Verify that the permission is deleted
-	getPermissionReq := &auth.GetPermissionReq{
-		PermissionCode: "test_permission_create_handler",
-	}
+	// 5. Verify that the permission is deleted
 	_, err = authClient.GetPermission(context.Background(), getPermissionReq)
 	if err == nil {
 		t.Fatal("Expected error when getting deleted permission, but got nil")

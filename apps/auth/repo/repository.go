@@ -731,7 +731,7 @@ func (r *RepoImpl) GetUserGroups(ctx context.Context, userID util.UUID) ([]strin
 
 	var groupCodes []string
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
-		Select("user_group.name").
+		Select("user_group.code").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
 		Where("user_group_relation.user_id = ? AND user_group_relation.status = 1", userID).
 		Pluck("user_group.code", &groupCodes).Error; err != nil {
