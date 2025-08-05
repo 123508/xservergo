@@ -41,8 +41,51 @@ func main() {
 
 		// 用户服务
 		userGroup := hz.Group("/user")
+		//注册用户
 		userGroup.POST("/register", user.Register)
-		userGroup.POST("/login", user.Login)
+		//邮箱登录
+		userGroup.POST("/email_login", user.EmailLogin)
+		//手机号登录
+		userGroup.POST("/phone_login", user.PhoneLogin)
+		//账户登录
+		userGroup.POST("/account_login", user.AccountLogin)
+		//验证码登录
+		userGroup.POST("/sms_login", user.SmsLogin)
+		//二维码扫码登录
+		userGroup.POST("/generate_qrCode", user.GenerateQrCode)
+		userGroup.POST("/qr_pre_login", user.QrPreLogin)
+		userGroup.POST("/qr_login", user.QrLogin)
+		//扫码登录移动端部分
+		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
+		userGroup.POST("/qr_mobile_login", user.QrMobileLogin)
+		userGroup.POST("/confirm_qr_login", user.ConfirmQrLogin)
+		userGroup.POST("/cancel_qr_login", user.CancelQrLogin)
+		//登出
+		userGroup.POST("/logout", user.Logout)
+		//修改密码
+		userGroup.POST("/change_pwd", user.ChangePassword)
+		//忘记密码
+		userGroup.POST("/forget_pwd", user.ForgetPassword)
+		userGroup.POST("/reset_pwd", user.ResetPassword)
+		//绑定邮箱
+		userGroup.POST("/start_bind_email", user.StartBindEmail)
+		userGroup.POST("/complete_bind_email", user.CompleteBindEmail)
+		//换绑邮箱
+		userGroup.POST("/start_change_email", user.StartChangeEmail)
+		userGroup.POST("/verify_new_email", user.VerifyNewEmail)
+		userGroup.POST("/complete_change_email", user.CompleteChangeEmail)
+		//绑定手机号
+		userGroup.POST("/start_bind_phone", user.StartBindPhone)
+		userGroup.POST("/complete_bind_phone", user.CompleteBindPhone)
+		//换绑手机号
+		userGroup.POST("/start_change_phone", user.StartChangePhone)
+		userGroup.POST("/verify_new_phone", user.VerifyNewPhone)
+		userGroup.POST("/complete_change_phone", user.CompleteChangePhone)
+		//获取用户信息
+		userGroup.POST("/get_userinfo_by_id", user.GetUserInfoById)
+		userGroup.POST("/get_userinfo_by_others", user.GetUserInfoByOthers)
+		//更新用户信息
+		userGroup.POST("/update_userinfo", user.UpdateUserinfo)
 
 		// 认证服务
 		authGroup := hz.Group("/auth")
