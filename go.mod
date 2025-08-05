@@ -3,7 +3,6 @@ module github.com/123508/xservergo
 go 1.23.3
 
 require (
-	github.com/Backblaze/blazer v0.7.2
 	github.com/cloudwego/hertz v0.10.1
 	github.com/cloudwego/kitex v0.14.1
 	github.com/cloudwego/prutal v0.1.2

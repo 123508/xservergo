@@ -40,3 +40,9 @@ type DeviceSign struct {
 	ClientIp  string `json:"client_ip"`
 	UserAgent string `json:"user_agent"`
 }
+
+type QrQuery struct {
+	Ticket    string `json:"ticket"`
+	Timeout   uint64 `json:"timeout"`
+	RequestId string `json:"request_id"`
+}

@@ -18,6 +18,7 @@ type AppConfig struct {
 	*UserConfig    `mapstructure:"user"`
 	*AuthConfig    `mapstructure:"auth"`
 	*LoggerConfig  `mapstructure:"logger"`
+	*AESConfig     `mapstructure:"aes"`
 }
 
 type MySQLConfig struct {
@@ -105,6 +106,11 @@ type FileOutputConfig struct {
 	Level      string `mapstructure:"level"`
 }
 
+type AESConfig struct {
+	Key string `mapstructure:"key"`
+	IV  string `mapstructure:"iv"`
+}
+
 var Conf AppConfig
 
 // setDefaultValues 设置默认配置值，基于docker-compose.yaml中的服务配置
@@ -175,6 +181,10 @@ func setDefaultValues(v *viper.Viper) {
 	v.SetDefault("logger.file_output.level", "info")
 	v.SetDefault("logger.sample_initial", 100)
 	v.SetDefault("logger.sample_burst", 200)
+
+	//加密默认设置
+	v.SetDefault("aes.key", "bfTbpSMpuYCEOXhmfSejqvoDcpq/W31ofbbqoNHOepA=")
+	v.SetDefault("aes.iv", "ZJ3y2hyLva1Qng8Q2iJO7w==")
 }
 
 func init() {
