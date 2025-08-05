@@ -50,6 +50,10 @@ func parseServiceErrToHandlerError(ctx context.Context, err error, requestId str
 
 func unmarshalUID(ctx context.Context, uid []byte, version uint64) (*user.OperationResult, error, util.UUID) {
 
+	if uid == nil || len(uid) == 0 {
+		return nil, nil, util.SystemUUID
+	}
+
 	Uid := util.NewUUID()
 	if err := Uid.Unmarshal(uid); err != nil {
 

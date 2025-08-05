@@ -58,13 +58,13 @@ func main() {
 		userGroup.POST("/qr_mobile_login", user.QrMobileLogin)
 		userGroup.POST("/confirm_qr_login", user.ConfirmQrLogin)
 		userGroup.POST("/cancel_qr_login", user.CancelQrLogin)
-		//登出
-		userGroup.POST("/logout", user.Logout)
 		//忘记密码
 		userGroup.POST("/forget_pwd", user.ForgetPassword)
 		userGroup.POST("/reset_pwd", user.ResetPassword)
 		//解析token
 		userGroup.Use(middleware.ParseToken())
+		//登出
+		userGroup.POST("/logout", user.Logout)
 		//修改密码
 		userGroup.POST("/change_pwd", user.ChangePassword)
 		//绑定邮箱

@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"github.com/123508/xservergo/apps/gateway/common"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/user"
@@ -12,7 +11,7 @@ import (
 
 func AccountLogin(ctx context.Context, c *app.RequestContext) {
 
-	acc := &Account{}
+	acc := &AccountLog{}
 
 	if err := c.Bind(acc); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -27,8 +26,6 @@ func AccountLogin(ctx context.Context, c *app.RequestContext) {
 		Password: acc.Password,
 	})
 
-	fmt.Println(resp, err)
-
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
 		return
@@ -36,8 +33,8 @@ func AccountLogin(ctx context.Context, c *app.RequestContext) {
 
 	//解析成功
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"code": http.StatusOK,
-		"meg":  "登录成功",
-		"data": resp,
+		"code":    http.StatusOK,
+		"message": "登录成功",
+		"data":    resp,
 	})
 }
