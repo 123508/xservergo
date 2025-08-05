@@ -1,8 +1,10 @@
 package cerrors
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strconv"
 )
 
@@ -174,7 +176,7 @@ func (e *GRPCError) Error() string {
 	if e == nil {
 		return ""
 	}
-	return "code:" + strconv.FormatUint(uint64(e.Code), 10) + ",message:" + e.Message
+	return "grpc error: code:" + strconv.FormatUint(e.Code, 10) + ",message:" + e.Message
 }
 
 func (e *GRPCError) Is(target error) bool {
@@ -189,6 +191,21 @@ func (e *GRPCError) Is(target error) bool {
 
 func (e *GRPCError) Unwrap() error {
 	return nil
+}
+
+var GRPCErrorRegex = regexp.MustCompile(`grpc error: code:(\d+),message:(.+)`)
+
+func ParseToGRPCError(err error) error {
+	matches := GRPCErrorRegex.FindStringSubmatch(err.Error())
+
+	if len(matches) != 3 {
+		return err
+	}
+	var code uint64
+	if _, err = fmt.Sscanf(matches[1], "%d", &code); err != nil {
+		return err
+	}
+	return NewGRPCError(code, matches[2])
 }
 
 //----------------- gateway层错误 -----------------//

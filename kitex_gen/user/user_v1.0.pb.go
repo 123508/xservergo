@@ -416,13 +416,12 @@ func (x *Empty) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
 // ---------- 认证模块 ---------- //
 type RegisterReq struct {
-	Username        string `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
-	Nickname        string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`
-	Password        string `protobuf:"bytes,3,opt,name=password" json:"password,omitempty"`
-	ConfirmPassword string `protobuf:"bytes,4,opt,name=confirm_password" json:"confirm_password,omitempty"`
-	Email           string `protobuf:"bytes,5,opt,name=email" json:"email,omitempty"`
-	Phone           string `protobuf:"bytes,6,opt,name=phone" json:"phone,omitempty"`
-	Gender          uint64 `protobuf:"varint,7,opt,name=gender" json:"gender,omitempty"` // 0-未知 1-男 2-女
+	Username string `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
+	Nickname string `protobuf:"bytes,2,opt,name=nickname" json:"nickname,omitempty"`
+	Password string `protobuf:"bytes,3,opt,name=password" json:"password,omitempty"`
+	Email    string `protobuf:"bytes,5,opt,name=email" json:"email,omitempty"`
+	Phone    string `protobuf:"bytes,6,opt,name=phone" json:"phone,omitempty"`
+	Gender   uint64 `protobuf:"varint,7,opt,name=gender" json:"gender,omitempty"` //  1-男 2-女 3-未知
 }
 
 func (x *RegisterReq) Reset() { *x = RegisterReq{} }
@@ -448,13 +447,6 @@ func (x *RegisterReq) GetNickname() string {
 func (x *RegisterReq) GetPassword() string {
 	if x != nil {
 		return x.Password
-	}
-	return ""
-}
-
-func (x *RegisterReq) GetConfirmPassword() string {
-	if x != nil {
-		return x.ConfirmPassword
 	}
 	return ""
 }

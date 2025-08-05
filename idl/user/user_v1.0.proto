@@ -109,10 +109,9 @@ message RegisterReq {
   string username = 1;
   string nickname=2;
   string password = 3;
-  string confirm_password=4;
   string email = 5;
   string phone = 6;
-  uint64 gender = 7;  // 0-未知 1-男 2-女
+  uint64 gender = 7;  //  1-男 2-女 3-未知
 }
 
 message EmailLoginReq {

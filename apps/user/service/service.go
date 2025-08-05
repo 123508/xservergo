@@ -77,7 +77,7 @@ func (s *ServiceImpl) GetRedis() *redis.Client {
 
 func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) error {
 
-	if u == nil || uLogin == nil {
+	if u == nil || uLogin == nil || u.Gender == 0 {
 		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 

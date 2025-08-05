@@ -203,9 +203,10 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 
 // AccountLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLoginReq) (resp *user.LoginResp, err error) {
+
 	login, token, err := s.userService.UserNameLogin(ctx, req.Username, req.Password)
 
-	resp = &user.LoginResp{}
+	var marshal []byte
 
 	if err != nil {
 
@@ -217,24 +218,26 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
 		}
 
+		return &user.LoginResp{}, err
+
 	} else {
-		marshal, err := login.ID.Marshal()
+		marshal, err = login.ID.Marshal()
 
 		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
+			return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
 		}
+	}
 
-		resp.AccessToken = token.AccessToken
-		resp.RefreshToken = token.RefreshToken
-		resp.UserInfo = &user.UserInfo{
+	return &user.LoginResp{
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+		UserInfo: &user.UserInfo{
 			UserId:   marshal,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
-		}
-	}
-
-	return resp, err
+		},
+	}, nil
 }
 
 // SmsLogin implements the UserServiceImpl interface.

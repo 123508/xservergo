@@ -179,18 +179,15 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 	// 1. 构建更新字段Map
 	updates := make(map[string]interface{})
 
-	// 基础字段（总是更新）
-	updates["gender"] = u.Gender
-
-	// 可选字段（空值不更新）
-	//if u.Phone != "" {
-	//	updates["phone"] = u.Phone
-	//}
 	if u.NickName != "" {
 		updates["nickname"] = u.NickName // 修正字段名
 	}
 	if u.Avatar != "" {
 		updates["avatar"] = u.Avatar
+	}
+
+	if u.Gender != 0 {
+		updates["gender"] = u.Gender
 	}
 
 	if !requestUserId.IsZero() {

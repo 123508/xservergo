@@ -36,8 +36,6 @@ func main() {
 
 		// 注册 Prometheus 中间件
 		middleware.RegisterPrometheus(hz)
-		// 注册JWT中间件
-		hz.Use(middleware.ParseToken())
 
 		// 用户服务
 		userGroup := hz.Group("/user")
@@ -62,11 +60,13 @@ func main() {
 		userGroup.POST("/cancel_qr_login", user.CancelQrLogin)
 		//登出
 		userGroup.POST("/logout", user.Logout)
-		//修改密码
-		userGroup.POST("/change_pwd", user.ChangePassword)
 		//忘记密码
 		userGroup.POST("/forget_pwd", user.ForgetPassword)
 		userGroup.POST("/reset_pwd", user.ResetPassword)
+		//解析token
+		userGroup.Use(middleware.ParseToken())
+		//修改密码
+		userGroup.POST("/change_pwd", user.ChangePassword)
 		//绑定邮箱
 		userGroup.POST("/start_bind_email", user.StartBindEmail)
 		userGroup.POST("/complete_bind_email", user.CompleteBindEmail)
@@ -89,8 +89,15 @@ func main() {
 
 		// 认证服务
 		authGroup := hz.Group("/auth")
+		// 解析token
+		authGroup.Use(middleware.ParseToken())
 		authGroup.POST("create_permission", auth.CreatePermission)
 
+		if err := hz.Run(); err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("网关服务启动成功")
 	}()
 
 	// 等待所有服务启动
