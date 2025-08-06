@@ -11,7 +11,7 @@ import (
 
 func QrPreLogin(ctx context.Context, c *app.RequestContext) {
 	query := &QrQuery{}
-	if err := c.Bind(&query); err != nil {
+	if err := c.Bind(query); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code":    http.StatusBadRequest,
 			"message": "请求参数错误",
@@ -30,10 +30,22 @@ func QrPreLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	ciphertext, err := common.EncryptAES(resp.UserId)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"code":    http.StatusInternalServerError,
+			"message": "加密失败",
+		})
+	}
+
 	//解析成功
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code":    http.StatusOK,
-		"message": "询问成功",
-		"data":    resp,
+		"message": "轮询成功",
+		"data": map[string]interface{}{
+			"user_id":    ciphertext,
+			"request_id": query.RequestId,
+		},
 	})
 }

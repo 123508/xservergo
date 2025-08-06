@@ -150,17 +150,11 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 		return &user.LoginResp{}, err
 	}
 
-	_, err, marshal := marshalUID(ctx, login.ID)
-
-	if err != nil {
-		return &user.LoginResp{}, err
-	}
-
 	return &user.LoginResp{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			Username: login.UserName,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
@@ -186,16 +180,11 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 		}
 
 	} else {
-		marshal, err := login.ID.Marshal()
-
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
-		}
 
 		resp.AccessToken = token.AccessToken
 		resp.RefreshToken = token.RefreshToken
 		resp.UserInfo = &user.UserInfo{
-			UserId:   marshal,
+			Username: login.UserName,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
@@ -210,8 +199,6 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 
 	login, token, err := s.userService.UserNameLogin(ctx, req.Username, req.Password)
 
-	var marshal []byte
-
 	if err != nil {
 
 		com, ok := err.(*cerrors.CommonError)
@@ -224,19 +211,13 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 
 		return &user.LoginResp{}, err
 
-	} else {
-		marshal, err = login.ID.Marshal()
-
-		if err != nil {
-			return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
-		}
 	}
 
 	return &user.LoginResp{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			Username: login.UserName,
 			Nickname: login.NickName,
 			Email:    login.Email,
 			Avatar:   login.Avatar,
@@ -271,19 +252,13 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 			}
 		}
 
-		marshal, err := login.ID.Marshal()
-
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化错误")
-		}
-
 		return &user.SmsLoginResp{
 			Result: &user.SmsLoginResp_Login{
 				Login: &user.LoginResp{
 					RefreshToken: token.RefreshToken,
 					AccessToken:  token.AccessToken,
 					UserInfo: &user.UserInfo{
-						UserId:   marshal,
+						Username: login.UserName,
 						Nickname: login.NickName,
 						Email:    login.Email,
 						Avatar:   login.Avatar,

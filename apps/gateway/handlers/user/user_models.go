@@ -46,3 +46,15 @@ type QrQuery struct {
 	Timeout   uint64 `json:"timeout"`
 	RequestId string `json:"request_id"`
 }
+
+type QrLog struct {
+	Ticket    string `json:"ticket"`
+	Timeout   uint64 `json:"timeout"`
+	RequestId string `json:"request_id"`
+	UserId    string `json:"user_id"`
+}
+
+type QrMobileReq struct {
+	Ticket    string `json:"ticket"`
+	RequestId string `json:"request_id"`
+}

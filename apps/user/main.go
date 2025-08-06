@@ -46,7 +46,7 @@ func main() {
 				ServiceName: config.Conf.UserConfig.ServiceName,
 			},
 		),
-		server.WithReadWriteTimeout(10*time.Second),                      // 增加读写超时时间
+		server.WithReadWriteTimeout(30*time.Second),                      // 增加读写超时时间
 		server.WithMaxConnIdleTime(30*time.Second),                       // 最大空闲时间
 		server.WithConnectionLimiter(limiter.NewConnectionLimiter(1000)), // 提高并发处理数
 	)

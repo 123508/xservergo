@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func QrMobilePreLogin(ctx context.Context, c *app.RequestContext) {
+func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 
 	userId := ctx.Value("userId")
 
@@ -40,21 +40,18 @@ func QrMobilePreLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.QrPreLogin(ctx, &user.QrPreLoginReq{
+	_, err := infra.UserClient.CancelQrLogin(ctx, &user.CancelQrLoginReq{
 		Ticket:    mobilePre.Ticket,
 		UserId:    uid,
 		RequestId: mobilePre.RequestId,
 	})
-
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
 		return
 	}
 
-	//解析成功
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code":    http.StatusOK,
-		"message": "请求成功",
-		"data":    resp,
+		"message": "成功取消",
 	})
 }

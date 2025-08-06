@@ -1050,7 +1050,7 @@ func (s *ServiceImpl) LoginWithResp(
 	}
 
 	loginUsr := &models.User{
-		ID:       usr.ID,
+		UserName: usr.UserName,
 		NickName: usr.NickName,
 		Email:    usr.Email,
 		Avatar:   usr.Avatar,
