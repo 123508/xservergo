@@ -21,7 +21,7 @@ func ParseToken() app.HandlerFunc {
 		refreshToken := c.Request.Header.Get("RefreshToken")
 
 		// 解析jwt
-		resp, err := infra.AuthCList.VerifyToken(ctx, &auth.VerifyTokenReq{
+		resp, err := infra.AuthClient.VerifyToken(ctx, &auth.VerifyTokenReq{
 			AccessToken: accessToken,
 		})
 		if err != nil {

@@ -12,28 +12,29 @@ import (
 
 var authClient authservice.Client
 var userId util.UUID
+var userIdBase64 string
 
 func init() {
 	authClient = cli.InitAuthService()
-	userId, _ = util.FromString("01981dbf-1b8a-7039-8d55-f26e2e525c26")
+	userId, _ = util.FromString("01987a69-f9d4-7008-a2a0-d055abeb7790")
+	userIdBase64 = userId.MarshalBase64()
 }
 
 func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
 	// 1. CreatePermission
-	userIdBytes, _ := userId.Marshal()
 	createPermissionReq := &auth.CreatePermissionReq{
 		Permission: &auth.Permission{
-			Id:             nil,
+			Id:             "",
 			Code:           "test_permission_create_handler",
 			PermissionName: "test_permission_create_handler",
 			Description:    "test_permission_create_handler",
-			ParentId:       nil,
+			ParentId:       "",
 			Type:           auth.Permission_API,
 			Resource:       "test/resource",
 			Method:         "GET",
 			Status:         true,
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 
 	createResp, err := authClient.CreatePermission(context.Background(), createPermissionReq)
@@ -54,13 +55,13 @@ func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
 			Code:           "test_permission_create_handler",
 			PermissionName: "test_permission_create_handler_update",
 			Description:    "test_permission_create_handler_update",
-			ParentId:       nil,
+			ParentId:       "",
 			Type:           auth.Permission_FILE,
 			Resource:       "test/resource",
 			Method:         "GET",
 			Status:         true,
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	updateResp, err := authClient.UpdatePermission(context.Background(), updatePermissionReq)
 	if err != nil {
@@ -90,7 +91,7 @@ func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
 	// 4. DeletePermission
 	deletePermissionReq := &auth.DeletePermissionReq{
 		PermissionCode: "test_permission_create_handler",
-		RequestUserId:  userIdBytes,
+		RequestUserId:  userIdBase64,
 	}
 	resp, err := authClient.DeletePermission(context.Background(), deletePermissionReq)
 	if err != nil {
@@ -110,10 +111,8 @@ func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
 }
 
 func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
-
 	// 1. IssueToken
-	issueReq := &auth.IssueTokenReq{UserId: userIdBytes}
+	issueReq := &auth.IssueTokenReq{UserId: userIdBase64}
 	issueResp, err := authClient.IssueToken(context.Background(), issueReq)
 	if err != nil {
 		t.Fatalf("IssueToken failed: %v", err)
@@ -132,18 +131,16 @@ func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
 	if verifyResp == nil {
 		t.Fatal("VerifyToken response is nil")
 	}
-	verifiedUserId := &util.UUID{}
-	_ = verifiedUserId.Unmarshal(verifyResp.UserId)
-	if verifiedUserId.String() != userId.String() {
-		t.Fatalf("Verified user ID %s does not match original user ID %s", verifiedUserId.String(), userId.String())
+	if verifyResp.UserId != userIdBase64 {
+		t.Fatalf("Verified user ID %s does not match original user ID %s", userIdBase64, userId.String())
 	}
-	t.Logf("VerifyToken response: UserId=%s", verifiedUserId.String())
+	t.Logf("VerifyToken response: UserId=%s", userIdBase64)
 
 	// 3. RefreshToken
 	refreshReq := &auth.RefreshTokenReq{
 		AccessToken:  issueResp.AccessToken,
 		RefreshToken: issueResp.RefreshToken,
-		UserId:       userIdBytes,
+		UserId:       userIdBase64,
 	}
 	refreshResp, err := authClient.RefreshToken(context.Background(), refreshReq)
 	if err != nil {
@@ -163,16 +160,13 @@ func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
 	if verifyNewResp == nil {
 		t.Fatal("VerifyToken after refresh response is nil")
 	}
-	verifiedNewUserId := &util.UUID{}
-	_ = verifiedNewUserId.Unmarshal(verifyNewResp.UserId)
-	if verifiedNewUserId.String() != userId.String() {
-		t.Fatalf("Verified user ID %s after refresh does not match original user ID %s", verifiedNewUserId.String(), userId.String())
+	if verifyResp.UserId != userIdBase64 {
+		t.Fatalf("Verified user ID %s after refresh does not match original user ID %s", userIdBase64, userId.String())
 	}
-	t.Logf("VerifyToken after refresh response: UserId=%s", verifiedNewUserId.String())
+	t.Logf("VerifyToken after refresh response: UserId=%s", userIdBase64)
 }
 
 func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
 	roleCode := "test_role_handler"
 
 	// 1. CreateRole
@@ -182,7 +176,7 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 			RoleName:    "Test Role Handler",
 			Description: "This is a test role from handler test",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	createResp, err := authClient.CreateRole(context.Background(), createRoleReq)
 	if err != nil {
@@ -200,7 +194,7 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 			RoleName:    "Test Role Handler Updated",
 			Description: "This is an updated test role",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	updateResp, err := authClient.UpdateRole(context.Background(), updateRoleReq)
 	if err != nil {
@@ -247,7 +241,7 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 	grantReq := &auth.GrantPermissionToRoleReq{
 		RoleCode:       roleCode,
 		PermissionCode: permissionCode,
-		RequestUserId:  userIdBytes,
+		RequestUserId:  userIdBase64,
 	}
 	grantResp, err := authClient.GrantPermissionToRole(context.Background(), grantReq)
 	if err != nil {
@@ -283,7 +277,7 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 	revokeReq := &auth.RevokePermissionFromRoleReq{
 		RoleCode:       roleCode,
 		PermissionCode: permissionCode,
-		RequestUserId:  userIdBytes,
+		RequestUserId:  userIdBase64,
 	}
 	revokeResp, err := authClient.RevokePermissionFromRole(context.Background(), revokeReq)
 	if err != nil {
@@ -297,7 +291,7 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 	// 7. DeleteRole
 	deleteRoleReq := &auth.DeleteRoleReq{
 		RoleCode:      roleCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	deleteResp, err := authClient.DeleteRole(context.Background(), deleteRoleReq)
 	if err != nil {
@@ -317,7 +311,6 @@ func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {
 }
 
 func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
 	groupCode := "test_group_handler"
 
 	// 1. CreateUserGroup
@@ -326,7 +319,7 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 			Code:      groupCode,
 			GroupName: "Test Group Handler",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	createResp, err := authClient.CreateUserGroup(context.Background(), createReq)
 	if err != nil {
@@ -343,7 +336,7 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 			Code:      groupCode,
 			GroupName: "Test Group Handler Updated",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	updateResp, err := authClient.UpdateUserGroup(context.Background(), updateReq)
 	if err != nil {
@@ -374,7 +367,7 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 	// 4. DeleteUserGroup
 	deleteReq := &auth.DeleteUserGroupReq{
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	deleteResp, err := authClient.DeleteUserGroup(context.Background(), deleteReq)
 	if err != nil {
@@ -399,7 +392,6 @@ func TestAuthServiceImpl_UserGroupLifecycle(t *testing.T) {
 }
 
 func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
 	groupCode := "test_group_for_user_assignment"
 
 	// Setup: Create a group first
@@ -408,7 +400,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 			Code:      groupCode,
 			GroupName: "Test Group for User Assignment",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err := authClient.CreateUserGroup(context.Background(), createReq)
 	if err != nil {
@@ -417,9 +409,9 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 
 	// 1. AssignUserToGroup
 	assignReq := &auth.AssignUserToGroupReq{
-		TargetUserId:  userIdBytes,
+		TargetUserId:  userIdBase64,
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	assignResp, err := authClient.AssignUserToGroup(context.Background(), assignReq)
 	if err != nil {
@@ -441,9 +433,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	}
 	found := false
 	for _, member := range getMembersResp.Users {
-		memberId := &util.UUID{}
-		_ = memberId.Unmarshal(member.UserId)
-		if memberId.String() == userId.String() {
+		if member.UserId == userIdBase64 {
 			found = true
 			break
 		}
@@ -454,7 +444,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	t.Logf("GetUserGroupMembers response: %v", getMembersResp)
 
 	// Also test GetUserGroups
-	getUserGroupsReq := &auth.GetUserGroupsReq{TargetUserId: userIdBytes}
+	getUserGroupsReq := &auth.GetUserGroupsReq{TargetUserId: userIdBase64}
 	getUserGroupsResp, err := authClient.GetUserGroups(context.Background(), getUserGroupsReq)
 	if err != nil {
 		t.Fatalf("GetUserGroups failed: %v", err)
@@ -476,9 +466,9 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 
 	// 3. RemoveUserFromGroup
 	removeReq := &auth.RemoveUserFromGroupReq{
-		TargetUserId:  userIdBytes,
+		TargetUserId:  userIdBase64,
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	removeResp, err := authClient.RemoveUserFromGroup(context.Background(), removeReq)
 	if err != nil {
@@ -496,9 +486,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	}
 	foundAfterRemove := false
 	for _, member := range getMembersRespAfterRemove.Users {
-		memberId := &util.UUID{}
-		_ = memberId.Unmarshal(member.UserId)
-		if memberId.String() == userId.String() {
+		if member.UserId == userIdBase64 {
 			foundAfterRemove = true
 			break
 		}
@@ -511,7 +499,7 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 	// Teardown: Delete the group
 	deleteReq := &auth.DeleteUserGroupReq{
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.DeleteUserGroup(context.Background(), deleteReq)
 	if err != nil {
@@ -520,7 +508,6 @@ func TestAuthServiceImpl_UserGroupAssignment(t *testing.T) {
 }
 
 func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
 	roleCode := "test_role_for_group_assignment"
 	groupCode := "test_group_for_role_assignment"
 	permissionCode := "test_permission_for_group_role"
@@ -534,7 +521,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 			Resource:       "/test/group_role",
 			Method:         "POST",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err := authClient.CreatePermission(context.Background(), createPermReq)
 	if err != nil {
@@ -549,7 +536,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 			RoleName:    "Test Role for Group Assignment",
 			Description: "A role for testing group assignment",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.CreateRole(context.Background(), createRoleReq)
 	if err != nil {
@@ -560,7 +547,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	grantReq := &auth.GrantPermissionToRoleReq{
 		RoleCode:       roleCode,
 		PermissionCode: permissionCode,
-		RequestUserId:  userIdBytes,
+		RequestUserId:  userIdBase64,
 	}
 	_, err = authClient.GrantPermissionToRole(context.Background(), grantReq)
 	if err != nil {
@@ -573,7 +560,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 			Code:      groupCode,
 			GroupName: "Test Group for Role Assignment",
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.CreateUserGroup(context.Background(), createGroupReq)
 	if err != nil {
@@ -584,7 +571,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	assignReq := &auth.AssignRoleToUserGroupReq{
 		RoleCode:      roleCode,
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	assignResp, err := authClient.AssignRoleToUserGroup(context.Background(), assignReq)
 	if err != nil {
@@ -597,9 +584,9 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 
 	// 2. Assign user to group to check permissions
 	assignUserReq := &auth.AssignUserToGroupReq{
-		TargetUserId:  userIdBytes,
+		TargetUserId:  userIdBase64,
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.AssignUserToGroup(context.Background(), assignUserReq)
 	if err != nil {
@@ -607,7 +594,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	}
 
 	// 3. GetUserPermissions to verify
-	getPermsReq := &auth.GetUserPermissionsReq{TargetUserId: userIdBytes}
+	getPermsReq := &auth.GetUserPermissionsReq{TargetUserId: userIdBase64}
 	getPermsResp, err := authClient.GetUserPermissions(context.Background(), getPermsReq)
 	if err != nil {
 		t.Fatalf("GetUserPermissions failed: %v", err)
@@ -631,7 +618,7 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	removeReq := &auth.RemoveRoleFromUserGroupReq{
 		RoleCode:      roleCode,
 		UserGroupCode: groupCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	removeResp, err := authClient.RemoveRoleFromUserGroup(context.Background(), removeReq)
 	if err != nil {
@@ -660,10 +647,10 @@ func TestAuthServiceImpl_UserGroupRoleAssignment(t *testing.T) {
 	t.Log("Successfully verified role removal from group")
 
 	// Teardown
-	_, _ = authClient.RemoveUserFromGroup(context.Background(), &auth.RemoveUserFromGroupReq{TargetUserId: userIdBytes, UserGroupCode: groupCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeleteUserGroup(context.Background(), &auth.DeleteUserGroupReq{UserGroupCode: groupCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBytes})
+	_, _ = authClient.RemoveUserFromGroup(context.Background(), &auth.RemoveUserFromGroupReq{TargetUserId: userIdBase64, UserGroupCode: groupCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeleteUserGroup(context.Background(), &auth.DeleteUserGroupReq{UserGroupCode: groupCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBase64})
 }
 
 func TestAuthServiceImpl_ListFunctions(t *testing.T) {
@@ -702,7 +689,6 @@ func TestAuthServiceImpl_ListFunctions(t *testing.T) {
 }
 
 func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
-	userIdBytes, _ := userId.Marshal()
 	permissionCode := "test_permission_for_checks"
 	resource := "/test/permission_checks"
 	method := "GET"
@@ -716,7 +702,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 			Resource:       resource,
 			Method:         method,
 		},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err := authClient.CreatePermission(context.Background(), createPermReq)
 	if err != nil {
@@ -725,7 +711,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 
 	// 1. HasPermission (without permission)
 	hasPermReq := &auth.HasPermissionReq{
-		TargetUserId:   userIdBytes,
+		TargetUserId:   userIdBase64,
 		PermissionCode: permissionCode,
 	}
 	hasPermResp, err := authClient.HasPermission(context.Background(), hasPermReq)
@@ -739,7 +725,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 
 	// 2. CanAccess (without permission)
 	canAccessReq := &auth.CanAccessReq{
-		TargetUserId: userIdBytes,
+		TargetUserId: userIdBase64,
 		Resource:     resource,
 		Method:       method,
 	}
@@ -756,7 +742,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	roleCode := "test_role_for_checks"
 	createRoleReq := &auth.CreateRoleReq{
 		Role:          &auth.Role{Code: roleCode, RoleName: "Test Role for Checks"},
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.CreateRole(context.Background(), createRoleReq)
 	if err != nil {
@@ -766,7 +752,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	grantReq := &auth.GrantPermissionToRoleReq{
 		RoleCode:       roleCode,
 		PermissionCode: permissionCode,
-		RequestUserId:  userIdBytes,
+		RequestUserId:  userIdBase64,
 	}
 	_, err = authClient.GrantPermissionToRole(context.Background(), grantReq)
 	if err != nil {
@@ -775,9 +761,9 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 
 	// Setup: Assign role to user
 	assignReq := &auth.AssignRoleToUserReq{
-		TargetUserId:  userIdBytes,
+		TargetUserId:  userIdBase64,
 		RoleCode:      roleCode,
-		RequestUserId: userIdBytes,
+		RequestUserId: userIdBase64,
 	}
 	_, err = authClient.AssignRoleToUser(context.Background(), assignReq)
 	if err != nil {
@@ -805,7 +791,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	t.Log("CanAccess (after grant) check successful")
 
 	// Teardown
-	_, _ = authClient.RemoveRoleFromUser(context.Background(), &auth.RemoveRoleFromUserReq{TargetUserId: userIdBytes, RoleCode: roleCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBytes})
-	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBytes})
+	_, _ = authClient.RemoveRoleFromUser(context.Background(), &auth.RemoveRoleFromUserReq{TargetUserId: userIdBase64, RoleCode: roleCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBase64})
 }
