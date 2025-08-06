@@ -71,7 +71,7 @@ message OperationResult {
 }
 
 message Role{
-  bytes  id=1;                   // uuid主键, 16字节
+  string  id=1;                   // uuid主键, 16字节
   string code=2;                 // 角色唯一标识符
   string role_name=3;            // 角色名称
   string description=4;          // 角色详细描述
@@ -79,11 +79,11 @@ message Role{
 }
 
 message Permission{
-  bytes  id=1;                   // uuid主键, 16字节
+  string  id=1;                   // uuid主键, 16字节
   string code=2;                 // 权限唯一标识符
   string permission_name=3;      // 权限名称
   string description=4;          // 权限详细描述
-  bytes  parent_id=5;            // 父权限ID, 为空时表示顶级权限
+  string  parent_id=5;            // 父权限ID, 为空时表示顶级权限
   enum Type {
     API = 0;                     // 接口权限
     MENU = 1;                    // 菜单权限
@@ -101,15 +101,15 @@ message Permission{
 }
 
 message UserGroup {
-  bytes  id=1;                   // uuid主键, 16字节
+  string  id=1;                   // uuid主键, 16字节
   string code=2;                 // 用户组唯一标识符
   string group_name=3;           // 用户组名称
   bool   status=4;               // 用户组是否启用： true=启用, false=禁用
-  bytes  parent_id=5;            // 父用户组ID, 为空时表示顶级用户组
+  string  parent_id=5;            // 父用户组ID, 为空时表示顶级用户组
 }
 
 message UserInfo {
-  bytes user_id = 1;             // 二进制格式的UUID (16 bytes)
+  string user_id = 1;             // 二进制格式的UUID (16 string)
   string username = 2;
   string nickname=3;
   string email = 4;
@@ -126,44 +126,44 @@ message UserInfo {
 
 message CreatePermissionReq{
   Permission permission=2; // 权限信息
-  bytes request_user_id=3; // 创建者用户ID(16字节UUID)
+  string request_user_id=3; // 创建者用户ID(16字节UUID)
 }
 
 message UpdatePermissionReq{
   Permission permission=2; // 权限信息
-  bytes request_user_id=3; // 更新者用户ID(16字节UUID)
+  string request_user_id=3; // 更新者用户ID(16字节UUID)
 }
 
 message DeletePermissionReq{
   string permission_code=2; // 权限唯一标识符
-  bytes request_user_id=3;  // 删除者用户ID(16字节UUID)
+  string request_user_id=3;  // 删除者用户ID(16字节UUID)
 }
 
 message GetPermissionReq{
   string permission_code=2; // 权限唯一标识符
-  bytes request_user_id=3;  // 查询者用户ID(16字节UUID)
+  string request_user_id=3;  // 查询者用户ID(16字节UUID)
 }
 
 // ---------- 角色相关 ---------- //
 
 message CreateRoleReq{
   Role role=2;              // 角色信息
-  bytes request_user_id=3;  // 创建者用户ID(16字节UUID)
+  string request_user_id=3;  // 创建者用户ID(16字节UUID)
 }
 
 message UpdateRoleReq{
   Role role=2;              // 角色信息
-  bytes request_user_id=3;  // 更新者用户ID(16字节UUID)
+  string request_user_id=3;  // 更新者用户ID(16字节UUID)
 }
 
 message DeleteRoleReq{
   string role_code=2;       // 角色唯一标识符
-  bytes request_user_id=3;  // 删除者用户ID(16字节UUID)
+  string request_user_id=3;  // 删除者用户ID(16字节UUID)
 }
 
 message GetRoleReq{
   string role_code=2;       // 角色唯一标识符
-  bytes request_user_id=3;  // 查询者用户ID(16字节UUID)
+  string request_user_id=3;  // 查询者用户ID(16字节UUID)
 }
 
 // ---------- 角色权限相关 ---------- //
@@ -171,18 +171,18 @@ message GetRoleReq{
 message GrantPermissionToRoleReq{
   string role_code=2;          // 角色唯一标识符
   string permission_code=3;    // 权限唯一标识符
-  bytes request_user_id=4;     // 操作者用户ID(16字节UUID)
+  string request_user_id=4;     // 操作者用户ID(16字节UUID)
 }
 
 message RevokePermissionFromRoleReq{
   string role_code=2;          // 角色唯一标识符
   string permission_code=3;    // 权限唯一标识符
-  bytes request_user_id=4;     // 操作者用户ID(16字节UUID)
+  string request_user_id=4;     // 操作者用户ID(16字节UUID)
 }
 
 message GetRolePermissionsReq{
   string role_code=2;          // 角色唯一标识符
-  bytes request_user_id=3;     // 查询者用户ID(16字节UUID)
+  string request_user_id=3;     // 查询者用户ID(16字节UUID)
 }
 
 message GetRolePermissionsResp{
@@ -192,20 +192,20 @@ message GetRolePermissionsResp{
 // ---------- 用户角色相关 ---------- //
 
 message AssignRoleToUserReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
   string role_code=3;           // 角色唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message RemoveRoleFromUserReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
   string role_code=3;           // 角色唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message GetUserRolesReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
-  bytes request_user_id=3;      // 查询者用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
+  string request_user_id=3;      // 查询者用户ID(16字节UUID)
 }
 
 message GetUserRolesResp{
@@ -216,39 +216,39 @@ message GetUserRolesResp{
 
 message CreateUserGroupReq{
   UserGroup user_group=2;   // 用户组信息
-  bytes request_user_id=3;  // 创建者用户ID(16字节UUID)
+  string request_user_id=3;  // 创建者用户ID(16字节UUID)
 }
 
 message UpdateUserGroupReq{
   UserGroup user_group=2;   // 用户组信息
-  bytes request_user_id=3;  // 更新者用户ID(16字节UUID)
+  string request_user_id=3;  // 更新者用户ID(16字节UUID)
 }
 
 message DeleteUserGroupReq{
   string user_group_code=2;    // 用户组唯一标识符
-  bytes request_user_id=3;     // 删除者用户ID(16字节UUID)
+  string request_user_id=3;     // 删除者用户ID(16字节UUID)
 }
 
 message GetUserGroupReq{
   string user_group_code=2;    // 用户组唯一标识符
-  bytes request_user_id=3;     // 查询者用户ID(16字节UUID)
+  string request_user_id=3;     // 查询者用户ID(16字节UUID)
 }
 
 message GetUserGroupMembersReq{
   string user_group_code=2;    // 用户组唯一标识符
-  bytes request_user_id=3;     // 查询者用户ID(16字节UUID)
+  string request_user_id=3;     // 查询者用户ID(16字节UUID)
 }
 
 message AssignRoleToUserGroupReq{
   string user_group_code=2;     // 用户组唯一标识符
   string role_code=3;           // 角色唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message RemoveRoleFromUserGroupReq{
   string user_group_code=2;     // 用户组唯一标识符
   string role_code=3;           // 角色唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message GetUserGroupMembersResp{
@@ -258,7 +258,7 @@ message GetUserGroupMembersResp{
 
 message GetUserGroupPermissionsReq{
   string user_group_code=2;    // 用户组唯一标识符
-  bytes request_user_id=3;     // 查询者用户ID(16字节UUID)
+  string request_user_id=3;     // 查询者用户ID(16字节UUID)
 }
 
 message GetUserGroupPermissionsResp{
@@ -268,20 +268,20 @@ message GetUserGroupPermissionsResp{
 // ---------- 用户-用户组相关 ---------- //
 
 message AssignUserToGroupReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
   string user_group_code=3;     // 用户组唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message RemoveUserFromGroupReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
   string user_group_code=3;     // 用户组名唯一标识符
-  bytes request_user_id=4;      // 操作者用户ID(16字节UUID)
+  string request_user_id=4;      // 操作者用户ID(16字节UUID)
 }
 
 message GetUserGroupsReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
-  bytes request_user_id=3;      // 查询者用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
+  string request_user_id=3;      // 查询者用户ID(16字节UUID)
 }
 
 message GetUserGroupsResp{
@@ -291,8 +291,8 @@ message GetUserGroupsResp{
 // ---------- 用户权限相关 ---------- //
 
 message GetUserPermissionsReq{
-  bytes target_user_id=2;       // 目标用户ID(16字节UUID)
-  bytes request_user_id=3;      // 查询者用户ID(16字节UUID)
+  string target_user_id=2;       // 目标用户ID(16字节UUID)
+  string request_user_id=3;      // 查询者用户ID(16字节UUID)
 }
 
 message GetUserPermissionsResp{
@@ -300,9 +300,9 @@ message GetUserPermissionsResp{
 }
 
 message HasPermissionReq{
-  bytes target_user_id=2;      // 目标用户ID(16字节UUID)
+  string target_user_id=2;      // 目标用户ID(16字节UUID)
   string permission_code=3;    // 权限唯一标识符
-  bytes request_user_id=4;     // 查询者用户ID(16字节UUID)
+  string request_user_id=4;     // 查询者用户ID(16字节UUID)
 }
 
 message  HasPermissionResp{
@@ -310,10 +310,10 @@ message  HasPermissionResp{
 }
 
 message CanAccessReq{
-  bytes target_user_id=2;     // 目标用户ID(16字节UUID)
+  string target_user_id=2;     // 目标用户ID(16字节UUID)
   string resource=3;          // 资源标识符
   string method=4;            // 操作方法
-  bytes request_user_id=5;    // 查询者用户ID(16字节UUID)
+  string request_user_id=5;    // 查询者用户ID(16字节UUID)
   uint64 user_status = 8;     // 用户状态 0-正常 1-冻结
 }
 
@@ -326,7 +326,7 @@ message CanAccessResp{
 message ListRolesReq{
   uint32 page=2;
   uint32 pageSize=3;
-  bytes request_user_id=4;    // 查询者用户ID(16字节UUID)
+  string request_user_id=4;    // 查询者用户ID(16字节UUID)
 }
 
 message ListRolesResp{
@@ -336,7 +336,7 @@ message ListRolesResp{
 message ListUserGroupsReq{
   uint32 page=2;
   uint32 pageSize=3;
-  bytes request_user_id=4;    // 查询者用户ID(16字节UUID)
+  string request_user_id=4;    // 查询者用户ID(16字节UUID)
 }
 
 message ListUserGroupsResp{
@@ -346,7 +346,7 @@ message ListUserGroupsResp{
 message ListPermissionsReq{
   uint32 page=2;
   uint32 pageSize=3;
-  bytes request_user_id=4;    // 查询者用户ID(16字节UUID)
+  string request_user_id=4;    // 查询者用户ID(16字节UUID)
 }
 
 message ListPermissionsResp{
@@ -354,7 +354,7 @@ message ListPermissionsResp{
 }
 
 message IssueTokenReq{
-  bytes user_id = 1;
+  string user_id = 1;
 }
 
 message IssueTokenResp{
@@ -365,7 +365,7 @@ message IssueTokenResp{
 message RefreshTokenReq{
   string access_token = 1;    // 访问令牌
   string refresh_token = 2;
-  bytes user_id=3;
+  string user_id=3;
 }
 
 message RefreshTokenResp{
@@ -378,7 +378,7 @@ message VerifyTokenReq{
 }
 
 message VerifyTokenResp{
-  bytes user_id=1;
+  string user_id=1;
   repeated string permissions=2;
   uint64 version=3;
 }

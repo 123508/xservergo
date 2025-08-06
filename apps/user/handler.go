@@ -48,14 +48,14 @@ func parseServiceErrToHandlerError(ctx context.Context, err error, requestId str
 	return resp, cerrors.NewGRPCError(code, message)
 }
 
-func unmarshalUID(ctx context.Context, uid []byte, version uint64) (*user.OperationResult, error, util.UUID) {
+func unmarshalUID(ctx context.Context, uid string, version uint64) (*user.OperationResult, error, util.UUID) {
 
-	if uid == nil || len(uid) == 0 {
+	if uid == "" || len(uid) == 0 {
 		return nil, nil, util.SystemUUID
 	}
 
 	Uid := util.NewUUID()
-	if err := Uid.Unmarshal(uid); err != nil {
+	if err := Uid.UnmarshalBase64(uid); err != nil {
 
 		resp := &user.OperationResult{
 			Success:   false,
@@ -75,18 +75,8 @@ func unmarshalUID(ctx context.Context, uid []byte, version uint64) (*user.Operat
 	return nil, nil, Uid
 }
 
-func marshalUID(ctx context.Context, uid util.UUID) (*user.OperationResult, error, []byte) {
-	marshal, err := uid.Marshal()
-
-	if err != nil {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusInternalServerError,
-			Message:   "序列化失败",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败"), marshal
-	}
-	return nil, nil, marshal
+func marshalUID(ctx context.Context, uid util.UUID) string {
+	return uid.MarshalBase64()
 }
 
 // UserServiceImpl implements the last service interface defined in the IDL.
@@ -150,19 +140,13 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 		return &user.LoginResp{}, err
 	}
 
-	_, err, marshal := marshalUID(ctx, login.ID)
-
-	if err != nil {
-		return &user.LoginResp{}, err
-	}
-
 	return &user.LoginResp{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			UserId:   marshalUID(ctx, login.ID),
+			Username: login.UserName,
 			Nickname: login.NickName,
-			Email:    login.Email,
 			Avatar:   login.Avatar,
 		},
 	}, err
@@ -186,18 +170,13 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 		}
 
 	} else {
-		marshal, err := login.ID.Marshal()
-
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
-		}
 
 		resp.AccessToken = token.AccessToken
 		resp.RefreshToken = token.RefreshToken
 		resp.UserInfo = &user.UserInfo{
-			UserId:   marshal,
+			UserId:   marshalUID(ctx, login.ID),
+			Username: login.UserName,
 			Nickname: login.NickName,
-			Email:    login.Email,
 			Avatar:   login.Avatar,
 		}
 	}
@@ -209,8 +188,6 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLoginReq) (resp *user.LoginResp, err error) {
 
 	login, token, err := s.userService.UserNameLogin(ctx, req.Username, req.Password)
-
-	var marshal []byte
 
 	if err != nil {
 
@@ -224,21 +201,15 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 
 		return &user.LoginResp{}, err
 
-	} else {
-		marshal, err = login.ID.Marshal()
-
-		if err != nil {
-			return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
-		}
 	}
 
 	return &user.LoginResp{
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken,
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			UserId:   marshalUID(ctx, login.ID),
+			Username: login.UserName,
 			Nickname: login.NickName,
-			Email:    login.Email,
 			Avatar:   login.Avatar,
 		},
 	}, nil
@@ -249,7 +220,7 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 	if req.Flow == 0 {
 		requestId, err := s.userService.SmsSendCode(ctx, req.Phone)
 		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "发送验证码错误")
+			return &user.SmsLoginResp{}, cerrors.NewGRPCError(http.StatusInternalServerError, "发送验证码错误")
 		} else {
 			return &user.SmsLoginResp{
 				Result: &user.SmsLoginResp_CodeSent{
@@ -265,16 +236,10 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 		login, token, err := s.userService.SmsLogin(ctx, req.Phone, req.Code, req.RequestId)
 		if err != nil {
 			if com, ok := err.(*cerrors.CommonError); ok {
-				return nil, cerrors.NewGRPCError(com.Code, com.Message)
+				return &user.SmsLoginResp{}, cerrors.NewGRPCError(com.Code, com.Message)
 			} else {
-				return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败")
+				return &user.SmsLoginResp{}, cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败")
 			}
-		}
-
-		marshal, err := login.ID.Marshal()
-
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化错误")
 		}
 
 		return &user.SmsLoginResp{
@@ -283,9 +248,9 @@ func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (
 					RefreshToken: token.RefreshToken,
 					AccessToken:  token.AccessToken,
 					UserInfo: &user.UserInfo{
-						UserId:   marshal,
+						UserId:   marshalUID(ctx, login.ID),
+						Username: login.UserName,
 						Nickname: login.NickName,
-						Email:    login.Email,
 						Avatar:   login.Avatar,
 					},
 				}},
@@ -330,13 +295,8 @@ func (s *UserServiceImpl) QrCodePreLoginStatus(ctx context.Context, req *user.Qr
 		resp.Ok = false
 	} else {
 		if status {
-			if marshal, Err := uid.Marshal(); Err != nil {
-				resp.Ok = false
-				err = cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
-			} else {
-				resp.Ok = status
-				resp.UserId = marshal
-			}
+			resp.Ok = status
+			resp.UserId = marshalUID(ctx, uid)
 		} else {
 			resp.Ok = false
 		}
@@ -405,8 +365,8 @@ func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCod
 						RefreshToken: token.RefreshToken,
 						UserInfo: &user.UserInfo{
 							UserId:   req.UserId,
+							Username: usr.UserName,
 							Nickname: usr.NickName,
-							Email:    usr.Email,
 							Avatar:   usr.Avatar,
 						},
 					},
@@ -577,19 +537,13 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
-	res, err, marshal := marshalUID(ctx, uid)
-
-	if err != nil {
-		return res, err
-	}
-
 	return &user.OperationResult{
 		Success:       ok,
 		Code:          http.StatusOK,
 		Message:       "成功",
 		RequestId:     requestId,
 		Timestamp:     time.Now().String(),
-		RequestUserId: marshal,
+		RequestUserId: marshalUID(ctx, uid),
 		Version:       0,
 	}, nil
 }
@@ -959,14 +913,6 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
 
-	res, err, marshal := marshalUID(ctx, userinfo.ID)
-
-	if err != nil {
-		return &user.UserInfoResp{
-			Result: res,
-		}, err
-	}
-
 	return &user.UserInfoResp{
 		Result: &user.OperationResult{
 			Success:   true,
@@ -976,11 +922,9 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			UserId:   marshalUID(ctx, userinfo.ID),
 			Username: userinfo.UserName,
 			Nickname: userinfo.NickName,
-			Email:    userinfo.Email,
-			Phone:    userinfo.Phone,
 			Gender:   userinfo.Gender,
 			Avatar:   userinfo.Avatar,
 		},
@@ -1037,15 +981,6 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
 	}
 
-	//序列化部分
-	res, err, marshal := marshalUID(ctx, userinfo.ID)
-
-	if err != nil {
-		return &user.UserInfoResp{
-			Result: res,
-		}, err
-	}
-
 	return &user.UserInfoResp{
 		Result: &user.OperationResult{
 			Success:   true,
@@ -1055,11 +990,9 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
-			UserId:   marshal,
+			UserId:   marshalUID(ctx, userinfo.ID),
 			Username: userinfo.UserName,
 			Nickname: userinfo.NickName,
-			Email:    userinfo.Email,
-			Phone:    userinfo.Phone,
 			Gender:   userinfo.Gender,
 			Avatar:   userinfo.Avatar,
 		},
@@ -1135,4 +1068,49 @@ func (s *UserServiceImpl) StartDeleteUser(ctx context.Context, req *user.StartDe
 func (s *UserServiceImpl) DeleteUser(ctx context.Context, req *user.DeleteUserReq) (resp *user.OperationResult, err error) {
 	// TODO: Your code here...
 	return
+}
+
+// GetVersion implements the UserServiceImpl interface.
+func (s *UserServiceImpl) GetVersion(ctx context.Context, req *user.VersionReq) (resp *user.OperationResult, err error) {
+	res, err, userId := unmarshalUID(ctx, req.UserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	version, err := s.userService.GetVersion(ctx, userId)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "获取成功",
+		RequestId: "",
+		Timestamp: time.Now().String(),
+		Version:   uint64(version),
+	}, nil
+}
+
+// AddVersion implements the UserServiceImpl interface.
+func (s *UserServiceImpl) AddVersion(ctx context.Context, req *user.VersionReq) (resp *user.OperationResult, err error) {
+	res, err, userId := unmarshalUID(ctx, req.UserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	if err = s.userService.AddVersion(ctx, userId); err != nil {
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "修改成功",
+		RequestId: "",
+		Timestamp: time.Now().String(),
+	}, nil
 }

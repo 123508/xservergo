@@ -53,16 +53,15 @@ func main() {
 		userGroup.POST("/generate_qrCode", user.GenerateQrCode)
 		userGroup.POST("/qr_pre_login", user.QrPreLogin)
 		userGroup.POST("/qr_login", user.QrLogin)
-		//扫码登录移动端部分
-		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
-		userGroup.POST("/qr_mobile_login", user.QrMobileLogin)
-		userGroup.POST("/confirm_qr_login", user.ConfirmQrLogin)
-		userGroup.POST("/cancel_qr_login", user.CancelQrLogin)
 		//忘记密码
 		userGroup.POST("/forget_pwd", user.ForgetPassword)
 		userGroup.POST("/reset_pwd", user.ResetPassword)
 		//解析token
 		userGroup.Use(middleware.ParseToken())
+		//扫码登录移动端部分
+		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
+		userGroup.POST("/qr_mobile_confirm_login", user.ConfirmQrLogin)
+		userGroup.POST("/qr_mobile_cancel_login", user.CancelQrLogin)
 		//登出
 		userGroup.POST("/logout", user.Logout)
 		//修改密码
@@ -82,8 +81,8 @@ func main() {
 		userGroup.POST("/verify_new_phone", user.VerifyNewPhone)
 		userGroup.POST("/complete_change_phone", user.CompleteChangePhone)
 		//获取用户信息
-		userGroup.POST("/get_userinfo_by_id", user.GetUserInfoById)
-		userGroup.POST("/get_userinfo_by_others", user.GetUserInfoByOthers)
+		userGroup.POST("/get_userinfo_id", user.GetUserInfoById)
+		userGroup.POST("/get_userinfo_others", user.GetUserInfoByOthers)
 		//更新用户信息
 		userGroup.POST("/update_userinfo", user.UpdateUserinfo)
 

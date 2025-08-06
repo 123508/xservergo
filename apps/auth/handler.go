@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"net/http"
-
 	"github.com/123508/xservergo/apps/auth/service"
 	auth "github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -12,6 +10,7 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 // permissionTypeFromString maps string to auth.Permission_Type enum.
@@ -61,26 +60,40 @@ func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
 	}
 }
 
-func getUUIDFromBytes(b []byte) (*util.UUID, error) {
-	if len(b) == 0 {
+func unmarshalParentUID(ctx context.Context, uid string) (*util.UUID, error) {
+	if uid == "" || len(uid) == 0 {
 		return nil, nil
 	}
-	uid := &util.UUID{}
-	if err := uid.Unmarshal(b); err != nil {
+
+	Uid := util.NewUUID()
+	if err := Uid.UnmarshalBase64(uid); err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	return uid, nil
+
+	return &Uid, nil
 }
 
-func getIDBytes(id *util.UUID) []byte {
-	if id == nil {
-		return nil
+func unmarshalRequestUID(ctx context.Context, uid string) (*util.UUID, error) {
+
+	if uid == "" || len(uid) == 0 {
+		return &util.SystemUUID, nil
 	}
-	idBytes, err := id.Marshal()
-	if err != nil {
-		return nil
+
+	Uid := util.NewUUID()
+	if err := Uid.UnmarshalBase64(uid); err != nil {
+		return &util.SystemUUID, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	return idBytes
+
+	return &Uid, nil
+}
+
+func marshalUID(ctx context.Context, uid *util.UUID) string {
+
+	if uid == nil {
+		return ""
+	}
+
+	return (*uid).MarshalBase64()
 }
 
 // AuthServiceImpl implements the last service interface defined in the IDL.
@@ -96,11 +109,9 @@ func NewAuthServiceImpl(database *gorm.DB, rds *redis.Client) *AuthServiceImpl {
 
 // CreatePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.CreatePermissionReq) (resp *auth.Permission, err error) {
-	parentId := &util.UUID{}
-	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
-		parentId = nil
-	}
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+
+	parentId, err := unmarshalParentUID(ctx, req.Permission.ParentId)
+
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -108,6 +119,13 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 	if !req.Permission.Status {
 		status = 0
 	}
+
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
 	permission := models.Permission{
 		ID:          util.NewUUID(),
 		Code:        req.Permission.Code,
@@ -129,16 +147,11 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 			return nil, cerrors.NewGRPCError(com.Code, com.Message)
 		}
 	}
-	id, err := newPermission.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
-	}
-	var parentIdMarshaled []byte
+	id := marshalUID(ctx, &newPermission.ID)
+	var parentIdMarshaled string
+
 	if newPermission.ParentID != nil {
-		parentIdMarshaled, err = newPermission.ParentID.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
-		}
+		parentIdMarshaled = newPermission.ParentID.MarshalBase64()
 	}
 	return &auth.Permission{
 		Id:             id,
@@ -155,11 +168,13 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 
 // UpdatePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.UpdatePermissionReq) (resp *auth.Permission, err error) {
-	parentId := &util.UUID{}
-	if err := parentId.Unmarshal(req.Permission.ParentId); err != nil {
-		parentId = nil
+	parentId, err := unmarshalParentUID(ctx, req.Permission.ParentId)
+
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -168,8 +183,8 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		status = 0
 	}
 	permissionId := util.UUID{}
-	if req.Permission.Id != nil {
-		if err := permissionId.Unmarshal(req.Permission.Id); err != nil {
+	if req.Permission.Id != "" {
+		if err := permissionId.UnmarshalBase64(req.Permission.Id); err != nil {
 			return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 		}
 	}
@@ -194,16 +209,10 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 			return nil, cerrors.NewGRPCError(com.Code, com.Message)
 		}
 	}
-	id, err := newPermission.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
-	}
-	var parentIdMarshaled []byte
+	id := marshalUID(ctx, &newPermission.ID)
+	var parentIdMarshaled string
 	if newPermission.ParentID != nil {
-		parentIdMarshaled, err = newPermission.ParentID.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化父级ID失败")
-		}
+		parentIdMarshaled = newPermission.ParentID.MarshalBase64()
 	}
 	return &auth.Permission{
 		Id:             id,
@@ -220,7 +229,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 
 // DeletePermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeletePermission(ctx context.Context, req *auth.DeletePermissionReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -243,11 +252,8 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusNotFound, "权限不存在")
 	}
-	id, err := permission.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
-	}
-	parentIdMarshaled := getIDBytes(permission.ParentID)
+	id := marshalUID(ctx, &permission.ID)
+	parentIdMarshaled := marshalUID(ctx, permission.ParentID)
 	return &auth.Permission{
 		Id:             id,
 		Code:           permission.Code,
@@ -263,7 +269,7 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 
 // CreateRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleReq) (resp *auth.Role, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -284,10 +290,7 @@ func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleRe
 		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
-	id, err := newRole.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
-	}
+	id := marshalUID(ctx, &newRole.ID)
 	return &auth.Role{
 		Id:          id,
 		Code:        newRole.Code,
@@ -298,7 +301,7 @@ func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleRe
 
 // UpdateRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdateRole(ctx context.Context, req *auth.UpdateRoleReq) (resp *auth.Role, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -318,10 +321,7 @@ func (s *AuthServiceImpl) UpdateRole(ctx context.Context, req *auth.UpdateRoleRe
 		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
-	id, err := updatedRole.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
-	}
+	id := marshalUID(ctx, &updatedRole.ID)
 	return &auth.Role{
 		Id:          id,
 		Code:        updatedRole.Code,
@@ -332,7 +332,7 @@ func (s *AuthServiceImpl) UpdateRole(ctx context.Context, req *auth.UpdateRoleRe
 
 // DeleteRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeleteRole(ctx context.Context, req *auth.DeleteRoleReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -355,10 +355,7 @@ func (s *AuthServiceImpl) GetRole(ctx context.Context, req *auth.GetRoleReq) (re
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusNotFound, "角色不存在")
 	}
-	id, err := role.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
-	}
+	id := marshalUID(ctx, &role.ID)
 	return &auth.Role{
 		Id:          id,
 		Code:        role.Code,
@@ -369,7 +366,7 @@ func (s *AuthServiceImpl) GetRole(ctx context.Context, req *auth.GetRoleReq) (re
 
 // GrantPermissionToRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GrantPermissionToRole(ctx context.Context, req *auth.GrantPermissionToRoleReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -388,7 +385,7 @@ func (s *AuthServiceImpl) GrantPermissionToRole(ctx context.Context, req *auth.G
 
 // RevokePermissionFromRole implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RevokePermissionFromRole(ctx context.Context, req *auth.RevokePermissionFromRoleReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -422,11 +419,11 @@ func (s *AuthServiceImpl) GetRolePermissions(ctx context.Context, req *auth.GetR
 
 // AssignRoleToUser implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignRoleToUser(ctx context.Context, req *auth.AssignRoleToUserReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	userId, err := getUUIDFromBytes(req.GetTargetUserId())
+	userId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -445,11 +442,11 @@ func (s *AuthServiceImpl) AssignRoleToUser(ctx context.Context, req *auth.Assign
 
 // RemoveRoleFromUser implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveRoleFromUser(ctx context.Context, req *auth.RemoveRoleFromUserReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	userId, err := getUUIDFromBytes(req.GetTargetUserId())
+	userId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -468,7 +465,7 @@ func (s *AuthServiceImpl) RemoveRoleFromUser(ctx context.Context, req *auth.Remo
 
 // GetUserRoles implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserRoles(ctx context.Context, req *auth.GetUserRolesReq) (resp *auth.GetUserRolesResp, err error) {
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -487,7 +484,7 @@ func (s *AuthServiceImpl) GetUserRoles(ctx context.Context, req *auth.GetUserRol
 
 // CreateUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateUserGroupReq) (resp *auth.UserGroup, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -507,10 +504,7 @@ func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateU
 		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
-	id, err := newUserGroup.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
-	}
+	id := marshalUID(ctx, &newUserGroup.ID)
 	return &auth.UserGroup{
 		Id:        id,
 		GroupName: newUserGroup.Name,
@@ -519,7 +513,7 @@ func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateU
 
 // UpdateUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateUserGroupReq) (resp *auth.UserGroup, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -535,10 +529,7 @@ func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateU
 		}
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
-	id, err := updatedUserGroup.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
-	}
+	id := marshalUID(ctx, &updatedUserGroup.ID)
 	return &auth.UserGroup{
 		Id:        id,
 		Code:      updatedUserGroup.Code,
@@ -548,7 +539,7 @@ func (s *AuthServiceImpl) UpdateUserGroup(ctx context.Context, req *auth.UpdateU
 
 // DeleteUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeleteUserGroup(ctx context.Context, req *auth.DeleteUserGroupReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.RequestUserId)
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -567,10 +558,7 @@ func (s *AuthServiceImpl) GetUserGroup(ctx context.Context, req *auth.GetUserGro
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组失败")
 	}
-	id, err := userGroup.ID.Marshal()
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
-	}
+	id := marshalUID(ctx, &userGroup.ID)
 	return &auth.UserGroup{
 		Id:        id,
 		Code:      req.UserGroupCode,
@@ -586,10 +574,7 @@ func (s *AuthServiceImpl) GetUserGroupMembers(ctx context.Context, req *auth.Get
 	}
 	var users []*auth.UserInfo
 	for _, member := range members {
-		idBytes, err := member.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化成员ID失败")
-		}
+		idBytes := marshalUID(ctx, &member)
 		users = append(users, &auth.UserInfo{
 			UserId: idBytes,
 		})
@@ -617,11 +602,11 @@ func (s *AuthServiceImpl) GetUserGroupPermissions(ctx context.Context, req *auth
 
 // AssignUserToGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignUserToGroup(ctx context.Context, req *auth.AssignUserToGroupReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
 	}
@@ -636,11 +621,11 @@ func (s *AuthServiceImpl) AssignUserToGroup(ctx context.Context, req *auth.Assig
 
 // RemoveUserFromGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveUserFromGroup(ctx context.Context, req *auth.RemoveUserFromGroupReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
 	}
@@ -655,7 +640,7 @@ func (s *AuthServiceImpl) RemoveUserFromGroup(ctx context.Context, req *auth.Rem
 
 // GetUserGroups implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserGroups(ctx context.Context, req *auth.GetUserGroupsReq) (resp *auth.GetUserGroupsResp, err error) {
-	targetUserId, err := getUUIDFromBytes(req.TargetUserId)
+	targetUserId, err := unmarshalRequestUID(ctx, req.TargetUserId)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "目标用户ID解析失败")
 	}
@@ -674,7 +659,7 @@ func (s *AuthServiceImpl) GetUserGroups(ctx context.Context, req *auth.GetUserGr
 
 // GetUserPermissions implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetUserPermissions(ctx context.Context, req *auth.GetUserPermissionsReq) (resp *auth.GetUserPermissionsResp, err error) {
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -693,7 +678,7 @@ func (s *AuthServiceImpl) GetUserPermissions(ctx context.Context, req *auth.GetU
 
 // HasPermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) HasPermission(ctx context.Context, req *auth.HasPermissionReq) (resp *auth.HasPermissionResp, err error) {
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -705,7 +690,7 @@ func (s *AuthServiceImpl) HasPermission(ctx context.Context, req *auth.HasPermis
 
 // CanAccess implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CanAccess(ctx context.Context, req *auth.CanAccessReq) (resp *auth.CanAccessResp, err error) {
-	targetUserId, err := getUUIDFromBytes(req.GetTargetUserId())
+	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -724,10 +709,7 @@ func (s *AuthServiceImpl) ListRoles(ctx context.Context, req *auth.ListRolesReq)
 
 	var authRoles []*auth.Role
 	for _, role := range roles {
-		id, err := role.ID.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化角色ID失败")
-		}
+		id := marshalUID(ctx, &role.ID)
 		authRoles = append(authRoles, &auth.Role{
 			Id:          id,
 			Code:        role.Code,
@@ -750,10 +732,7 @@ func (s *AuthServiceImpl) ListUserGroups(ctx context.Context, req *auth.ListUser
 
 	var authUserGroups []*auth.UserGroup
 	for _, group := range userGroups {
-		id, err := group.ID.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化用户组ID失败")
-		}
+		id := marshalUID(ctx, &group.ID)
 		authUserGroups = append(authUserGroups, &auth.UserGroup{
 			Id:        id,
 			GroupName: group.Name,
@@ -774,16 +753,13 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 
 	var authPermissions []*auth.Permission
 	for _, perm := range permissions {
-		id, err := perm.ID.Marshal()
-		if err != nil {
-			return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化权限ID失败")
-		}
+		id := marshalUID(ctx, &perm.ID)
 		authPermissions = append(authPermissions, &auth.Permission{
 			Id:             id,
 			Code:           perm.Code,
 			PermissionName: perm.Name,
 			Description:    perm.Description,
-			ParentId:       getIDBytes(perm.ParentID),
+			ParentId:       marshalUID(ctx, perm.ParentID),
 			Type:           permissionTypeFromString(string(perm.Type)),
 			Resource:       perm.Resource,
 			Method:         perm.Method,
@@ -799,13 +775,13 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 // IssueToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenReq) (resp *auth.IssueTokenResp, err error) {
 
-	uid := util.NewUUID()
+	uid, err := unmarshalRequestUID(ctx, req.UserId)
 
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	token, err := s.authService.IssueToken(ctx, uid)
+	token, err := s.authService.IssueToken(ctx, *uid)
 
 	if err != nil {
 		if com, ok := err.(*cerrors.CommonError); ok {
@@ -822,9 +798,9 @@ func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenRe
 
 // RefreshToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTokenReq) (resp *auth.RefreshTokenResp, err error) {
-	uid := util.NewUUID()
+	uid, err := unmarshalRequestUID(ctx, req.UserId)
 
-	if err = uid.Unmarshal(req.UserId); err != nil {
+	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
@@ -833,7 +809,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 		RefreshToken: req.RefreshToken,
 	}
 
-	Token, err := s.authService.RefreshToken(ctx, token, uid)
+	Token, err := s.authService.RefreshToken(ctx, token, *uid)
 
 	if err != nil {
 		if com, ok := err.(*cerrors.CommonError); ok {
@@ -859,11 +835,7 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
 	}
 
-	Uid, err := uid.Marshal()
-
-	if err != nil {
-		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "序列化失败")
-	}
+	Uid := marshalUID(ctx, &uid)
 
 	return &auth.VerifyTokenResp{
 		UserId:      Uid,
@@ -874,7 +846,7 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 
 // AssignRoleToUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AssignRoleToUserGroup(ctx context.Context, req *auth.AssignRoleToUserGroupReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -889,7 +861,7 @@ func (s *AuthServiceImpl) AssignRoleToUserGroup(ctx context.Context, req *auth.A
 
 // RemoveRoleFromUserGroup implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, req *auth.RemoveRoleFromUserGroupReq) (resp *auth.OperationResult, err error) {
-	operatorId, err := getUUIDFromBytes(req.GetRequestUserId())
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}

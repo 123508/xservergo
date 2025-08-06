@@ -49,6 +49,10 @@ service UserService {
   rpc ReactivateUser(ReactivateUserReq) returns (OperationResult) {}       // 解冻用户
   rpc StartDeleteUser(StartDeleteReq) returns (OperationResult) {}         // 预删除用户
   rpc DeleteUser(DeleteUserReq) returns (OperationResult) {}               // 删除用户
+
+  // ---------- 版本号处理 ---------- //
+  rpc GetVersion(VersionReq) returns (OperationResult){}      //获取版本号
+  rpc AddVersion(VersionReq) returns (OperationResult){}      //递增版本号
 }
 
 // ====================== 数据结构 ====================== //
@@ -60,12 +64,12 @@ message OperationResult {
   string message = 3;     // 用户提示信息
   string request_id = 4;  // 请求追踪ID
   string timestamp = 5;   // 服务器时间戳(毫秒)
-  bytes request_user_id=6;// 请求用户id
+  string request_user_id=6;// 请求用户id
   uint64 version=7;       // 响应的jwt版本
 }
 
 message UserInfo {
-  bytes user_id = 1;        // 二进制格式的UUID (16 bytes)
+  string user_id = 1;        // 二进制格式的UUID (16 bytes)
   string username = 2;
   string nickname=3;
   string email = 4;
@@ -179,7 +183,7 @@ message QrCodePreLoginStatusReq{
 
 message QrCodePreLoginStatusResp{
   bool ok = 1;
-  bytes user_id = 2;
+  string user_id = 2;
 }
 
 // 长轮询状态请求
@@ -187,7 +191,7 @@ message QrCodeLoginStatusReq {
   string ticket = 1;             // 票据ID(即会话ID)
   uint64 timeout = 2;            // 长轮询超时时间 (毫秒, 0=使用默认)
   string request_id = 3;
-  bytes user_id = 4;
+  string user_id = 4;
 }
 
 // 长轮询状态响应
@@ -222,7 +226,7 @@ message LoginFailure {
 
 message QrPreLoginReq{
   string ticket = 1;
-  bytes user_id=2;
+  string user_id=2;
   string request_id = 3;
 }
 
@@ -233,14 +237,14 @@ message QrPreLoginResp{
 
 message ConfirmQrLoginReq {
   string ticket = 1;
-  bytes user_id=2;
+  string user_id=2;
   string request_id = 3;
 }
 
 // 取消登录请求 (移动端)
 message CancelQrLoginReq {
   string ticket = 1;             // 票据ID
-  bytes user_id=2;
+  string user_id=2;
   string request_id = 3;
 }
 
@@ -250,18 +254,18 @@ message OAuthLoginReq {
 }
 
 message LogoutReq {
-  bytes target_user_id = 1;
+  string target_user_id = 1;
   string access_token = 2;
   string refresh_token = 3;
-  bytes request_user_id = 4;
+  string request_user_id = 4;
 }
 
 // ---------- 密码管理 ---------- //
 message ChangePasswordReq {
-  bytes target_user_id = 1;
+  string target_user_id = 1;
   string old_password = 2;
   string new_password = 3;
-  bytes request_user_id=4;
+  string request_user_id=4;
 }
 
 message ForgotPasswordReq {
@@ -274,90 +278,90 @@ message ForgotPasswordReq {
 }
 
 message ResetPasswordReq {
-  bytes target_user_id=1;
+  string target_user_id=1;
   string verification_token = 2;  // 验证码
   string new_password = 3;
   string request_id=4;
-  bytes request_user_id=5;
+  string request_user_id=5;
 }
 
 // ---------- 绑定管理 ---------- //
 message StartBindEmailReq {
-  bytes target_user_id = 1;
+  string target_user_id = 1;
   string new_email = 2;
-  bytes request_user_id=3;
+  string request_user_id=3;
 }
 
 message CompleteBindEmailReq {
-  bytes target_user_id = 1;
+  string target_user_id = 1;
   string new_email = 2;
   string verification_code = 3;
   string request_id=4;
-  bytes request_user_id=5;
+  string request_user_id=5;
   uint64 version=6;
 }
 
 message StartChangeEmailReq{
-  bytes target_user_id=1;
-  bytes request_user_id=3;
+  string target_user_id=1;
+  string request_user_id=3;
 }
 
 message VerifyNewEmailReq{
-  bytes target_user_id=1;
+  string target_user_id=1;
   string new_email=2;
   string verification_code=3;
-  bytes request_user_id=4;
+  string request_user_id=4;
   string request_id=5;
 }
 
 message CompleteChangeEmailReq{
-  bytes target_user_id=1;
+  string target_user_id=1;
   string verification_code=2;
   string request_id=3;
-  bytes request_user_id=4;
+  string request_user_id=4;
   uint64 version=5;
 }
 
 message StartBindPhoneReq {
-  bytes target_user_id = 1;  // 当前用户ID
+  string target_user_id = 1;  // 当前用户ID
   string new_phone = 2;      // 要绑定的新手机号
-  bytes request_user_id=3;   // 操作者ID
+  string request_user_id=3;   // 操作者ID
 }
 
 message CompleteBindPhoneReq {
-  bytes target_user_id = 1; // 当前用户ID
+  string target_user_id = 1; // 当前用户ID
   string new_phone = 2;     // 要绑定的手机号
   string verification_code = 3;  // 短信验证码
   string request_id = 4;    // 预绑定返回的请求ID
-  bytes request_user_id=5;
+  string request_user_id=5;
   uint64 version=6;
 }
 
 message StartChangePhoneReq{
-  bytes target_user_id=1;
-  bytes request_user_id=3;
+  string target_user_id=1;
+  string request_user_id=3;
 }
 
 message VerifyNewPhoneReq{
-  bytes target_user_id=1;
+  string target_user_id=1;
   string new_phone=2;
   string verification_code=3;
-  bytes request_user_id=4;
+  string request_user_id=4;
   string request_id=5;
 }
 
 message CompleteChangePhoneReq{
-  bytes target_user_id=1;
+  string target_user_id=1;
   string verification_code=2;
   string request_id=3;
-  bytes request_user_id=4;
+  string request_user_id=4;
   uint64 version=5;
 }
 
 // ---------- 用户管理 ---------- //
 message GetUserInfoByIdReq {
-  bytes target_user_id = 1;
-  bytes request_user_id=5;
+  string target_user_id = 1;
+  string request_user_id=5;
 }
 
 message GetUserInfoByOthersReq {
@@ -366,7 +370,7 @@ message GetUserInfoByOthersReq {
     string email = 3;
     string phone = 4;
   }
-  bytes request_user_id=5;
+  string request_user_id=5;
 }
 
 message UserInfoResp {
@@ -375,11 +379,11 @@ message UserInfoResp {
 }
 
 message UpdateUserInfoReq {
-  bytes target_user_id = 1;
+  string target_user_id = 1;
   string nickname = 2;  // 可选更新字段
   string avatar = 3;
   uint64 gender = 4;     // 0-未知 1-男 2-女
-  bytes request_user_id=6;      // 操作者ID
+  string request_user_id=6;      // 操作者ID
   uint64 version = 7;
 }
 
@@ -388,7 +392,7 @@ message ListUsersReq {
   uint64 page_size = 2;             // 每页数量
   repeated SafeFilter filters = 3; // 过滤条件
   repeated OrderBy order_by=4;     // 排序字段
-  bytes request_user_id=5;
+  string request_user_id=5;
 }
 
 message OrderBy {
@@ -408,7 +412,7 @@ message SearchUserByNicknameReq {
   string keyword = 1;      // 查询关键字，支持模糊匹配
   uint64 page = 2;          // 页码，从1开始
   uint64 page_size = 3;     // 每页数量，建议默认20
-  bytes request_user_id=4;
+  string request_user_id=4;
 }
 
 message SearchUserByNicknameResp {
@@ -420,13 +424,13 @@ message SearchUserByNicknameResp {
 
 // ---------- 账户状态 ---------- //
 message StartDeactivateReq {
-  bytes target_user_id = 1;
-  bytes request_user_id = 2;  // 操作者ID
+  string target_user_id = 1;
+  string request_user_id = 2;  // 操作者ID
 }
 
 message DeactivateUserReq {
-  bytes target_user_id = 1;
-  bytes request_user_id = 2;
+  string target_user_id = 1;
+  string request_user_id = 2;
   string verification_code = 3;  // 二次验证码
   string request_id=4;
 }
@@ -435,17 +439,22 @@ message ReactivateUserReq {
   string identity = 1;  // 邮箱或手机号
   string code = 2;      // 验证码
   optional string new_password = 3;  // 可选新密码
-  bytes request_user_id = 4;
+  string request_user_id = 4;
 }
 
 message StartDeleteReq {
-  bytes target_user_id = 1;
-  bytes request_user_id = 2;
+  string target_user_id = 1;
+  string request_user_id = 2;
 }
 
 message DeleteUserReq {
-  bytes target_user_id = 1;
-  bytes request_user_id = 2;
+  string target_user_id = 1;
+  string request_user_id = 2;
   string verification_code = 3;  // 二次验证码
   string request_id=4;
 }
+
+message VersionReq{
+  string user_id=1;
+}
+

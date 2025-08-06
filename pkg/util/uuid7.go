@@ -3,6 +3,7 @@ package util
 import (
 	"crypto/rand"
 	"database/sql/driver"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -211,6 +212,27 @@ func (u *UUID) UnmarshalText(text []byte) error {
 	return u.unmarshalString(string(text))
 }
 
+// MarshalBase64 将UUID序列化为URL安全的base64字符串（无填充）
+func (u UUID) MarshalBase64() string {
+	return base64.RawURLEncoding.EncodeToString(u[:])
+}
+
+// UnmarshalBase64 从base64字符串反序列化UUID
+func (u *UUID) UnmarshalBase64(s string) error {
+	// 计算解码后长度（16字节对应22字符base64）
+	if len(s) != base64.RawURLEncoding.EncodedLen(len(u)) {
+		return errors.New("uuid7: invalid base64 UUID length")
+	}
+
+	decoded, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return fmt.Errorf("uuid7: invalid base64 encoding: %w", err)
+	}
+
+	copy(u[:], decoded)
+	return nil
+}
+
 // 系统级固定UUID (v7格式)
 var SystemUUID = UUID{
 	0x00, 0x00, 0x00, 0x00, // 时间戳高位 (全零)
@@ -218,4 +240,19 @@ var SystemUUID = UUID{
 	0x70, 0x00, // 版本7(0111) + 随机位
 	0x80, 0x00, // 变体位(10) + 随机位
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 固定后缀
+}
+
+var EmptyUUID = UUID{
+	// 时间戳高位 (32位全零)
+	0x00, 0x00, 0x00, 0x00,
+	// 时间戳低位 (16位全零)
+	0x00, 0x00,
+	// 版本7(0111) + 12位保留位(全零)
+	// 二进制: 0111 0000 0000 0000 -> 十六进制: 0x70 0x00
+	0x70, 0x00,
+	// 变体位(10) + 14位保留位(全零)
+	// 二进制: 1000 0000 0000 0000 -> 十六进制: 0x80 0x00
+	0x80, 0x00,
+	// 固定后缀
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 }

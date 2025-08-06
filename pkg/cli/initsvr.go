@@ -28,7 +28,7 @@ func InitUserService() userservice.Client {
 
 	c, err := userservice.NewClient(
 		config.Conf.UserConfig.ServiceName,
-		client.WithRPCTimeout(3*time.Second),
+		client.WithRPCTimeout(30*time.Second),
 		client.WithResolver(r),
 	)
 	if err != nil {

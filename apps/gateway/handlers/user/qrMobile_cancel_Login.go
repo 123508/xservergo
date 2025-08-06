@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func Logout(ctx context.Context, c *app.RequestContext) {
+func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 
 	userId := ctx.Value("userId")
 
@@ -31,8 +31,8 @@ func Logout(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	token := &Tokens{}
-	if err := c.Bind(token); err != nil {
+	mobilePre := &QrMobileReq{}
+	if err := c.Bind(mobilePre); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code":    http.StatusBadRequest,
 			"message": "请求参数错误",
@@ -40,22 +40,18 @@ func Logout(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.Logout(ctx, &user.LogoutReq{
-		TargetUserId:  "",
-		AccessToken:   token.AccessToken,
-		RefreshToken:  token.RefreshToken,
-		RequestUserId: uid,
+	_, err := infra.UserClient.CancelQrLogin(ctx, &user.CancelQrLoginReq{
+		Ticket:    mobilePre.Ticket,
+		UserId:    uid,
+		RequestId: mobilePre.RequestId,
 	})
-
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
 		return
 	}
 
-	//解析成功
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code":    http.StatusOK,
-		"message": "用户登出成功",
-		"data":    resp,
+		"message": "成功取消",
 	})
 }

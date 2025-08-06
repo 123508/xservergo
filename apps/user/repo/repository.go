@@ -29,6 +29,7 @@ type UserRepository interface {
 	ResetPhone(ctx context.Context, userID util.UUID, phone string, version int, requestUserId util.UUID) (int, error)
 	FreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error)
 	UnfreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error)
+	AddVersion(ctx context.Context, userId util.UUID) error
 }
 
 type RepoImpl struct {
@@ -193,9 +194,6 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 	if !requestUserId.IsZero() {
 		updates["last_updated_by"] = requestUserId
 	}
-
-	// 乐观锁控制
-	updates["version"] = gorm.Expr("version + 1") // 使用表达式确保原子性
 
 	// 2. 执行更新（带乐观锁检查）
 	result := r.DB.WithContext(ctx).Model(&models.User{}).
@@ -376,4 +374,26 @@ func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID util.UUID, version i
 	}
 
 	return version + 1, nil
+}
+
+func (r *RepoImpl) AddVersion(ctx context.Context, userId util.UUID) error {
+	addStmt := `update users
+					set version = version + 1 , updated_at = CURRENT_TIMESTAMP
+					where id = ? and is_deleted = 0`
+
+	result := r.DB.WithContext(ctx).Exec(addStmt, userId)
+
+	if result.Error != nil {
+		logs.ErrorLogger.Error("更新用户版本失败", zap.Error(result.Error))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户版本失败", result.Error)
+	}
+
+	// 检查是否成功更新
+	if result.RowsAffected == 0 {
+		err := errors.New("更新用户版本失败:用户不存在或版本不匹配")
+		logs.ErrorLogger.Error(err.Error(), zap.ByteString("userID", userId[:]))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户版本失败", result.Error)
+	}
+
+	return nil
 }
