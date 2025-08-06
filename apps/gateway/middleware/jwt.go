@@ -2,17 +2,22 @@ package middleware
 
 import (
 	"context"
+	"net/http"
+	"strings"
+
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
-	"net/http"
-	"strings"
 )
 
 // ParseToken 解析token
 func ParseToken() app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
-		accessToken := strings.Split(c.Request.Header.Get("Authorization"), "Bearer ")[1]
+		Authorization := strings.Split(c.Request.Header.Get("Authorization"), " ")
+		accessToken := ""
+		if len(Authorization) > 1 {
+			accessToken = Authorization[1]
+		}
 		refreshToken := c.Request.Header.Get("RefreshToken")
 
 		// 解析jwt
