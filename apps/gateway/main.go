@@ -92,6 +92,7 @@ func main() {
 		// 解析token
 		authGroup.Use(middleware.ParseToken())
 		authGroup.GET("/permission/:perm_code", auth.GetPermission)
+		authGroup.GET("/permission", auth.GetPermissions)
 		authGroup.POST("/permission", auth.CreatePermission)
 
 		if err := hz.Run(); err != nil {

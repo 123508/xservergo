@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -16,24 +17,24 @@ func CreatePermission(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	permissionType := auth.Permission_API
+	permissionTypeInt := auth.Permission_API
 	switch permission.Type {
 	case "API":
-		permissionType = auth.Permission_API
+		permissionTypeInt = auth.Permission_API
 	case "MENU":
-		permissionType = auth.Permission_MENU
+		permissionTypeInt = auth.Permission_MENU
 	case "BUTTON":
-		permissionType = auth.Permission_BUTTON
+		permissionTypeInt = auth.Permission_BUTTON
 	case "DATA":
-		permissionType = auth.Permission_DATA
+		permissionTypeInt = auth.Permission_DATA
 	case "FIELD":
-		permissionType = auth.Permission_FIELD
+		permissionTypeInt = auth.Permission_FIELD
 	case "MODULE":
-		permissionType = auth.Permission_MODULE
+		permissionTypeInt = auth.Permission_MODULE
 	case "FILE":
-		permissionType = auth.Permission_FILE
+		permissionTypeInt = auth.Permission_FILE
 	case "TASK":
-		permissionType = auth.Permission_TASK
+		permissionTypeInt = auth.Permission_TASK
 	}
 
 	req := &auth.CreatePermissionReq{
@@ -43,7 +44,7 @@ func CreatePermission(ctx context.Context, c *app.RequestContext) {
 			PermissionName: permission.Name,
 			Description:    permission.Description,
 			ParentId:       []byte(permission.ParentID),
-			Type:           permissionType,
+			Type:           permissionTypeInt,
 			Resource:       permission.Resource,
 			Method:         permission.Method,
 			Status:         permission.Status,
@@ -59,6 +60,16 @@ func CreatePermission(ctx context.Context, c *app.RequestContext) {
 	c.JSON(200, map[string]interface{}{
 		"code": 200,
 		"msg":  "权限创建成功",
-		"data": resp,
+		"data": Permission{
+			ID:          base64.StdEncoding.EncodeToString(resp.Id),
+			Code:        resp.Code,
+			Name:        resp.PermissionName,
+			Description: resp.Description,
+			ParentID:    base64.StdEncoding.EncodeToString(resp.ParentId),
+			Type:        permissionType(resp.Type),
+			Resource:    resp.Resource,
+			Method:      resp.Method,
+			Status:      resp.Status,
+		},
 	})
 }
