@@ -35,7 +35,7 @@ func QrPreLogin(ctx context.Context, c *app.RequestContext) {
 		"code":    http.StatusOK,
 		"message": "轮询成功",
 		"data": map[string]interface{}{
-			"user_id":    string(resp.UserId),
+			"user_id":    resp.UserId,
 			"request_id": query.RequestId,
 		},
 	})

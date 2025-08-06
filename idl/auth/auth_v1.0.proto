@@ -363,7 +363,6 @@ message IssueTokenResp{
 }
 
 message RefreshTokenReq{
-  string access_token = 1;    // 访问令牌
   string refresh_token = 2;
   string user_id=3;
 }
@@ -381,4 +380,5 @@ message VerifyTokenResp{
   string user_id=1;
   repeated string permissions=2;
   uint64 version=3;
+  int64 ttl=4;
 }

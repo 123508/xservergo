@@ -32,6 +32,7 @@ type SmsLog struct {
 }
 
 type Tokens struct {
+	UserId       string `json:"user_id"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
@@ -84,4 +85,41 @@ type UStruct struct {
 	Phone    string `json:"phone"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
+}
+
+type SBEmail struct {
+	UserId string `json:"user_id"`
+	Email  string `json:"email"`
+}
+
+type VBEmail struct {
+	UserId     string `json:"user_id"`
+	Email      string `json:"email"`
+	VerifyCode string `json:"verify_code"`
+	RequestId  string `json:"request_id"`
+}
+
+type SBPhone struct {
+	UserId string `json:"user_id"`
+	Phone  string `json:"phone"`
+}
+
+type VBPhone struct {
+	UserId     string `json:"user_id"`
+	Phone      string `json:"phone"`
+	VerifyCode string `json:"verify_code"`
+	RequestId  string `json:"request_id"`
+}
+
+type UpdateInfo struct {
+	UserId    string `json:"user_id"`
+	Nickname  string `json:"nickname"`
+	AvatarUrl string `json:"avatar_url"`
+	Gender    uint64 `json:"gender"`
+}
+
+type CompleteReq struct {
+	UserId     string `json:"user_id"`
+	VerifyCode string `json:"verify_code"`
+	RequestId  string `json:"request_id"`
 }

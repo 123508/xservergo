@@ -804,12 +804,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	token := models.Token{
-		AccessToken:  req.AccessToken,
-		RefreshToken: req.RefreshToken,
-	}
-
-	Token, err := s.authService.RefreshToken(ctx, token, *uid)
+	Token, err := s.authService.RefreshToken(ctx, req.RefreshToken, *uid)
 
 	if err != nil {
 		if com, ok := err.(*cerrors.CommonError); ok {
@@ -826,7 +821,7 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 
 // VerifyToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyTokenReq) (resp *auth.VerifyTokenResp, err error) {
-	uid, perms, ver, err := s.authService.VerifyToken(ctx, req.AccessToken)
+	uid, perms, ver, ttl, err := s.authService.VerifyToken(ctx, req.AccessToken)
 
 	if err != nil {
 		if com, ok := err.(*cerrors.CommonError); ok {
@@ -841,6 +836,7 @@ func (s *AuthServiceImpl) VerifyToken(ctx context.Context, req *auth.VerifyToken
 		UserId:      Uid,
 		Permissions: perms,
 		Version:     ver,
+		Ttl:         ttl,
 	}, nil
 }
 

@@ -20,7 +20,7 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	targetUid, ok := userId.(string)
+	requestUserId, ok := userId.(string)
 
 	if !ok {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -44,7 +44,7 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 		TargetUserId:  chg.UserId,
 		OldPassword:   chg.OldPassword,
 		NewPassword:   chg.NewPassword,
-		RequestUserId: targetUid,
+		RequestUserId: requestUserId,
 	})
 
 	if err != nil {

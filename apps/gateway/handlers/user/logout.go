@@ -21,7 +21,7 @@ func Logout(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	uid, ok := userId.(string)
+	requestUserId, ok := userId.(string)
 
 	if !ok {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -41,10 +41,10 @@ func Logout(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := infra.UserClient.Logout(ctx, &user.LogoutReq{
-		TargetUserId:  "",
+		TargetUserId:  token.UserId,
 		AccessToken:   token.AccessToken,
 		RefreshToken:  token.RefreshToken,
-		RequestUserId: uid,
+		RequestUserId: requestUserId,
 	})
 
 	if err != nil {

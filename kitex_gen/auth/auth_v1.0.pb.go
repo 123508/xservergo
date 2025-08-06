@@ -1539,7 +1539,6 @@ func (x *IssueTokenResp) GetRefreshToken() string {
 }
 
 type RefreshTokenReq struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
 	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
 	UserId       string `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`
 }
@@ -1549,13 +1548,6 @@ func (x *RefreshTokenReq) Reset() { *x = RefreshTokenReq{} }
 func (x *RefreshTokenReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *RefreshTokenReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *RefreshTokenReq) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
 
 func (x *RefreshTokenReq) GetRefreshToken() string {
 	if x != nil {
@@ -1617,6 +1609,7 @@ type VerifyTokenResp struct {
 	UserId      string   `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"`
 	Permissions []string `protobuf:"bytes,2,rep,name=permissions" json:"permissions,omitempty"`
 	Version     uint64   `protobuf:"varint,3,opt,name=version" json:"version,omitempty"`
+	Ttl         int64    `protobuf:"varint,4,opt,name=ttl" json:"ttl,omitempty"`
 }
 
 func (x *VerifyTokenResp) Reset() { *x = VerifyTokenResp{} }
@@ -1642,6 +1635,13 @@ func (x *VerifyTokenResp) GetPermissions() []string {
 func (x *VerifyTokenResp) GetVersion() uint64 {
 	if x != nil {
 		return x.Version
+	}
+	return 0
+}
+
+func (x *VerifyTokenResp) GetTtl() int64 {
+	if x != nil {
+		return x.Ttl
 	}
 	return 0
 }

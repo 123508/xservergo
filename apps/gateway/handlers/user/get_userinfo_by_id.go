@@ -20,7 +20,7 @@ func GetUserInfoById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	targetUid, ok := userId.(string)
+	requestUserId, ok := userId.(string)
 
 	if !ok {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
@@ -42,7 +42,7 @@ func GetUserInfoById(ctx context.Context, c *app.RequestContext) {
 
 	resp, err := infra.UserClient.GetUserInfoById(ctx, &user.GetUserInfoByIdReq{
 		TargetUserId:  us.UserId,
-		RequestUserId: targetUid,
+		RequestUserId: requestUserId,
 	})
 
 	if err != nil {

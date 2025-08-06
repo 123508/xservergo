@@ -9,7 +9,6 @@ import (
 
 	"github.com/123508/xservergo/apps/auth/repo"
 	"github.com/123508/xservergo/pkg/cerrors"
-	"github.com/123508/xservergo/pkg/config"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util"
@@ -24,9 +23,9 @@ type AuthService interface {
 	// IssueToken 分发Token
 	IssueToken(ctx context.Context, uid util.UUID) (models.Token, error)
 	// RefreshToken 刷新Token
-	RefreshToken(ctx context.Context, token models.Token, uid util.UUID) (models.Token, error)
+	RefreshToken(ctx context.Context, refreshToken string, uid util.UUID) (models.Token, error)
 	// VerifyToken 验证Token
-	VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, error)
+	VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, int64, error)
 
 	// CreatePermission 创建权限
 	CreatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error)
@@ -157,12 +156,12 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 	}, nil
 }
 
-func (s *ServiceImpl) RefreshToken(ctx context.Context, token models.Token, uid util.UUID) (models.Token, error) {
-	if token.AccessToken == "" || token.RefreshToken == "" || uid.IsZero() {
+func (s *ServiceImpl) RefreshToken(ctx context.Context, refreshToken string, uid util.UUID) (models.Token, error) {
+	if refreshToken == "" || uid.IsZero() {
 		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
-	if b, err := s.Rds.Get(ctx, token.RefreshToken).Bool(); err != nil || !b {
+	if b, err := s.Rds.Get(ctx, refreshToken).Bool(); err != nil || !b {
 		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
@@ -173,48 +172,37 @@ func (s *ServiceImpl) RefreshToken(ctx context.Context, token models.Token, uid 
 	}
 
 	//原子化刷新令牌
-	pipe := s.Rds.Pipeline()
-
-	pipe.Set(ctx, token.RefreshToken, false, 7*24*time.Hour)
-
-	pipe.Set(ctx, token.AccessToken, true, time.Duration(config.Conf.AdminTtl)*time.Second)
-
-	_, err = pipe.Exec(ctx)
-
-	if err != nil {
+	if err = s.Rds.Del(ctx, refreshToken).Err(); err != nil {
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", nil)
 	}
 
 	return issueToken, nil
 }
 
-func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, error) {
+func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (uid util.UUID, perms []string, Pversion uint64, ttl int64, err error) {
 	if accessToken == "" {
-		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
-	}
-
-	if b, err := s.Rds.Get(ctx, accessToken).Bool(); err == nil && b {
-		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", err)
+		return util.EmptyUUID, nil, 0, -1, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	claims, err := ParseJWT(accessToken)
 
 	if err != nil {
-		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return util.EmptyUUID, nil, 0, -1, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	//向user服务请求用户版本
 	res, err := UserClient.GetVersion(ctx, &user.VersionReq{UserId: claims.UserId.MarshalBase64()})
 
 	if err != nil || !res.Success {
-		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusFailedDependency, "请求失败", "", err)
+		return util.EmptyUUID, nil, 0, -1, cerrors.NewCommonError(http.StatusFailedDependency, "请求失败", "", err)
 	}
 
+	//版本号不匹配
 	if res.Version != claims.PVer {
-		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusTooEarly, "版本错误,请更换token", "", nil)
+		return util.EmptyUUID, nil, 0, -1, cerrors.NewCommonError(http.StatusTooEarly, "版本错误,请更换token", "", nil)
 	}
 
-	return claims.UserId, claims.Perms, claims.PVer, nil
+	return claims.UserId, claims.Perms, claims.PVer, claims.ExpiresAt.Time.Unix() - time.Now().Unix(), nil
 }
 
 func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.Permission, operatorId *util.UUID) (*models.Permission, error) {
