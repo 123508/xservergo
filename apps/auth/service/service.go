@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"github.com/123508/xservergo/kitex_gen/user"
+	"github.com/123508/xservergo/pkg/cli"
 	"net/http"
 	"time"
 
@@ -99,6 +101,8 @@ type AuthService interface {
 	GetUserGroupList(ctx context.Context, page, pageSize uint32) ([]*models.UserGroup, error)
 }
 
+var UserClient = cli.InitUserService()
+
 type ServiceImpl struct {
 	authRepo repo.AuthRepository
 	Rds      *redis.Client
@@ -120,7 +124,16 @@ func (s *ServiceImpl) GetRedis() *redis.Client {
 func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Token, error) {
 
 	var perms []string
-	accessToken, err := GenerateJWT(uid, perms, 0)
+
+	//向user服务请求用户版本
+	res, err := UserClient.GetVersion(ctx, &user.VersionReq{UserId: uid.MarshalBase64()})
+
+	if err != nil {
+		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求失败", "", err)
+	}
+
+	//获取令牌
+	accessToken, err := GenerateJWT(uid, perms, res.Version)
 
 	if err != nil {
 		logs.ErrorLogger.Error("生成accessToken错误:", zap.Error(err))
@@ -177,17 +190,28 @@ func (s *ServiceImpl) RefreshToken(ctx context.Context, token models.Token, uid 
 
 func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, error) {
 	if accessToken == "" {
-		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
 	if b, err := s.Rds.Get(ctx, accessToken).Bool(); err == nil && b {
-		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", err)
 	}
 
 	claims, err := ParseJWT(accessToken)
 
 	if err != nil {
-		return util.NewUUID(), nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+	}
+
+	//向user服务请求用户版本
+	res, err := UserClient.GetVersion(ctx, &user.VersionReq{UserId: claims.UserId.MarshalBase64()})
+
+	if err != nil || !res.Success {
+		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusFailedDependency, "请求失败", "", err)
+	}
+
+	if res.Version != claims.PVer {
+		return util.EmptyUUID, nil, 0, cerrors.NewCommonError(http.StatusTooEarly, "版本错误,请更换token", "", nil)
 	}
 
 	return claims.UserId, claims.Perms, claims.PVer, nil

@@ -30,21 +30,12 @@ func QrPreLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	ciphertext, err := common.EncryptAES(resp.UserId)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, map[string]interface{}{
-			"code":    http.StatusInternalServerError,
-			"message": "加密失败",
-		})
-	}
-
 	//解析成功
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code":    http.StatusOK,
 		"message": "轮询成功",
 		"data": map[string]interface{}{
-			"user_id":    ciphertext,
+			"user_id":    string(resp.UserId),
 			"request_id": query.RequestId,
 		},
 	})

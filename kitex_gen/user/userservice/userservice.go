@@ -267,6 +267,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"GetVersion": kitex.NewMethodInfo(
+		getVersionHandler,
+		newGetVersionArgs,
+		newGetVersionResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"AddVersion": kitex.NewMethodInfo(
+		addVersionHandler,
+		newAddVersionArgs,
+		newAddVersionResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 }
 
 var (
@@ -4329,6 +4343,228 @@ func (p *DeleteUserResult) GetResult() interface{} {
 	return p.Success
 }
 
+func getVersionHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.VersionReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).GetVersion(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *GetVersionArgs:
+		success, err := handler.(user.UserService).GetVersion(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*GetVersionResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newGetVersionArgs() interface{} {
+	return &GetVersionArgs{}
+}
+
+func newGetVersionResult() interface{} {
+	return &GetVersionResult{}
+}
+
+type GetVersionArgs struct {
+	Req *user.VersionReq
+}
+
+func (p *GetVersionArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *GetVersionArgs) Unmarshal(in []byte) error {
+	msg := new(user.VersionReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var GetVersionArgs_Req_DEFAULT *user.VersionReq
+
+func (p *GetVersionArgs) GetReq() *user.VersionReq {
+	if !p.IsSetReq() {
+		return GetVersionArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *GetVersionArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *GetVersionArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type GetVersionResult struct {
+	Success *user.OperationResult
+}
+
+var GetVersionResult_Success_DEFAULT *user.OperationResult
+
+func (p *GetVersionResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *GetVersionResult) Unmarshal(in []byte) error {
+	msg := new(user.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *GetVersionResult) GetSuccess() *user.OperationResult {
+	if !p.IsSetSuccess() {
+		return GetVersionResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *GetVersionResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.OperationResult)
+}
+
+func (p *GetVersionResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *GetVersionResult) GetResult() interface{} {
+	return p.Success
+}
+
+func addVersionHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.VersionReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).AddVersion(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *AddVersionArgs:
+		success, err := handler.(user.UserService).AddVersion(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*AddVersionResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newAddVersionArgs() interface{} {
+	return &AddVersionArgs{}
+}
+
+func newAddVersionResult() interface{} {
+	return &AddVersionResult{}
+}
+
+type AddVersionArgs struct {
+	Req *user.VersionReq
+}
+
+func (p *AddVersionArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *AddVersionArgs) Unmarshal(in []byte) error {
+	msg := new(user.VersionReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var AddVersionArgs_Req_DEFAULT *user.VersionReq
+
+func (p *AddVersionArgs) GetReq() *user.VersionReq {
+	if !p.IsSetReq() {
+		return AddVersionArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *AddVersionArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *AddVersionArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type AddVersionResult struct {
+	Success *user.OperationResult
+}
+
+var AddVersionResult_Success_DEFAULT *user.OperationResult
+
+func (p *AddVersionResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *AddVersionResult) Unmarshal(in []byte) error {
+	msg := new(user.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *AddVersionResult) GetSuccess() *user.OperationResult {
+	if !p.IsSetSuccess() {
+		return AddVersionResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *AddVersionResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.OperationResult)
+}
+
+func (p *AddVersionResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AddVersionResult) GetResult() interface{} {
+	return p.Success
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -4694,6 +4930,26 @@ func (p *kClient) DeleteUser(ctx context.Context, Req *user.DeleteUserReq) (r *u
 	_args.Req = Req
 	var _result DeleteUserResult
 	if err = p.c.Call(ctx, "DeleteUser", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetVersion(ctx context.Context, Req *user.VersionReq) (r *user.OperationResult, err error) {
+	var _args GetVersionArgs
+	_args.Req = Req
+	var _result GetVersionResult
+	if err = p.c.Call(ctx, "GetVersion", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) AddVersion(ctx context.Context, Req *user.VersionReq) (r *user.OperationResult, err error) {
+	var _args AddVersionArgs
+	_args.Req = Req
+	var _result AddVersionResult
+	if err = p.c.Call(ctx, "AddVersion", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

@@ -47,6 +47,8 @@ type Client interface {
 	ReactivateUser(ctx context.Context, Req *user.ReactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartDeleteUser(ctx context.Context, Req *user.StartDeleteReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	DeleteUser(ctx context.Context, Req *user.DeleteUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	GetVersion(ctx context.Context, Req *user.VersionReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	AddVersion(ctx context.Context, Req *user.VersionReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -256,4 +258,14 @@ func (p *kUserServiceClient) StartDeleteUser(ctx context.Context, Req *user.Star
 func (p *kUserServiceClient) DeleteUser(ctx context.Context, Req *user.DeleteUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.DeleteUser(ctx, Req)
+}
+
+func (p *kUserServiceClient) GetVersion(ctx context.Context, Req *user.VersionReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetVersion(ctx, Req)
+}
+
+func (p *kUserServiceClient) AddVersion(ctx context.Context, Req *user.VersionReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.AddVersion(ctx, Req)
 }

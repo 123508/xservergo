@@ -57,6 +57,8 @@ type UserService interface {
 	VerifyNewPhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, newPhone, RequestId string) (requestId string, err error)
 	CompleteChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error)
 	UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (v int, err error)
+	GetVersion(ctx context.Context, userId util.UUID) (v int, err error)
+	AddVersion(ctx context.Context, userId util.UUID) (err error)
 }
 
 type ServiceImpl struct {
@@ -691,6 +693,25 @@ func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestU
 	return v, nil
 }
 
+func (s *ServiceImpl) GetVersion(ctx context.Context, userId util.UUID) (v int, err error) {
+	usr, err := s.userRepo.GetUserByID(ctx, userId)
+	if err != nil {
+		return 0, ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	s.Rds.Set(ctx, util.TakeKey("userservice", "user", "version", userId), *usr.Version, 7*time.Hour)
+
+	return *usr.Version, nil
+}
+
+func (s *ServiceImpl) AddVersion(ctx context.Context, userId util.UUID) (err error) {
+	if err = s.userRepo.AddVersion(ctx, userId); err != nil {
+		return ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+	defer s.Rds.Del(ctx, util.TakeKey("userservice", "user", "version", userId))
+	return nil
+}
+
 func (s *ServiceImpl) ConfirmOrCancelQrLogin(
 	ctx context.Context,
 	ticket string,
@@ -813,6 +834,8 @@ func (s *ServiceImpl) CompleteBindPhoneOrEmail(ctx context.Context, targetUserId
 	s.Rds.Del(ctx, Token)
 	//删除缓存
 	s.CleanCache(ctx, usr)
+	//更新版本号
+	s.AddVersion(ctx, usr.ID)
 
 	return v, nil
 }
@@ -1002,6 +1025,8 @@ func (s *ServiceImpl) CompleteChangePhoneOrEmail(ctx context.Context, targetUser
 	s.CleanCache(ctx, usr)
 	//删除临时存储的新sign
 	s.Rds.Del(ctx, storeToken)
+	//更新版本号
+	s.AddVersion(ctx, usr.ID)
 
 	return v, nil
 }
@@ -1050,10 +1075,13 @@ func (s *ServiceImpl) LoginWithResp(
 	}
 
 	loginUsr := &models.User{
+		ID:       usr.ID,
 		UserName: usr.UserName,
 		NickName: usr.NickName,
 		Email:    usr.Email,
 		Avatar:   usr.Avatar,
+		Gender:   usr.Gender,
+		Phone:    usr.Phone,
 	}
 
 	return loginUsr, &models.Token{
@@ -1066,11 +1094,7 @@ func (s *ServiceImpl) LoginWithResp(
 // RequestToken 辅助函数(用于请求token)
 func (s *ServiceImpl) RequestToken(ctx context.Context, userId util.UUID, version int) (*auth.IssueTokenResp, error) {
 
-	marshal, err := userId.Marshal()
-
-	if err != nil {
-		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "序列化参数错误", "", nil)
-	}
+	marshal := userId.MarshalBase64()
 
 	resp, err := authClient.IssueToken(ctx, &auth.IssueTokenReq{
 		UserId: marshal,

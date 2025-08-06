@@ -19,20 +19,11 @@ func QrLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	plaintext, err := common.DecryptAES(qrL.UserId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
-		})
-		return
-	}
-
 	resp, err := infra.UserClient.QrCodeLoginStatus(ctx, &user.QrCodeLoginStatusReq{
 		Ticket:    qrL.Ticket,
 		Timeout:   qrL.Timeout,
 		RequestId: qrL.RequestId,
-		UserId:    plaintext,
+		UserId:    qrL.UserId,
 	})
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

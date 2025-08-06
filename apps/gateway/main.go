@@ -81,8 +81,8 @@ func main() {
 		userGroup.POST("/verify_new_phone", user.VerifyNewPhone)
 		userGroup.POST("/complete_change_phone", user.CompleteChangePhone)
 		//获取用户信息
-		userGroup.POST("/get_userinfo_by_id", user.GetUserInfoById)
-		userGroup.POST("/get_userinfo_by_others", user.GetUserInfoByOthers)
+		userGroup.POST("/get_userinfo_id", user.GetUserInfoById)
+		userGroup.POST("/get_userinfo_others", user.GetUserInfoByOthers)
 		//更新用户信息
 		userGroup.POST("/update_userinfo", user.UpdateUserinfo)
 

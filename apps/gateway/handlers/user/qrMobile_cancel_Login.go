@@ -21,7 +21,7 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	uid, ok := userId.([]byte)
+	uid, ok := userId.(string)
 
 	if !ok {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
