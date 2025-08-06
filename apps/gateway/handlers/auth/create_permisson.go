@@ -2,14 +2,13 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
 func CreatePermission(ctx context.Context, c *app.RequestContext) {
-	requestId := ctx.Value("userId").([]byte)
+	requestId := ctx.Value("userId").(string)
 
 	var permission Permission
 	if err := c.BindAndValidate(&permission); err != nil {
@@ -39,11 +38,11 @@ func CreatePermission(ctx context.Context, c *app.RequestContext) {
 
 	req := &auth.CreatePermissionReq{
 		Permission: &auth.Permission{
-			Id:             nil,
+			Id:             "",
 			Code:           permission.Code,
 			PermissionName: permission.Name,
 			Description:    permission.Description,
-			ParentId:       []byte(permission.ParentID),
+			ParentId:       permission.ParentID,
 			Type:           permissionTypeInt,
 			Resource:       permission.Resource,
 			Method:         permission.Method,
@@ -61,11 +60,11 @@ func CreatePermission(ctx context.Context, c *app.RequestContext) {
 		"code": 200,
 		"msg":  "权限创建成功",
 		"data": Permission{
-			ID:          base64.StdEncoding.EncodeToString(resp.Id),
+			ID:          resp.Id,
 			Code:        resp.Code,
 			Name:        resp.PermissionName,
 			Description: resp.Description,
-			ParentID:    base64.StdEncoding.EncodeToString(resp.ParentId),
+			ParentID:    resp.ParentId,
 			Type:        permissionType(resp.Type),
 			Resource:    resp.Resource,
 			Method:      resp.Method,

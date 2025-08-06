@@ -2,14 +2,16 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
+	"strconv"
+
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
-	"strconv"
 )
 
 func GetPermissions(ctx context.Context, c *app.RequestContext) {
+	requestUserId := ctx.Value("userId").(string)
+
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil {
 		c.JSON(400, map[string]interface{}{
@@ -32,7 +34,7 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 	listPermissionsReq := &auth.ListPermissionsReq{
 		Page:          uint32(page),
 		PageSize:      uint32(pageSize),
-		RequestUserId: nil,
+		RequestUserId: requestUserId,
 	}
 
 	permissions, err := infra.AuthClient.ListPermissions(ctx, listPermissionsReq)
@@ -48,11 +50,11 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 	perms := make([]Permission, 0, len(permissions.Perms))
 	for _, perm := range permissions.Perms {
 		perms = append(perms, Permission{
-			ID:          base64.StdEncoding.EncodeToString(perm.Id),
+			ID:          perm.Id,
 			Code:        perm.Code,
 			Name:        perm.PermissionName,
 			Description: perm.Description,
-			ParentID:    string(perm.ParentId),
+			ParentID:    perm.ParentId,
 			Type:        permissionType(perm.Type),
 			Resource:    perm.Resource,
 			Method:      perm.Method,

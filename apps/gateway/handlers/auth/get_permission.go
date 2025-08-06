@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
-
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -27,11 +25,11 @@ func GetPermission(ctx context.Context, c *app.RequestContext) {
 		"code": 200,
 		"msg":  "获取权限成功",
 		"data": Permission{
-			ID:          base64.StdEncoding.EncodeToString(resp.Id),
+			ID:          resp.Id,
 			Code:        resp.Code,
 			Name:        resp.PermissionName,
 			Description: resp.Description,
-			ParentID:    base64.StdEncoding.EncodeToString(resp.ParentId),
+			ParentID:    resp.ParentId,
 			Type:        permissionType(resp.Type),
 			Resource:    resp.Resource,
 			Method:      resp.Method,
