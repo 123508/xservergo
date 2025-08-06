@@ -6,4 +6,4 @@ import (
 
 var UserClient = cli.InitUserService()
 
-var AuthCList = cli.InitAuthService()
+var AuthClient = cli.InitAuthService()
