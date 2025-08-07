@@ -29,10 +29,10 @@ qrredis:
 jwt:
   # 设置jwt签名加密时使用的前端秘钥
   admin_secret_key: "default_admin_secret_key_change_in_production"
-  # 设置jwt过期时间为7天（秒）
-  admin_ttl: 604800
-  # 设置jwt刷新时间为1小时（秒）
-  admin_suv: 3600
+  # 设置AccessToken的有效时间（秒）
+  access_token_ttl: 3600
+  # 设置RefreshToken的有效时间（秒）
+  refresh_token_suv: 604800
 
 elasticsearch:
   hosts:

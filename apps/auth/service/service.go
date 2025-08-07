@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/123508/xservergo/kitex_gen/user"
-	"github.com/123508/xservergo/pkg/cli"
 	"net/http"
 	"time"
+
+	"github.com/123508/xservergo/kitex_gen/user"
+	"github.com/123508/xservergo/pkg/cli"
+	"github.com/123508/xservergo/pkg/config"
 
 	"github.com/123508/xservergo/apps/auth/repo"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -147,7 +149,7 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 
-	if err = s.Rds.Set(ctx, refreshToken, uid.MarshalBase64(), 7*24*time.Hour).Err(); err != nil {
+	if err = s.Rds.Set(ctx, refreshToken, uid.MarshalBase64(), time.Duration(config.Conf.Jwt.RefreshTokenTTL)*time.Second).Err(); err != nil {
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 

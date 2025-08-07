@@ -56,9 +56,9 @@ type EtcdConfig struct {
 }
 
 type Jwt struct {
-	AdminSecretKey string `mapstructure:"admin_secret_key"`
-	AdminTtl       int    `mapstructure:"admin_ttl"`
-	AdminSuv       int    `mapstructure:"admin_suv"`
+	AdminSecretKey  string `mapstructure:"admin_secret_key"`
+	AccessTokenTTL  int    `mapstructure:"access_token_ttl"`
+	RefreshTokenTTL int    `mapstructure:"refresh_token_ttl"`
 }
 
 type ElasticSearch struct {
@@ -168,6 +168,11 @@ func setDefaultValues(v *viper.Viper) {
 	v.SetDefault("auth.host", "127.0.0.1")
 	v.SetDefault("auth.port", 8901)
 	v.SetDefault("auth.service_name", "auth_service")
+
+	// JWT 默认配置
+	v.SetDefault("jwt.admin_secret_key", "default_admin_secret_key_change_in_production")
+	v.SetDefault("jwt.access_token_ttl", 3600)
+	v.SetDefault("jwt.refresh_token_ttl", 604800)
 
 	// Logger 默认配置
 	v.SetDefault("logger.stdout.allowed", true)

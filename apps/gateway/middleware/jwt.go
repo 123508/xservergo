@@ -7,7 +7,6 @@ import (
 
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
-	"github.com/123508/xservergo/pkg/config"
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
@@ -45,25 +44,6 @@ func ParseToken() app.HandlerFunc {
 			ctx = context.WithValue(ctx, "accessToken", refreshResp.AccessToken)
 			ctx = context.WithValue(ctx, "refreshToken", refreshResp.RefreshToken)
 		} else {
-			if resp.Ttl < int64(config.Conf.Jwt.AdminSuv) {
-				// 如果token的有效期小于一定时间，则需要刷新token
-				refreshTokenReq := &auth.RefreshTokenReq{
-					RefreshToken: refreshToken,
-				}
-				refreshResp, err := infra.AuthClient.RefreshToken(ctx, refreshTokenReq)
-				if err != nil {
-					c.JSON(http.StatusUnauthorized, map[string]interface{}{
-						"code":   http.StatusUnauthorized,
-						"msg":    "令牌已过期，请重新登录",
-						"detail": err.Error(),
-					})
-					c.Abort()
-					return
-				}
-				ctx = context.WithValue(ctx, "accessToken", refreshResp.AccessToken)
-				ctx = context.WithValue(ctx, "refreshToken", refreshResp.RefreshToken)
-			}
-
 			userId := resp.UserId
 			ctx = context.WithValue(ctx, "permission", resp.Permissions)
 			ctx = context.WithValue(ctx, "userId", userId)

@@ -7,11 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/123508/xservergo/pkg/config"
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Md5Hash 用做查询条件的处理
@@ -44,7 +45,7 @@ func GenerateJWT(
 		Perms:  perms,
 		PVer:   version,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(config.Conf.AdminTtl) * time.Second)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(config.Conf.AccessTokenTTL) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    Md5Hash("user service delivery this token"),
