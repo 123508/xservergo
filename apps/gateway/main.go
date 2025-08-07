@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+	"sync"
+
 	"github.com/123508/xservergo/apps/gateway/handlers/auth"
 	"github.com/123508/xservergo/apps/gateway/handlers/user"
 	"github.com/123508/xservergo/apps/gateway/middleware"
 	"github.com/123508/xservergo/pkg/config"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
-	"net/http"
-	"sync"
 )
 
 func main() {
@@ -58,6 +59,8 @@ func main() {
 		userGroup.POST("/reset_pwd", user.ResetPassword)
 		//解析token
 		userGroup.Use(middleware.ParseToken())
+		//刷新token
+		userGroup.Use(middleware.RefreshToken())
 		//扫码登录移动端部分
 		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
 		userGroup.POST("/qr_mobile_confirm_login", user.ConfirmQrLogin)
@@ -90,6 +93,8 @@ func main() {
 		authGroup := hz.Group("/auth")
 		// 解析token
 		authGroup.Use(middleware.ParseToken())
+		// 刷新token
+		authGroup.Use(middleware.RefreshToken())
 		authGroup.GET("/permission/:perm_code", auth.GetPermission)
 		authGroup.GET("/permission", auth.GetPermissions)
 		authGroup.POST("/permission", auth.CreatePermission)

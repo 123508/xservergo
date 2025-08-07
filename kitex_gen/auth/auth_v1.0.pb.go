@@ -1540,7 +1540,6 @@ func (x *IssueTokenResp) GetRefreshToken() string {
 
 type RefreshTokenReq struct {
 	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
-	UserId       string `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"`
 }
 
 func (x *RefreshTokenReq) Reset() { *x = RefreshTokenReq{} }
@@ -1556,16 +1555,13 @@ func (x *RefreshTokenReq) GetRefreshToken() string {
 	return ""
 }
 
-func (x *RefreshTokenReq) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
 type RefreshTokenResp struct {
-	AccessToken  string `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
-	RefreshToken string `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	AccessToken  string   `protobuf:"bytes,1,opt,name=access_token" json:"access_token,omitempty"` // 访问令牌
+	RefreshToken string   `protobuf:"bytes,2,opt,name=refresh_token" json:"refresh_token,omitempty"`
+	UserId       string   `protobuf:"bytes,3,opt,name=user_id" json:"user_id,omitempty"` // 用户ID
+	Permissions  []string `protobuf:"bytes,4,rep,name=permissions" json:"permissions,omitempty"`
+	Version      uint64   `protobuf:"varint,5,opt,name=version" json:"version,omitempty"`
+	Ttl          int64    `protobuf:"varint,6,opt,name=ttl" json:"ttl,omitempty"`
 }
 
 func (x *RefreshTokenResp) Reset() { *x = RefreshTokenResp{} }
@@ -1586,6 +1582,34 @@ func (x *RefreshTokenResp) GetRefreshToken() string {
 		return x.RefreshToken
 	}
 	return ""
+}
+
+func (x *RefreshTokenResp) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RefreshTokenResp) GetPermissions() []string {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+func (x *RefreshTokenResp) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *RefreshTokenResp) GetTtl() int64 {
+	if x != nil {
+		return x.Ttl
+	}
+	return 0
 }
 
 type VerifyTokenReq struct {

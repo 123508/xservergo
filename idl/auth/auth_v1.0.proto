@@ -364,12 +364,15 @@ message IssueTokenResp{
 
 message RefreshTokenReq{
   string refresh_token = 2;
-  string user_id=3;
 }
 
 message RefreshTokenResp{
-  string access_token = 1;    // 访问令牌
+  string access_token = 1;        // 访问令牌
   string refresh_token = 2;
+  string user_id=3;               // 用户ID
+  repeated string permissions=4;
+  uint64 version=5;
+  int64 ttl=6;
 }
 
 message VerifyTokenReq{

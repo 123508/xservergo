@@ -798,13 +798,12 @@ func (s *AuthServiceImpl) IssueToken(ctx context.Context, req *auth.IssueTokenRe
 
 // RefreshToken implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTokenReq) (resp *auth.RefreshTokenResp, err error) {
-	uid, err := unmarshalRequestUID(ctx, req.UserId)
 
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	Token, err := s.authService.RefreshToken(ctx, req.RefreshToken, *uid)
+	Token, uid, perms, version, ttl, err := s.authService.RefreshToken(ctx, req.RefreshToken)
 
 	if err != nil {
 		if com, ok := err.(*cerrors.CommonError); ok {
@@ -816,6 +815,10 @@ func (s *AuthServiceImpl) RefreshToken(ctx context.Context, req *auth.RefreshTok
 	return &auth.RefreshTokenResp{
 		AccessToken:  Token.AccessToken,
 		RefreshToken: Token.RefreshToken,
+		UserId:       uid.MarshalBase64(),
+		Permissions:  perms,
+		Version:      version,
+		Ttl:          ttl,
 	}, nil
 }
 

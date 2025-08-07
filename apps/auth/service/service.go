@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/123508/xservergo/kitex_gen/user"
 	"github.com/123508/xservergo/pkg/cli"
 	"net/http"
@@ -23,7 +24,7 @@ type AuthService interface {
 	// IssueToken 分发Token
 	IssueToken(ctx context.Context, uid util.UUID) (models.Token, error)
 	// RefreshToken 刷新Token
-	RefreshToken(ctx context.Context, refreshToken string, uid util.UUID) (models.Token, error)
+	RefreshToken(ctx context.Context, refreshToken string) (models.Token, util.UUID, []string, uint64, int64, error)
 	// VerifyToken 验证Token
 	VerifyToken(ctx context.Context, accessToken string) (util.UUID, []string, uint64, int64, error)
 
@@ -146,7 +147,7 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 
-	if err = s.Rds.Set(ctx, refreshToken, true, 7*24*time.Hour).Err(); err != nil {
+	if err = s.Rds.Set(ctx, refreshToken, uid.MarshalBase64(), 7*24*time.Hour).Err(); err != nil {
 		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "生成令牌错误", "", nil)
 	}
 
@@ -156,27 +157,38 @@ func (s *ServiceImpl) IssueToken(ctx context.Context, uid util.UUID) (models.Tok
 	}, nil
 }
 
-func (s *ServiceImpl) RefreshToken(ctx context.Context, refreshToken string, uid util.UUID) (models.Token, error) {
-	if refreshToken == "" || uid.IsZero() {
-		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+func (s *ServiceImpl) RefreshToken(ctx context.Context, refreshToken string) (models.Token, util.UUID, []string, uint64, int64, error) {
+	if refreshToken == "" {
+		return models.Token{}, util.UUID{}, nil, 0, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
 	}
 
-	if b, err := s.Rds.Get(ctx, refreshToken).Bool(); err != nil || !b {
-		return models.Token{}, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+	var uid util.UUID
+	//从redis中获取uid
+	if res, err := s.Rds.Get(ctx, refreshToken).Result(); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return models.Token{}, util.UUID{}, nil, 0, 0, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		}
+		logs.ErrorLogger.Error("获取refreshToken错误:", zap.Error(err))
+		return models.Token{}, util.UUID{}, nil, 0, 0, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", err)
+	} else {
+		err := uid.UnmarshalBase64(res)
+		if err != nil {
+			return models.Token{}, util.UUID{}, nil, 0, 0, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", err)
+		}
 	}
 
 	issueToken, err := s.IssueToken(ctx, uid)
 
 	if err != nil {
-		return models.Token{}, err
+		return models.Token{}, util.UUID{}, nil, 0, 0, err
 	}
 
 	//原子化刷新令牌
 	if err = s.Rds.Del(ctx, refreshToken).Err(); err != nil {
-		return models.Token{}, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", nil)
+		return models.Token{}, util.UUID{}, nil, 0, 0, cerrors.NewCommonError(http.StatusInternalServerError, "服务器异常", "", nil)
 	}
-
-	return issueToken, nil
+	userId, perms, version, ttl, err := s.VerifyToken(ctx, issueToken.AccessToken)
+	return issueToken, userId, perms, version, ttl, err
 }
 
 func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (uid util.UUID, perms []string, Pversion uint64, ttl int64, err error) {
