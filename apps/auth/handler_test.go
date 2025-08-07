@@ -138,15 +138,13 @@ func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
 
 	// 3. RefreshToken
 	refreshReq := &auth.RefreshTokenReq{
-		AccessToken:  issueResp.AccessToken,
 		RefreshToken: issueResp.RefreshToken,
-		UserId:       userIdBase64,
 	}
 	refreshResp, err := authClient.RefreshToken(context.Background(), refreshReq)
 	if err != nil {
 		t.Fatalf("RefreshToken failed: %v", err)
 	}
-	if refreshResp == nil || refreshResp.AccessToken == "" || refreshResp.RefreshToken == "" {
+	if refreshResp == nil || refreshResp.AccessToken == "" || refreshResp.RefreshToken == "" || refreshResp.UserId != userIdBase64 {
 		t.Fatal("RefreshToken response is invalid")
 	}
 	t.Logf("RefreshToken response: AccessToken=%s, RefreshToken=%s", refreshResp.AccessToken, refreshResp.RefreshToken)
