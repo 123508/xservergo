@@ -26,10 +26,10 @@ var authClient = cli.InitAuthService()
 
 type UserService interface {
 	GetRedis() *redis.Client
-	Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) (err error)
-	EmailLogin(ctx context.Context, email, pwd string) (userinfo *models.User, token *models.Token, err error)
-	PhoneLogin(ctx context.Context, phone, pwd string) (userinfo *models.User, token *models.Token, err error)
-	UserNameLogin(ctx context.Context, username, pwd string) (userinfo *models.User, token *models.Token, err error)
+	Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) (err error, requestId string)
+	EmailLogin(ctx context.Context, email, pwd string) (userinfo *models.User, token *models.Token, err error, requestId string)
+	PhoneLogin(ctx context.Context, phone, pwd string) (userinfo *models.User, token *models.Token, err error, requestId string)
+	UserNameLogin(ctx context.Context, username, pwd string) (userinfo *models.User, token *models.Token, err error, requestId string)
 	SmsSendCode(ctx context.Context, phone string) (verifyCode string, err error)
 	SmsLogin(ctx context.Context, phone, code, requestId string) (userinfo *models.User, token *models.Token, err error)
 	SendPhoneCode(ctx context.Context, key, phone string) (err error)
@@ -40,10 +40,10 @@ type UserService interface {
 	QrPreLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (ok bool, err error)
 	ConfirmQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (err error)
 	CancelQrLogin(ctx context.Context, ticket string, uid util.UUID, requestId string) (err error)
-	Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) (err error)
-	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (userinfo *models.User, err error)
-	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (userinfo *models.User, err error)
-	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) (err error)
+	Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) (err error, requestId string)
+	GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (userinfo *models.User, err error, requestId string)
+	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (userinfo *models.User, err error, requestId string)
+	ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) (err error, requestId string)
 	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (ok bool, uid util.UUID, requestId string, err error)
 	ResetPassword(ctx context.Context, targetUserId, requestUserId util.UUID, newPwd, requestId, VerifyCode string) (err error)
 	StartBindEmail(ctx context.Context, targetUserId, requestUserId util.UUID, newEmail string) (requestId string, err error)
@@ -56,9 +56,15 @@ type UserService interface {
 	StartChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID) (requestId string, err error)
 	VerifyNewPhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, newPhone, RequestId string) (requestId string, err error)
 	CompleteChangePhone(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error)
-	UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (v int, err error)
+	UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (v int, err error, requestId string)
 	GetVersion(ctx context.Context, userId util.UUID) (v int, err error)
 	AddVersion(ctx context.Context, userId util.UUID) (err error)
+	StartDeactivateUser(ctx context.Context, targetUserId, requestUserId util.UUID, queryType QueryType) (requestId string, err error)
+	DeactivateUser(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error)
+	StartReactiveUser(ctx context.Context, requestUserId util.UUID, phone, email, username string) (allow bool, targetUserId string, requestId string, err error)
+	ReactiveUser(ctx context.Context, targetUserId, requestUserId util.UUID, version int, requestId string) (v int, err error)
+	StartDeleteUser(ctx context.Context, targetUserId, requestUserId util.UUID, queryType QueryType) (requestId string, err error)
+	DeleteUser(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string) (err error, RequestId string)
 }
 
 type ServiceImpl struct {
@@ -77,10 +83,16 @@ func (s *ServiceImpl) GetRedis() *redis.Client {
 	return s.Rds
 }
 
-func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) error {
+func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *models.UserLogin) (error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return err, ""
+	}
 
 	if u == nil || uLogin == nil || u.Gender == 0 {
-		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
 	uid := util.NewUUID()
@@ -92,42 +104,60 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 	uLogin.Password = Encryption(uLogin.Password)
 
 	if err := s.userRepo.CreateUser(ctx, u, uLogin); err != nil {
-		return ParseRepoErrorToCommonError(err, "用户注册失败")
+		return ParseRepoErrorToCommonError(err, "用户注册失败"), requestId
 	}
 
-	return nil
+	return nil, requestId
 }
 
-func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*models.User, *models.Token, error) {
+func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*models.User, *models.Token, error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+	if err != nil {
+		return nil, nil, err, ""
+	}
 
 	if email == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
 	usr, err := s.userRepo.GetUserByEmail(ctx, email)
 
-	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
-
+	return s.LoginWithResp(ctx, usr, pwd, err, true, requestId)
 }
 
-func (s *ServiceImpl) PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error) {
+func (s *ServiceImpl) PhoneLogin(ctx context.Context, phone, pwd string) (*models.User, *models.Token, error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return nil, nil, err, ""
+	}
+
 	if phone == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
-	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
+	return s.LoginWithResp(ctx, usr, pwd, err, true, requestId)
 }
 
-func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error) {
+func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (*models.User, *models.Token, error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return nil, nil, err, ""
+	}
+
 	if username == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil), requestId
 	}
 
 	usr, err := s.userRepo.GetUserByUsername(ctx, username)
 
-	return s.LoginWithResp(ctx, usr, pwd, err, true, "")
+	return s.LoginWithResp(ctx, usr, pwd, err, true, requestId)
 }
 
 func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string) (string, error) {
@@ -178,7 +208,7 @@ func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId strin
 
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
-	resp, token, err := s.LoginWithResp(ctx, usr, "", err, false, requestId)
+	resp, token, err, _ := s.LoginWithResp(ctx, usr, "", err, false, requestId)
 
 	//登录成功,删除凭证
 	if err == nil {
@@ -323,7 +353,7 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 	//校验成功状态
 	usr, err := s.userRepo.GetUserByID(ctx, uid)
 
-	usr, token, err := s.LoginWithResp(ctx, usr, "", err, false, requestId)
+	usr, token, err, requestId := s.LoginWithResp(ctx, usr, "", err, false, requestId)
 
 	if err != nil {
 		return 6, nil, nil, err
@@ -376,13 +406,19 @@ func (s *ServiceImpl) CancelQrLogin(ctx context.Context, ticket string, uid util
 	return s.ConfirmOrCancelQrLogin(ctx, ticket, uid, requestId, 5)
 }
 
-func (s *ServiceImpl) Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) error {
+func (s *ServiceImpl) Logout(ctx context.Context, reqeustUid, targetUid util.UUID, token *models.Token) (error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return err, ""
+	}
 
 	//权限校验
 
 	//业务代码
 	if token == nil {
-		return cerrors.NewCommonError(http.StatusBadRequest, "请求错误", "", nil)
+		return cerrors.NewCommonError(http.StatusBadRequest, "请求错误", "", nil), requestId
 	}
 
 	pipe := s.Rds.Pipeline()
@@ -392,16 +428,22 @@ func (s *ServiceImpl) Logout(ctx context.Context, reqeustUid, targetUid util.UUI
 	pipe.Set(ctx, util.TakeKey("user_token_used", "access", token.AccessToken), true, 7*24*time.Hour)
 
 	if _, err := pipe.Exec(ctx); err != nil {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", "", err)
+		return cerrors.NewCommonError(http.StatusInternalServerError, "redis错误", "", err), requestId
 	}
 
-	return nil
+	return nil, requestId
 }
 
-func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (*models.User, error) {
+func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, requestUserId util.UUID) (*models.User, error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return nil, err, ""
+	}
 
 	if targetUserId.IsZero() || requestUserId.IsZero() {
-		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil)
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil), requestId
 	}
 
 	wrapper := serializer.NewSerializerWrapper(serializer.JSON)
@@ -422,11 +464,11 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 	usr, err := simple.QueryWithCache()
 
 	if err != nil {
-		return nil, ParseRepoErrorToCommonError(err, "未知异常")
+		return nil, ParseRepoErrorToCommonError(err, "未知异常"), requestId
 	}
 
 	if usr == nil {
-		return nil, cerrors.NewCommonError(http.StatusBadRequest, "用户不存在或者已经删除", "", nil)
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "用户不存在或者已经删除", "", nil), requestId
 	}
 
 	return &models.User{
@@ -437,14 +479,20 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 		Phone:    usr.Phone,
 		Gender:   usr.Gender,
 		Avatar:   usr.Avatar,
-	}, nil
+	}, nil, requestId
 
 }
 
-func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error) {
+func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId util.UUID, queryType QueryType, serialType serializer.SerializerType) (*models.User, error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return nil, err, ""
+	}
 
 	if sign == "" || requestUserId.IsZero() {
-		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil)
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil), requestId
 	}
 
 	var suffix string
@@ -457,7 +505,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 	case USERNAME:
 		suffix = "username"
 	default:
-		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil)
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "参数错误", "", nil), requestId
 	}
 
 	wrapper := serializer.NewSerializerWrapper(serialType)
@@ -486,11 +534,11 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 	usr, err := simple.QueryWithCache()
 
 	if err != nil {
-		return nil, ParseRepoErrorToCommonError(err, "未知异常")
+		return nil, ParseRepoErrorToCommonError(err, "未知异常"), requestId
 	}
 
 	if usr == nil {
-		return nil, cerrors.NewCommonError(http.StatusBadRequest, "用户不存在或者已经删除", "", nil)
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "用户不存在或者已经删除", "", nil), requestId
 	}
 
 	return &models.User{
@@ -501,27 +549,33 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 		Phone:    usr.Phone,
 		Gender:   usr.Gender,
 		Avatar:   usr.Avatar,
-	}, nil
+	}, nil, requestId
 
 }
 
-func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) error {
+func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestUserId util.UUID, oldPwd, newPwd string) (error, string) {
+
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
+	if err != nil {
+		return err, ""
+	}
 
 	ok, err := s.userRepo.ComparePassword(ctx, targetUserId, Encryption(oldPwd))
 
 	if err != nil {
-		return ParseRepoErrorToCommonError(err, "修改失败")
+		return ParseRepoErrorToCommonError(err, "修改失败"), requestId
 	}
 
 	if !ok {
-		return cerrors.NewCommonError(http.StatusBadRequest, "旧密码错误", "", nil)
+		return cerrors.NewCommonError(http.StatusBadRequest, "旧密码错误", "", nil), requestId
 	}
 
 	if err := s.userRepo.UpdatePassword(ctx, targetUserId, Encryption(newPwd)); err != nil {
-		return ParseRepoErrorToCommonError(err, "修改失败")
+		return ParseRepoErrorToCommonError(err, "修改失败"), requestId
 	}
 
-	return nil
+	return nil, requestId
 }
 
 func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer.SerializerType, msgType uint64) (bool, util.UUID, string, error) {
@@ -532,7 +586,7 @@ func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType
 		return false, util.NewUUID(), "", err
 	}
 
-	usr, err := s.GetUserInfoBySpecialSig(ctx, sign, util.SystemUUID, queryType, serialType)
+	usr, err, _ := s.GetUserInfoBySpecialSig(ctx, sign, util.SystemUUID, queryType, serialType)
 	if err != nil {
 		return false, util.NewUUID(), "", err
 	}
@@ -588,6 +642,10 @@ func (s *ServiceImpl) ResetPassword(ctx context.Context, targetUserId, requestUs
 
 func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string, phone string) error {
 
+	if phone == "" {
+		return cerrors.NewCommonError(http.StatusForbidden, "用户未绑定手机号,请绑定", "", nil)
+	}
+
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
 	//TODO 这里之后调用发送验证码的逻辑
@@ -607,6 +665,11 @@ func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string, phone strin
 }
 
 func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string, email string) error {
+
+	if email == "" {
+		return cerrors.NewCommonError(http.StatusForbidden, "用户未绑定邮箱,请绑定", "", nil)
+	}
+
 	vCode := fmt.Sprintf("%06d", rand.Intn(1000000))
 
 	//TODO 这里之后调用发送验证码的逻辑
@@ -671,11 +734,17 @@ func (s *ServiceImpl) CompleteChangePhone(ctx context.Context, targetUserId, req
 	return s.CompleteChangePhoneOrEmail(ctx, targetUserId, requestUserId, verifyCode, requestId, version, PHONE)
 }
 
-func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (int, error) {
+func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestUserId util.UUID, nickName, avatar string, gender uint64, version int) (int, error, string) {
 
-	usr, err := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+
 	if err != nil {
-		return version, err
+		return version, err, ""
+	}
+
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	if err != nil {
+		return version, err, requestId
 	}
 
 	usr.NickName = nickName
@@ -685,12 +754,12 @@ func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestU
 	v, err := s.userRepo.UpdateUser(ctx, usr, requestUserId)
 
 	if err != nil {
-		return version, ParseRepoErrorToCommonError(err, "服务器错误")
+		return version, ParseRepoErrorToCommonError(err, "服务器错误"), requestId
 	}
 
 	s.CleanCache(ctx, usr)
 
-	return v, nil
+	return v, nil, requestId
 }
 
 func (s *ServiceImpl) GetVersion(ctx context.Context, userId util.UUID) (v int, err error) {
@@ -710,6 +779,163 @@ func (s *ServiceImpl) AddVersion(ctx context.Context, userId util.UUID) (err err
 	}
 	defer s.Rds.Del(ctx, util.TakeKey("userservice", "user", "version", userId))
 	return nil
+}
+
+func (s *ServiceImpl) StartDeactivateUser(ctx context.Context, targetUserId, requestUserId util.UUID, queryType QueryType) (requestId string, err error) {
+
+	requestId, err = s.GenerateRequestId(ctx, 10*time.Minute)
+	if err != nil {
+		return "", err
+	}
+
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+
+	if err != nil {
+		return "", err
+	}
+
+	switch queryType {
+	case PHONE:
+		if err = s.SendPhoneCode(ctx, util.TakeKey("userservice", "user", "deactivate", targetUserId), usr.Phone); err != nil {
+			return "", err
+		}
+	case EMAIL:
+		if err = s.SendEmailCode(ctx, util.TakeKey("userservice", "user", "deactivate", targetUserId), usr.Email); err != nil {
+			return "", err
+		}
+	default:
+		return "", cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil)
+	}
+
+	return requestId, nil
+}
+
+func (s *ServiceImpl) DeactivateUser(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string, version int) (v int, err error) {
+
+	if err = s.VerityRequestID(ctx, requestId); err != nil {
+		return version, err
+	}
+
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	if err != nil {
+		return version, err
+	}
+
+	vCode, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "deactivate", targetUserId)).Result()
+
+	if err != nil {
+		return version, ParseRedisErr(err, requestId)
+	}
+
+	//校验验证码
+	if verifyCode != vCode {
+		return version, cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil)
+	}
+
+	v, err = s.userRepo.FreezeUser(ctx, targetUserId, version, requestUserId)
+
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	s.CleanCache(ctx, usr)
+
+	return v, nil
+}
+
+func (s *ServiceImpl) StartReactiveUser(ctx context.Context, requestUserId util.UUID, phone, email, username string) (allow bool, targetUserId string, requestId string, err error) {
+	requestId, err = s.GenerateRequestId(ctx, 10*time.Minute)
+
+	if err != nil {
+		return false, "", "", err
+	}
+
+	usr, err := s.userRepo.GetUserByUsername(ctx, username)
+
+	if usr == nil {
+		return false, "", "", cerrors.NewCommonError(http.StatusBadRequest, "用户名错误", "", nil)
+	}
+
+	if err != nil {
+		return false, "", "", ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	if usr.Phone == phone && usr.Email == email {
+		return true, usr.ID.MarshalBase64(), requestId, nil
+	}
+
+	return false, "", requestId, nil
+}
+
+func (s *ServiceImpl) ReactiveUser(ctx context.Context, targetUserId, requestUserId util.UUID, version int, requestId string) (v int, err error) {
+
+	if err = s.VerityRequestID(ctx, requestId); err != nil {
+		return version, err
+	}
+
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	if err != nil {
+		return version, err
+	}
+
+	v, err = s.userRepo.UnfreezeUser(ctx, targetUserId, version, requestUserId)
+	if err != nil {
+		return version, ParseRepoErrorToCommonError(err, "服务器异常")
+	}
+
+	s.CleanCache(ctx, usr)
+
+	return v, nil
+}
+
+func (s *ServiceImpl) StartDeleteUser(ctx context.Context, targetUserId, requestUserId util.UUID, queryType QueryType) (requestId string, err error) {
+	requestId, err = s.GenerateRequestId(ctx, 1*time.Second)
+	if err != nil {
+		return "", err
+	}
+
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+
+	if err != nil {
+		return requestId, err
+	}
+
+	switch queryType {
+	case PHONE:
+		if err := s.SendPhoneCode(ctx, util.TakeKey("userservice", "user", "delete", targetUserId), usr.Phone); err != nil {
+			return requestId, err
+		}
+	case EMAIL:
+		if err := s.SendEmailCode(ctx, util.TakeKey("userservice", "user", "delete", targetUserId), usr.Email); err != nil {
+			return requestId, err
+		}
+	default:
+		return requestId, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil)
+	}
+
+	return requestId, nil
+}
+
+func (s *ServiceImpl) DeleteUser(ctx context.Context, targetUserId, requestUserId util.UUID, verifyCode, requestId string) (err error, RequestId string) {
+	if err = s.VerityRequestID(ctx, requestId); err != nil {
+		return err, requestId
+	}
+
+	vCode, err := s.Rds.Get(ctx, util.TakeKey("userservice", "user", "delete", targetUserId)).Result()
+
+	if err != nil {
+		return ParseRedisErr(err, requestId), requestId
+	}
+
+	if verifyCode != vCode {
+		return cerrors.NewCommonError(http.StatusBadRequest, "验证码错误", requestId, nil), requestId
+	}
+
+	if err = s.userRepo.DeleteUser(ctx, targetUserId, requestUserId); err != nil {
+		return ParseRepoErrorToCommonError(err, "服务器异常"), requestId
+	}
+
+	return nil, requestId
 }
 
 func (s *ServiceImpl) ConfirmOrCancelQrLogin(
@@ -849,7 +1075,7 @@ func (s *ServiceImpl) StartChangePhoneOrEmail(ctx context.Context, targetUserId,
 	}
 
 	//获取用户信息
-	usr, err := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
 
 	if err != nil {
 		return "", err
@@ -887,7 +1113,7 @@ func (s *ServiceImpl) VerifyNewPhoneOrEmail(ctx context.Context, targetUserId, r
 	}
 
 	//获取用户信息(因为前面有缓存这次查询可以接受)
-	usr, err := s.GetUserInfoById(ctx, targetUserId, requestUserId)
+	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
 	if err != nil {
 		return requestId, err
 	}
@@ -1039,15 +1265,15 @@ func (s *ServiceImpl) LoginWithResp(
 	err error,
 	hasPwd bool,
 	requestId string,
-) (*models.User, *models.Token, error) {
+) (*models.User, *models.Token, error, string) {
 
 	//错误处理部分
 	if err != nil {
-		return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败")
+		return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败"), requestId
 	}
 
 	if usr == nil {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "获取用户失败", requestId, nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "获取用户失败", requestId, nil), requestId
 	}
 
 	if hasPwd {
@@ -1055,23 +1281,23 @@ func (s *ServiceImpl) LoginWithResp(
 		ok, err := s.userRepo.ComparePassword(ctx, usr.ID, Encryption(pwd))
 		if err != nil {
 			//错误处理部分
-			return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败")
+			return nil, nil, ParseRepoErrorToCommonError(err, "用户登录失败"), requestId
 		}
 
 		if !ok {
-			return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "用户名或者密码错误", requestId, nil)
+			return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "用户名或者密码错误", requestId, nil), requestId
 		}
 	}
 
 	if usr.Status == 1 {
-		return nil, nil, cerrors.NewCommonError(http.StatusNotAcceptable, "用户已被冻结", requestId, nil)
+		return nil, nil, cerrors.NewCommonError(http.StatusNotAcceptable, "用户已被冻结", requestId, nil), requestId
 	}
 
 	//获取token部分
 	resp, err := s.RequestToken(ctx, usr.ID, *usr.Version)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, err, requestId
 	}
 
 	loginUsr := &models.User{
@@ -1087,7 +1313,7 @@ func (s *ServiceImpl) LoginWithResp(
 	return loginUsr, &models.Token{
 		AccessToken:  resp.AccessToken,
 		RefreshToken: resp.RefreshToken,
-	}, nil
+	}, nil, requestId
 
 }
 

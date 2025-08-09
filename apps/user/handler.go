@@ -115,8 +115,9 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		},
 	}
 
-	if err = s.userService.Register(ctx, u, uLogin); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	err, requestId := s.userService.Register(ctx, u, uLogin)
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	return &user.OperationResult{
@@ -124,6 +125,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Code:      http.StatusOK,
 		Message:   "创建用户成功",
 		Timestamp: time.Now().String(),
+		RequestId: requestId,
 		Version:   0,
 	}, err
 }
@@ -131,12 +133,12 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 // EmailLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginReq) (resp *user.LoginResp, err error) {
 
-	login, token, err := s.userService.EmailLogin(ctx, req.Email, req.Password)
+	login, token, err, requestId := s.userService.EmailLogin(ctx, req.Email, req.Password)
 
 	resp = &user.LoginResp{}
 
 	if err != nil {
-		_, err := parseServiceErrToHandlerError(ctx, err, "", 0)
+		_, err := parseServiceErrToHandlerError(ctx, err, requestId, 0)
 		return &user.LoginResp{}, err
 	}
 
@@ -155,7 +157,7 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 // PhoneLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginReq) (resp *user.LoginResp, err error) {
 
-	login, token, err := s.userService.PhoneLogin(ctx, req.Phone, req.Password)
+	login, token, err, _ := s.userService.PhoneLogin(ctx, req.Phone, req.Password)
 
 	resp = &user.LoginResp{}
 
@@ -187,7 +189,7 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 // AccountLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLoginReq) (resp *user.LoginResp, err error) {
 
-	login, token, err := s.userService.UserNameLogin(ctx, req.Username, req.Password)
+	login, token, err, _ := s.userService.UserNameLogin(ctx, req.Username, req.Password)
 
 	if err != nil {
 
@@ -468,11 +470,13 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 		return res, err
 	}
 
-	if err = s.userService.Logout(ctx, requestUid, targetUid, &models.Token{
+	err, requestId := s.userService.Logout(ctx, requestUid, targetUid, &models.Token{
 		AccessToken:  req.AccessToken,
 		RefreshToken: req.RefreshToken,
-	}); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	})
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	return &user.OperationResult{
@@ -480,6 +484,7 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 		Code:      http.StatusOK,
 		Message:   "成功退出",
 		Timestamp: time.Now().String(),
+		RequestId: requestId,
 		Version:   0,
 	}, nil
 
@@ -499,8 +504,10 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 		return res, err
 	}
 
-	if err = s.userService.ChangePassword(ctx, targetUid, requestUid, req.OldPassword, req.NewPassword); err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	err, requestId := s.userService.ChangePassword(ctx, targetUid, requestUid, req.OldPassword, req.NewPassword)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 
 	return &user.OperationResult{
@@ -508,6 +515,7 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 		Code:      http.StatusOK,
 		Message:   "修改密码成功",
 		Timestamp: time.Now().String(),
+		RequestId: requestId,
 		Version:   0,
 	}, nil
 }
@@ -892,10 +900,10 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 		}, err
 	}
 
-	userinfo, err := s.userService.GetUserInfoById(ctx, targetUid, requestUid)
+	userinfo, err, requestId := s.userService.GetUserInfoById(ctx, targetUid, requestUid)
 
 	if err != nil {
-		result, err := parseServiceErrToHandlerError(ctx, err, "", 0)
+		result, err := parseServiceErrToHandlerError(ctx, err, requestId, 0)
 		return &user.UserInfoResp{
 			Result: result,
 		}, err
@@ -908,6 +916,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 				Code:      http.StatusForbidden,
 				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
+				RequestId: requestId,
 				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
@@ -919,6 +928,7 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 			Code:      http.StatusOK,
 			Message:   "查询成功",
 			Timestamp: time.Now().String(),
+			RequestId: requestId,
 			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
@@ -944,12 +954,14 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 	var userinfo *models.User
 
+	requestId := ""
+
 	if req.GetUsername() != "" {
-		userinfo, err = s.userService.GetUserInfoBySpecialSig(ctx, req.GetUsername(), requestUid, service.USERNAME, serializer.JSON)
+		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, req.GetUsername(), requestUid, service.USERNAME, serializer.JSON)
 	} else if req.GetEmail() != "" {
-		userinfo, err = s.userService.GetUserInfoBySpecialSig(ctx, req.GetEmail(), requestUid, service.EMAIL, serializer.JSON)
+		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, req.GetEmail(), requestUid, service.EMAIL, serializer.JSON)
 	} else if req.GetPhone() != "" {
-		userinfo, err = s.userService.GetUserInfoBySpecialSig(ctx, req.GetPhone(), requestUid, service.PHONE, serializer.JSON)
+		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, req.GetPhone(), requestUid, service.PHONE, serializer.JSON)
 	} else {
 		return &user.UserInfoResp{
 			Result: &user.OperationResult{
@@ -957,13 +969,14 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 				Code:      http.StatusBadRequest,
 				Message:   "参数错误",
 				Timestamp: time.Now().String(),
+				RequestId: requestId,
 				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
 	}
 
 	if err != nil {
-		result, err := parseServiceErrToHandlerError(ctx, err, "", 0)
+		result, err := parseServiceErrToHandlerError(ctx, err, requestId, 0)
 		return &user.UserInfoResp{
 			Result: result,
 		}, err
@@ -976,6 +989,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 				Code:      http.StatusForbidden,
 				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
+				RequestId: requestId,
 				Version:   0,
 			},
 		}, cerrors.NewGRPCError(http.StatusForbidden, "用户不存在或已经删除")
@@ -987,6 +1001,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 			Code:      http.StatusOK,
 			Message:   "查询成功",
 			Timestamp: time.Now().String(),
+			RequestId: requestId,
 			Version:   0,
 		},
 		UserInfo: &user.UserInfo{
@@ -1013,10 +1028,10 @@ func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUs
 		return res, err
 	}
 
-	v, err := s.userService.UpdateUserInfo(ctx, targetUid, requestUid, req.Nickname, req.Avatar, req.Gender, int(req.Version))
+	v, err, requestId := s.userService.UpdateUserInfo(ctx, targetUid, requestUid, req.Nickname, req.Avatar, req.Gender, int(req.Version))
 
 	if err != nil {
-		return parseServiceErrToHandlerError(ctx, err, "", uint64(v))
+		return parseServiceErrToHandlerError(ctx, err, requestId, uint64(v))
 	}
 
 	return &user.OperationResult{
@@ -1024,6 +1039,7 @@ func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUs
 		Code:      http.StatusOK,
 		Message:   "修改成功",
 		Timestamp: time.Now().String(),
+		RequestId: requestId,
 		Version:   uint64(v),
 	}, nil
 }
@@ -1034,40 +1050,190 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, req *user.ListUsersReq)
 	return
 }
 
-// SearchUserByNickname implements the UserServiceImpl interface.
-func (s *UserServiceImpl) SearchUserByNickname(ctx context.Context, req *user.SearchUserByNicknameReq) (resp *user.SearchUserByNicknameResp, err error) {
+// SearchUserByUsername implements the UserServiceImpl interface.
+func (s *UserServiceImpl) SearchUserByUsername(ctx context.Context, req *user.SearchUserByUsernameReq) (resp *user.SearchUserByUsernameResp, err error) {
 	// TODO: Your code here...
 	return
 }
 
 // StartDeactivateUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartDeactivateUser(ctx context.Context, req *user.StartDeactivateReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	requestId, err := s.userService.StartDeactivateUser(ctx, targetUid, requestUid, service.QueryType(req.QueryType))
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, "", 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "请求成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // DeactivateUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) DeactivateUser(ctx context.Context, req *user.DeactivateUserReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
+
+	if err != nil {
+		return res, err
+	}
+
+	v, err := s.userService.DeactivateUser(ctx, targetUid, requestUid, req.VerificationCode, req.RequestId, int(req.Version))
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, req.RequestId, uint64(v))
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "请求成功",
+		Timestamp: time.Now().String(),
+		RequestId: req.RequestId,
+		Version:   uint64(v),
+	}, nil
+}
+
+// StartReactiveUser implements the UserServiceImpl interface.
+func (s *UserServiceImpl) StartReactiveUser(ctx context.Context, req *user.StartReactivateUserReq) (resp *user.StartReactivateUserResp, err error) {
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return &user.StartReactivateUserResp{
+			Op:              res,
+			TargetUserId:    "",
+			AllowedReactive: false,
+		}, err
+	}
+
+	allow, targetUserId, requestId, err := s.userService.StartReactiveUser(ctx, requestUid, req.Phone, req.Email, req.Username)
+	if err != nil {
+		handlerError, err := parseServiceErrToHandlerError(ctx, err, "", 0)
+		return &user.StartReactivateUserResp{
+			Op:              handlerError,
+			TargetUserId:    "",
+			AllowedReactive: false,
+		}, err
+	}
+
+	return &user.StartReactivateUserResp{
+		Op: &user.OperationResult{
+			Success:   true,
+			Code:      http.StatusOK,
+			Message:   "请求成功",
+			RequestId: requestId,
+			Timestamp: time.Now().String(),
+			Version:   0,
+		},
+		TargetUserId:    targetUserId,
+		AllowedReactive: allow,
+	}, nil
 }
 
 // ReactivateUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ReactivateUser(ctx context.Context, req *user.ReactivateUserReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, req.Version)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, req.Version)
+
+	if err != nil {
+		return res, err
+	}
+
+	v, err := s.userService.ReactiveUser(ctx, targetUid, requestUid, int(req.Version), req.RequestId)
+
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, req.RequestId, 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "请求成功",
+		RequestId: req.RequestId,
+		Timestamp: time.Now().String(),
+		Version:   uint64(v),
+	}, nil
 }
 
 // StartDeleteUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartDeleteUser(ctx context.Context, req *user.StartDeleteReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	requestId, err := s.userService.StartDeleteUser(ctx, targetUid, requestUid, service.QueryType(req.QueryType))
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "发送成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // DeleteUser implements the UserServiceImpl interface.
 func (s *UserServiceImpl) DeleteUser(ctx context.Context, req *user.DeleteUserReq) (resp *user.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	res, err, targetUid := unmarshalUID(ctx, req.TargetUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	res, err, requestUid := unmarshalUID(ctx, req.RequestUserId, 0)
+
+	if err != nil {
+		return res, err
+	}
+
+	err, requestId := s.userService.DeleteUser(ctx, targetUid, requestUid, req.VerificationCode, req.RequestId)
+	if err != nil {
+		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
+	}
+
+	return &user.OperationResult{
+		Success:   true,
+		Code:      http.StatusOK,
+		Message:   "注销成功",
+		RequestId: requestId,
+		Timestamp: time.Now().String(),
+	}, nil
 }
 
 // GetVersion implements the UserServiceImpl interface.

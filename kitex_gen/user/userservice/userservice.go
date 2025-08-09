@@ -225,10 +225,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"SearchUserByNickname": kitex.NewMethodInfo(
-		searchUserByNicknameHandler,
-		newSearchUserByNicknameArgs,
-		newSearchUserByNicknameResult,
+	"SearchUserByUsername": kitex.NewMethodInfo(
+		searchUserByUsernameHandler,
+		newSearchUserByUsernameArgs,
+		newSearchUserByUsernameResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -243,6 +243,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		deactivateUserHandler,
 		newDeactivateUserArgs,
 		newDeactivateUserResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"StartReactiveUser": kitex.NewMethodInfo(
+		startReactiveUserHandler,
+		newStartReactiveUserArgs,
+		newStartReactiveUserResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -3677,52 +3684,52 @@ func (p *ListUsersResult) GetResult() interface{} {
 	return p.Success
 }
 
-func searchUserByNicknameHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func searchUserByUsernameHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(user.SearchUserByNicknameReq)
+		req := new(user.SearchUserByUsernameReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(user.UserService).SearchUserByNickname(ctx, req)
+		resp, err := handler.(user.UserService).SearchUserByUsername(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *SearchUserByNicknameArgs:
-		success, err := handler.(user.UserService).SearchUserByNickname(ctx, s.Req)
+	case *SearchUserByUsernameArgs:
+		success, err := handler.(user.UserService).SearchUserByUsername(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*SearchUserByNicknameResult)
+		realResult := result.(*SearchUserByUsernameResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newSearchUserByNicknameArgs() interface{} {
-	return &SearchUserByNicknameArgs{}
+func newSearchUserByUsernameArgs() interface{} {
+	return &SearchUserByUsernameArgs{}
 }
 
-func newSearchUserByNicknameResult() interface{} {
-	return &SearchUserByNicknameResult{}
+func newSearchUserByUsernameResult() interface{} {
+	return &SearchUserByUsernameResult{}
 }
 
-type SearchUserByNicknameArgs struct {
-	Req *user.SearchUserByNicknameReq
+type SearchUserByUsernameArgs struct {
+	Req *user.SearchUserByUsernameReq
 }
 
-func (p *SearchUserByNicknameArgs) Marshal(out []byte) ([]byte, error) {
+func (p *SearchUserByUsernameArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *SearchUserByNicknameArgs) Unmarshal(in []byte) error {
-	msg := new(user.SearchUserByNicknameReq)
+func (p *SearchUserByUsernameArgs) Unmarshal(in []byte) error {
+	msg := new(user.SearchUserByUsernameReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -3730,38 +3737,38 @@ func (p *SearchUserByNicknameArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var SearchUserByNicknameArgs_Req_DEFAULT *user.SearchUserByNicknameReq
+var SearchUserByUsernameArgs_Req_DEFAULT *user.SearchUserByUsernameReq
 
-func (p *SearchUserByNicknameArgs) GetReq() *user.SearchUserByNicknameReq {
+func (p *SearchUserByUsernameArgs) GetReq() *user.SearchUserByUsernameReq {
 	if !p.IsSetReq() {
-		return SearchUserByNicknameArgs_Req_DEFAULT
+		return SearchUserByUsernameArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *SearchUserByNicknameArgs) IsSetReq() bool {
+func (p *SearchUserByUsernameArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *SearchUserByNicknameArgs) GetFirstArgument() interface{} {
+func (p *SearchUserByUsernameArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type SearchUserByNicknameResult struct {
-	Success *user.SearchUserByNicknameResp
+type SearchUserByUsernameResult struct {
+	Success *user.SearchUserByUsernameResp
 }
 
-var SearchUserByNicknameResult_Success_DEFAULT *user.SearchUserByNicknameResp
+var SearchUserByUsernameResult_Success_DEFAULT *user.SearchUserByUsernameResp
 
-func (p *SearchUserByNicknameResult) Marshal(out []byte) ([]byte, error) {
+func (p *SearchUserByUsernameResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *SearchUserByNicknameResult) Unmarshal(in []byte) error {
-	msg := new(user.SearchUserByNicknameResp)
+func (p *SearchUserByUsernameResult) Unmarshal(in []byte) error {
+	msg := new(user.SearchUserByUsernameResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -3769,22 +3776,22 @@ func (p *SearchUserByNicknameResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *SearchUserByNicknameResult) GetSuccess() *user.SearchUserByNicknameResp {
+func (p *SearchUserByUsernameResult) GetSuccess() *user.SearchUserByUsernameResp {
 	if !p.IsSetSuccess() {
-		return SearchUserByNicknameResult_Success_DEFAULT
+		return SearchUserByUsernameResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *SearchUserByNicknameResult) SetSuccess(x interface{}) {
-	p.Success = x.(*user.SearchUserByNicknameResp)
+func (p *SearchUserByUsernameResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.SearchUserByUsernameResp)
 }
 
-func (p *SearchUserByNicknameResult) IsSetSuccess() bool {
+func (p *SearchUserByUsernameResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *SearchUserByNicknameResult) GetResult() interface{} {
+func (p *SearchUserByUsernameResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -4007,6 +4014,117 @@ func (p *DeactivateUserResult) IsSetSuccess() bool {
 }
 
 func (p *DeactivateUserResult) GetResult() interface{} {
+	return p.Success
+}
+
+func startReactiveUserHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.StartReactivateUserReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).StartReactiveUser(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *StartReactiveUserArgs:
+		success, err := handler.(user.UserService).StartReactiveUser(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*StartReactiveUserResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newStartReactiveUserArgs() interface{} {
+	return &StartReactiveUserArgs{}
+}
+
+func newStartReactiveUserResult() interface{} {
+	return &StartReactiveUserResult{}
+}
+
+type StartReactiveUserArgs struct {
+	Req *user.StartReactivateUserReq
+}
+
+func (p *StartReactiveUserArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *StartReactiveUserArgs) Unmarshal(in []byte) error {
+	msg := new(user.StartReactivateUserReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var StartReactiveUserArgs_Req_DEFAULT *user.StartReactivateUserReq
+
+func (p *StartReactiveUserArgs) GetReq() *user.StartReactivateUserReq {
+	if !p.IsSetReq() {
+		return StartReactiveUserArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *StartReactiveUserArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *StartReactiveUserArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type StartReactiveUserResult struct {
+	Success *user.StartReactivateUserResp
+}
+
+var StartReactiveUserResult_Success_DEFAULT *user.StartReactivateUserResp
+
+func (p *StartReactiveUserResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *StartReactiveUserResult) Unmarshal(in []byte) error {
+	msg := new(user.StartReactivateUserResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *StartReactiveUserResult) GetSuccess() *user.StartReactivateUserResp {
+	if !p.IsSetSuccess() {
+		return StartReactiveUserResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *StartReactiveUserResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.StartReactivateUserResp)
+}
+
+func (p *StartReactiveUserResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *StartReactiveUserResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -4875,11 +4993,11 @@ func (p *kClient) ListUsers(ctx context.Context, Req *user.ListUsersReq) (r *use
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) SearchUserByNickname(ctx context.Context, Req *user.SearchUserByNicknameReq) (r *user.SearchUserByNicknameResp, err error) {
-	var _args SearchUserByNicknameArgs
+func (p *kClient) SearchUserByUsername(ctx context.Context, Req *user.SearchUserByUsernameReq) (r *user.SearchUserByUsernameResp, err error) {
+	var _args SearchUserByUsernameArgs
 	_args.Req = Req
-	var _result SearchUserByNicknameResult
-	if err = p.c.Call(ctx, "SearchUserByNickname", &_args, &_result); err != nil {
+	var _result SearchUserByUsernameResult
+	if err = p.c.Call(ctx, "SearchUserByUsername", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
@@ -4900,6 +5018,16 @@ func (p *kClient) DeactivateUser(ctx context.Context, Req *user.DeactivateUserRe
 	_args.Req = Req
 	var _result DeactivateUserResult
 	if err = p.c.Call(ctx, "DeactivateUser", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) StartReactiveUser(ctx context.Context, Req *user.StartReactivateUserReq) (r *user.StartReactivateUserResp, err error) {
+	var _args StartReactiveUserArgs
+	_args.Req = Req
+	var _result StartReactiveUserResult
+	if err = p.c.Call(ctx, "StartReactiveUser", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

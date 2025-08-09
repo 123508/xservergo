@@ -2102,86 +2102,86 @@ func (x *ListUsersResp) GetCurrentPage() int32 {
 	return 0
 }
 
-type SearchUserByNicknameReq struct {
+type SearchUserByUsernameReq struct {
 	Keyword       string `protobuf:"bytes,1,opt,name=keyword" json:"keyword,omitempty"`      // 查询关键字，支持模糊匹配
 	Page          uint64 `protobuf:"varint,2,opt,name=page" json:"page,omitempty"`           // 页码，从1开始
 	PageSize      uint64 `protobuf:"varint,3,opt,name=page_size" json:"page_size,omitempty"` // 每页数量，建议默认20
 	RequestUserId string `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
-func (x *SearchUserByNicknameReq) Reset() { *x = SearchUserByNicknameReq{} }
+func (x *SearchUserByUsernameReq) Reset() { *x = SearchUserByUsernameReq{} }
 
-func (x *SearchUserByNicknameReq) Marshal(in []byte) ([]byte, error) {
+func (x *SearchUserByUsernameReq) Marshal(in []byte) ([]byte, error) {
 	return prutal.MarshalAppend(in, x)
 }
 
-func (x *SearchUserByNicknameReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *SearchUserByUsernameReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *SearchUserByNicknameReq) GetKeyword() string {
+func (x *SearchUserByUsernameReq) GetKeyword() string {
 	if x != nil {
 		return x.Keyword
 	}
 	return ""
 }
 
-func (x *SearchUserByNicknameReq) GetPage() uint64 {
+func (x *SearchUserByUsernameReq) GetPage() uint64 {
 	if x != nil {
 		return x.Page
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameReq) GetPageSize() uint64 {
+func (x *SearchUserByUsernameReq) GetPageSize() uint64 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameReq) GetRequestUserId() string {
+func (x *SearchUserByUsernameReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
 	}
 	return ""
 }
 
-type SearchUserByNicknameResp struct {
+type SearchUserByUsernameResp struct {
 	Users       []*UserInfo `protobuf:"bytes,1,rep,name=users" json:"users,omitempty"`                // 匹配到的用户列表
 	TotalCount  uint64      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"`   // 总数
 	TotalPages  uint64      `protobuf:"varint,3,opt,name=total_pages" json:"total_pages,omitempty"`   // 总页数
 	CurrentPage uint64      `protobuf:"varint,4,opt,name=current_page" json:"current_page,omitempty"` // 当前页
 }
 
-func (x *SearchUserByNicknameResp) Reset() { *x = SearchUserByNicknameResp{} }
+func (x *SearchUserByUsernameResp) Reset() { *x = SearchUserByUsernameResp{} }
 
-func (x *SearchUserByNicknameResp) Marshal(in []byte) ([]byte, error) {
+func (x *SearchUserByUsernameResp) Marshal(in []byte) ([]byte, error) {
 	return prutal.MarshalAppend(in, x)
 }
 
-func (x *SearchUserByNicknameResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *SearchUserByUsernameResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *SearchUserByNicknameResp) GetUsers() []*UserInfo {
+func (x *SearchUserByUsernameResp) GetUsers() []*UserInfo {
 	if x != nil {
 		return x.Users
 	}
 	return nil
 }
 
-func (x *SearchUserByNicknameResp) GetTotalCount() uint64 {
+func (x *SearchUserByUsernameResp) GetTotalCount() uint64 {
 	if x != nil {
 		return x.TotalCount
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameResp) GetTotalPages() uint64 {
+func (x *SearchUserByUsernameResp) GetTotalPages() uint64 {
 	if x != nil {
 		return x.TotalPages
 	}
 	return 0
 }
 
-func (x *SearchUserByNicknameResp) GetCurrentPage() uint64 {
+func (x *SearchUserByUsernameResp) GetCurrentPage() uint64 {
 	if x != nil {
 		return x.CurrentPage
 	}
@@ -2192,6 +2192,7 @@ func (x *SearchUserByNicknameResp) GetCurrentPage() uint64 {
 type StartDeactivateReq struct {
 	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者ID
+	QueryType     uint64 `protobuf:"varint,3,opt,name=QueryType" json:"QueryType,omitempty"`            // 0手机 1邮箱
 }
 
 func (x *StartDeactivateReq) Reset() { *x = StartDeactivateReq{} }
@@ -2214,11 +2215,19 @@ func (x *StartDeactivateReq) GetRequestUserId() string {
 	return ""
 }
 
+func (x *StartDeactivateReq) GetQueryType() uint64 {
+	if x != nil {
+		return x.QueryType
+	}
+	return 0
+}
+
 type DeactivateUserReq struct {
 	TargetUserId     string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId    string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"` // 二次验证码
+	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"` // 验证码
 	RequestId        string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
+	Version          uint64 `protobuf:"varint,5,opt,name=version" json:"version,omitempty"`
 }
 
 func (x *DeactivateUserReq) Reset() { *x = DeactivateUserReq{} }
@@ -2255,11 +2264,96 @@ func (x *DeactivateUserReq) GetRequestId() string {
 	return ""
 }
 
+func (x *DeactivateUserReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type StartReactivateUserReq struct {
+	Phone         string `protobuf:"bytes,1,opt,name=phone" json:"phone,omitempty"`                     // 手机号
+	Email         string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`                     // 邮箱
+	Username      string `protobuf:"bytes,3,opt,name=username" json:"username,omitempty"`               // 用户名
+	RequestUserId string `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"` // 操作者ID
+}
+
+func (x *StartReactivateUserReq) Reset() { *x = StartReactivateUserReq{} }
+
+func (x *StartReactivateUserReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *StartReactivateUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *StartReactivateUserReq) GetPhone() string {
+	if x != nil {
+		return x.Phone
+	}
+	return ""
+}
+
+func (x *StartReactivateUserReq) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *StartReactivateUserReq) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *StartReactivateUserReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type StartReactivateUserResp struct {
+	Op              *OperationResult `protobuf:"bytes,1,opt,name=op" json:"op,omitempty"`
+	TargetUserId    string           `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	AllowedReactive bool             `protobuf:"varint,3,opt,name=allowed_reactive" json:"allowed_reactive,omitempty"`
+}
+
+func (x *StartReactivateUserResp) Reset() { *x = StartReactivateUserResp{} }
+
+func (x *StartReactivateUserResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *StartReactivateUserResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *StartReactivateUserResp) GetOp() *OperationResult {
+	if x != nil {
+		return x.Op
+	}
+	return nil
+}
+
+func (x *StartReactivateUserResp) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *StartReactivateUserResp) GetAllowedReactive() bool {
+	if x != nil {
+		return x.AllowedReactive
+	}
+	return false
+}
+
 type ReactivateUserReq struct {
-	Identity      string  `protobuf:"bytes,1,opt,name=identity" json:"identity,omitempty"`         // 邮箱或手机号
-	Code          string  `protobuf:"bytes,2,opt,name=code" json:"code,omitempty"`                 // 验证码
-	NewPassword   *string `protobuf:"bytes,3,opt,name=new_password" json:"new_password,omitempty"` // 可选新密码
-	RequestUserId string  `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Version       uint64 `protobuf:"varint,3,opt,name=version" json:"version,omitempty"`
+	RequestId     string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *ReactivateUserReq) Reset() { *x = ReactivateUserReq{} }
@@ -2268,23 +2362,9 @@ func (x *ReactivateUserReq) Marshal(in []byte) ([]byte, error) { return prutal.M
 
 func (x *ReactivateUserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *ReactivateUserReq) GetIdentity() string {
+func (x *ReactivateUserReq) GetTargetUserId() string {
 	if x != nil {
-		return x.Identity
-	}
-	return ""
-}
-
-func (x *ReactivateUserReq) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-func (x *ReactivateUserReq) GetNewPassword() string {
-	if x != nil && x.NewPassword != nil {
-		return *x.NewPassword
+		return x.TargetUserId
 	}
 	return ""
 }
@@ -2296,9 +2376,24 @@ func (x *ReactivateUserReq) GetRequestUserId() string {
 	return ""
 }
 
+func (x *ReactivateUserReq) GetVersion() uint64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *ReactivateUserReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 type StartDeleteReq struct {
 	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	QueryType     uint64 `protobuf:"varint,3,opt,name=QueryType" json:"QueryType,omitempty"` // 0手机 1邮箱
 }
 
 func (x *StartDeleteReq) Reset() { *x = StartDeleteReq{} }
@@ -2321,10 +2416,17 @@ func (x *StartDeleteReq) GetRequestUserId() string {
 	return ""
 }
 
+func (x *StartDeleteReq) GetQueryType() uint64 {
+	if x != nil {
+		return x.QueryType
+	}
+	return 0
+}
+
 type DeleteUserReq struct {
 	TargetUserId     string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId    string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"` // 二次验证码
+	VerificationCode string `protobuf:"bytes,3,opt,name=verification_code" json:"verification_code,omitempty"` // 验证码
 	RequestId        string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
 }
 
@@ -2410,9 +2512,10 @@ type UserService interface {
 	GetUserInfoByOthers(ctx context.Context, req *GetUserInfoByOthersReq) (res *UserInfoResp, err error)
 	UpdateUserInfo(ctx context.Context, req *UpdateUserInfoReq) (res *OperationResult, err error)
 	ListUsers(ctx context.Context, req *ListUsersReq) (res *ListUsersResp, err error)
-	SearchUserByNickname(ctx context.Context, req *SearchUserByNicknameReq) (res *SearchUserByNicknameResp, err error)
+	SearchUserByUsername(ctx context.Context, req *SearchUserByUsernameReq) (res *SearchUserByUsernameResp, err error)
 	StartDeactivateUser(ctx context.Context, req *StartDeactivateReq) (res *OperationResult, err error)
 	DeactivateUser(ctx context.Context, req *DeactivateUserReq) (res *OperationResult, err error)
+	StartReactiveUser(ctx context.Context, req *StartReactivateUserReq) (res *StartReactivateUserResp, err error)
 	ReactivateUser(ctx context.Context, req *ReactivateUserReq) (res *OperationResult, err error)
 	StartDeleteUser(ctx context.Context, req *StartDeleteReq) (res *OperationResult, err error)
 	DeleteUser(ctx context.Context, req *DeleteUserReq) (res *OperationResult, err error)

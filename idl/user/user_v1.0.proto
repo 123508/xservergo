@@ -41,11 +41,12 @@ service UserService {
   rpc GetUserInfoByOthers(GetUserInfoByOthersReq) returns (UserInfoResp) {}
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (OperationResult) {}       // 更新用户信息
   rpc ListUsers(ListUsersReq) returns (ListUsersResp) {}                   // 用户列表
-  rpc SearchUserByNickname(SearchUserByNicknameReq) returns (SearchUserByNicknameResp){} // 根据用户昵称模糊查询
+  rpc SearchUserByUsername(SearchUserByUsernameReq) returns (SearchUserByUsernameResp){} // 根据用户昵称模糊查询
 
   // ---------- 账户状态 ---------- //
   rpc StartDeactivateUser(StartDeactivateReq) returns (OperationResult) {} // 预冻结用户
   rpc DeactivateUser(DeactivateUserReq) returns (OperationResult) {}       // 冻结用户
+  rpc StartReactiveUser(StartReactivateUserReq) returns (StartReactivateUserResp){}// 预备解冻用户
   rpc ReactivateUser(ReactivateUserReq) returns (OperationResult) {}       // 解冻用户
   rpc StartDeleteUser(StartDeleteReq) returns (OperationResult) {}         // 预删除用户
   rpc DeleteUser(DeleteUserReq) returns (OperationResult) {}               // 删除用户
@@ -408,14 +409,14 @@ message ListUsersResp {
   int32 current_page = 5;        // 当前页
 }
 
-message SearchUserByNicknameReq {
+message SearchUserByUsernameReq {
   string keyword = 1;      // 查询关键字，支持模糊匹配
   uint64 page = 2;          // 页码，从1开始
   uint64 page_size = 3;     // 每页数量，建议默认20
   string request_user_id=4;
 }
 
-message SearchUserByNicknameResp {
+message SearchUserByUsernameResp {
   repeated UserInfo users = 1;   // 匹配到的用户列表
   uint64 total_count = 2;         // 总数
   uint64 total_pages = 3;         // 总页数
@@ -426,31 +427,47 @@ message SearchUserByNicknameResp {
 message StartDeactivateReq {
   string target_user_id = 1;
   string request_user_id = 2;  // 操作者ID
+  uint64 QueryType = 3;        // 0手机 1邮箱
 }
 
 message DeactivateUserReq {
   string target_user_id = 1;
   string request_user_id = 2;
-  string verification_code = 3;  // 二次验证码
+  string verification_code = 3;  // 验证码
   string request_id=4;
+  uint64 version=5;
+}
+
+message StartReactivateUserReq{
+  string phone=1;     // 手机号
+  string email=2;     // 邮箱
+  string username=3;  // 用户名
+  string request_user_id = 4;  // 操作者ID
+}
+
+message StartReactivateUserResp{
+  OperationResult op=1;
+  string target_user_id=2;
+  bool   allowed_reactive=3;
 }
 
 message ReactivateUserReq {
-  string identity = 1;  // 邮箱或手机号
-  string code = 2;      // 验证码
-  optional string new_password = 3;  // 可选新密码
-  string request_user_id = 4;
+  string target_user_id=1;
+  string request_user_id = 2;
+  uint64 version=3;
+  string request_id=4;
 }
 
 message StartDeleteReq {
   string target_user_id = 1;
   string request_user_id = 2;
+  uint64 QueryType = 3;        // 0手机 1邮箱
 }
 
 message DeleteUserReq {
   string target_user_id = 1;
   string request_user_id = 2;
-  string verification_code = 3;  // 二次验证码
+  string verification_code = 3;  // 验证码
   string request_id=4;
 }
 

@@ -41,9 +41,10 @@ type Client interface {
 	GetUserInfoByOthers(ctx context.Context, Req *user.GetUserInfoByOthersReq, callOptions ...callopt.Option) (r *user.UserInfoResp, err error)
 	UpdateUserInfo(ctx context.Context, Req *user.UpdateUserInfoReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	ListUsers(ctx context.Context, Req *user.ListUsersReq, callOptions ...callopt.Option) (r *user.ListUsersResp, err error)
-	SearchUserByNickname(ctx context.Context, Req *user.SearchUserByNicknameReq, callOptions ...callopt.Option) (r *user.SearchUserByNicknameResp, err error)
+	SearchUserByUsername(ctx context.Context, Req *user.SearchUserByUsernameReq, callOptions ...callopt.Option) (r *user.SearchUserByUsernameResp, err error)
 	StartDeactivateUser(ctx context.Context, Req *user.StartDeactivateReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	DeactivateUser(ctx context.Context, Req *user.DeactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
+	StartReactiveUser(ctx context.Context, Req *user.StartReactivateUserReq, callOptions ...callopt.Option) (r *user.StartReactivateUserResp, err error)
 	ReactivateUser(ctx context.Context, Req *user.ReactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartDeleteUser(ctx context.Context, Req *user.StartDeleteReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	DeleteUser(ctx context.Context, Req *user.DeleteUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
@@ -230,9 +231,9 @@ func (p *kUserServiceClient) ListUsers(ctx context.Context, Req *user.ListUsersR
 	return p.kClient.ListUsers(ctx, Req)
 }
 
-func (p *kUserServiceClient) SearchUserByNickname(ctx context.Context, Req *user.SearchUserByNicknameReq, callOptions ...callopt.Option) (r *user.SearchUserByNicknameResp, err error) {
+func (p *kUserServiceClient) SearchUserByUsername(ctx context.Context, Req *user.SearchUserByUsernameReq, callOptions ...callopt.Option) (r *user.SearchUserByUsernameResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.SearchUserByNickname(ctx, Req)
+	return p.kClient.SearchUserByUsername(ctx, Req)
 }
 
 func (p *kUserServiceClient) StartDeactivateUser(ctx context.Context, Req *user.StartDeactivateReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
@@ -243,6 +244,11 @@ func (p *kUserServiceClient) StartDeactivateUser(ctx context.Context, Req *user.
 func (p *kUserServiceClient) DeactivateUser(ctx context.Context, Req *user.DeactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.DeactivateUser(ctx, Req)
+}
+
+func (p *kUserServiceClient) StartReactiveUser(ctx context.Context, Req *user.StartReactivateUserReq, callOptions ...callopt.Option) (r *user.StartReactivateUserResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.StartReactiveUser(ctx, Req)
 }
 
 func (p *kUserServiceClient) ReactivateUser(ctx context.Context, Req *user.ReactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
