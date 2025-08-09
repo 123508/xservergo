@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"net/http"
+
 	"github.com/123508/xservergo/apps/auth/service"
 	auth "github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -10,7 +12,6 @@ import (
 	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 // permissionTypeFromString maps string to auth.Permission_Type enum.
@@ -209,13 +210,12 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 			return nil, cerrors.NewGRPCError(com.Code, com.Message)
 		}
 	}
-	id := marshalUID(ctx, &newPermission.ID)
 	var parentIdMarshaled string
 	if newPermission.ParentID != nil {
 		parentIdMarshaled = newPermission.ParentID.MarshalBase64()
 	}
 	return &auth.Permission{
-		Id:             id,
+		Id:             newPermission.ID.MarshalBase64(),
 		Code:           newPermission.Code,
 		PermissionName: newPermission.Name,
 		Description:    newPermission.Description,

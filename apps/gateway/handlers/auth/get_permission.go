@@ -30,7 +30,7 @@ func GetPermission(ctx context.Context, c *app.RequestContext) {
 			Name:        resp.PermissionName,
 			Description: resp.Description,
 			ParentID:    resp.ParentId,
-			Type:        permissionType(resp.Type),
+			Type:        permissionTypeToString(resp.Type),
 			Resource:    resp.Resource,
 			Method:      resp.Method,
 			Status:      resp.Status,

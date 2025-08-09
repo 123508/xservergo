@@ -98,7 +98,8 @@ func main() {
 		authGroup.GET("/permission/:perm_code", auth.GetPermission)
 		authGroup.GET("/permission", auth.GetPermissions)
 		authGroup.POST("/permission", auth.CreatePermission)
-
+		authGroup.PUT("/permission/:perm_code", auth.UpdatePermission)
+		authGroup.DELETE("/permission/:perm_code", auth.DeletePermission)
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}

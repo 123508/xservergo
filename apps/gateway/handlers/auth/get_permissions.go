@@ -55,7 +55,7 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 			Name:        perm.PermissionName,
 			Description: perm.Description,
 			ParentID:    perm.ParentId,
-			Type:        permissionType(perm.Type),
+			Type:        permissionTypeToString(perm.Type),
 			Resource:    perm.Resource,
 			Method:      perm.Method,
 			Status:      perm.Status,
