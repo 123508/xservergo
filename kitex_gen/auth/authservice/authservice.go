@@ -148,6 +148,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"GetUserGroupRoles": kitex.NewMethodInfo(
+		getUserGroupRolesHandler,
+		newGetUserGroupRolesArgs,
+		newGetUserGroupRolesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 	"AssignRoleToUserGroup": kitex.NewMethodInfo(
 		assignRoleToUserGroupHandler,
 		newAssignRoleToUserGroupArgs,
@@ -2428,6 +2435,117 @@ func (p *GetUserGroupMembersResult) GetResult() interface{} {
 	return p.Success
 }
 
+func getUserGroupRolesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.GetUserGroupRolesReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).GetUserGroupRoles(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *GetUserGroupRolesArgs:
+		success, err := handler.(auth.AuthService).GetUserGroupRoles(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*GetUserGroupRolesResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newGetUserGroupRolesArgs() interface{} {
+	return &GetUserGroupRolesArgs{}
+}
+
+func newGetUserGroupRolesResult() interface{} {
+	return &GetUserGroupRolesResult{}
+}
+
+type GetUserGroupRolesArgs struct {
+	Req *auth.GetUserGroupRolesReq
+}
+
+func (p *GetUserGroupRolesArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *GetUserGroupRolesArgs) Unmarshal(in []byte) error {
+	msg := new(auth.GetUserGroupRolesReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var GetUserGroupRolesArgs_Req_DEFAULT *auth.GetUserGroupRolesReq
+
+func (p *GetUserGroupRolesArgs) GetReq() *auth.GetUserGroupRolesReq {
+	if !p.IsSetReq() {
+		return GetUserGroupRolesArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *GetUserGroupRolesArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *GetUserGroupRolesArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type GetUserGroupRolesResult struct {
+	Success *auth.GetUserGroupRolesResp
+}
+
+var GetUserGroupRolesResult_Success_DEFAULT *auth.GetUserGroupRolesResp
+
+func (p *GetUserGroupRolesResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *GetUserGroupRolesResult) Unmarshal(in []byte) error {
+	msg := new(auth.GetUserGroupRolesResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *GetUserGroupRolesResult) GetSuccess() *auth.GetUserGroupRolesResp {
+	if !p.IsSetSuccess() {
+		return GetUserGroupRolesResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *GetUserGroupRolesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.GetUserGroupRolesResp)
+}
+
+func (p *GetUserGroupRolesResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *GetUserGroupRolesResult) GetResult() interface{} {
+	return p.Success
+}
+
 func assignRoleToUserGroupHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
@@ -4288,6 +4406,16 @@ func (p *kClient) GetUserGroupMembers(ctx context.Context, Req *auth.GetUserGrou
 	_args.Req = Req
 	var _result GetUserGroupMembersResult
 	if err = p.c.Call(ctx, "GetUserGroupMembers", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetUserGroupRoles(ctx context.Context, Req *auth.GetUserGroupRolesReq) (r *auth.GetUserGroupRolesResp, err error) {
+	var _args GetUserGroupRolesArgs
+	_args.Req = Req
+	var _result GetUserGroupRolesResult
+	if err = p.c.Call(ctx, "GetUserGroupRoles", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

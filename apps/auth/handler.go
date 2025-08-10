@@ -868,3 +868,18 @@ func (s *AuthServiceImpl) RemoveRoleFromUserGroup(ctx context.Context, req *auth
 		Success: true,
 	}, nil
 }
+
+// GetUserGroupRoles implements the AuthServiceImpl interface.
+func (s *AuthServiceImpl) GetUserGroupRoles(ctx context.Context, req *auth.GetUserGroupRolesReq) (resp *auth.GetUserGroupRolesResp, err error) {
+	roles, err := s.authService.GetUserGroupRoles(ctx, req.UserGroupCode)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取用户组角色失败")
+	}
+	var authRoles []*auth.Role
+	for _, roleCode := range roles {
+		authRoles = append(authRoles, &auth.Role{Code: roleCode})
+	}
+	return &auth.GetUserGroupRolesResp{
+		Roles: authRoles,
+	}, nil
+}

@@ -30,6 +30,7 @@ type Client interface {
 	DeleteUserGroup(ctx context.Context, Req *auth.DeleteUserGroupReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
 	GetUserGroup(ctx context.Context, Req *auth.GetUserGroupReq, callOptions ...callopt.Option) (r *auth.UserGroup, err error)
 	GetUserGroupMembers(ctx context.Context, Req *auth.GetUserGroupMembersReq, callOptions ...callopt.Option) (r *auth.GetUserGroupMembersResp, err error)
+	GetUserGroupRoles(ctx context.Context, Req *auth.GetUserGroupRolesReq, callOptions ...callopt.Option) (r *auth.GetUserGroupRolesResp, err error)
 	AssignRoleToUserGroup(ctx context.Context, Req *auth.AssignRoleToUserGroupReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
 	RemoveRoleFromUserGroup(ctx context.Context, Req *auth.RemoveRoleFromUserGroupReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
 	GetUserGroupPermissions(ctx context.Context, Req *auth.GetUserGroupPermissionsReq, callOptions ...callopt.Option) (r *auth.GetUserGroupPermissionsResp, err error)
@@ -169,6 +170,11 @@ func (p *kAuthServiceClient) GetUserGroup(ctx context.Context, Req *auth.GetUser
 func (p *kAuthServiceClient) GetUserGroupMembers(ctx context.Context, Req *auth.GetUserGroupMembersReq, callOptions ...callopt.Option) (r *auth.GetUserGroupMembersResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.GetUserGroupMembers(ctx, Req)
+}
+
+func (p *kAuthServiceClient) GetUserGroupRoles(ctx context.Context, Req *auth.GetUserGroupRolesReq, callOptions ...callopt.Option) (r *auth.GetUserGroupRolesResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetUserGroupRoles(ctx, Req)
 }
 
 func (p *kAuthServiceClient) AssignRoleToUserGroup(ctx context.Context, Req *auth.AssignRoleToUserGroupReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {

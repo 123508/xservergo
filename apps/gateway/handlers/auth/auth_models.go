@@ -59,3 +59,30 @@ type Permission struct {
 	Method      string `json:"method"`
 	Status      bool   `json:"status"`
 }
+
+type Role struct {
+	ID          string `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      bool   `json:"status"`
+}
+
+type UserGroup struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Code     string `json:"code"`
+	Status   bool   `json:"status"`
+	ParentID string `json:"parent_id"`
+}
+
+type User struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Gender   uint64 `json:"gender"`
+	Avatar   string `json:"avatar"`
+	Status   uint64 `json:"status"`
+}

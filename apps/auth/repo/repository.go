@@ -65,6 +65,8 @@ type AuthRepository interface {
 	// GetUserGroupMembers 获取用户组成员
 	// 返回成员用户名列表
 	GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error)
+	// GetUserGroupRoles 获取用户组的角色
+	GetUserGroupRoles(ctx context.Context, groupCode string) ([]string, error)
 	// AssignRoleToUserGroup 分配角色到用户组
 	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
 	// RemoveRoleFromUserGroup 从用户组中移除角色
@@ -984,4 +986,21 @@ func (r *RepoImpl) GetUserGroupList(ctx context.Context, page uint32, pageSize u
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group list: ", err)
 	}
 	return userGroups, nil
+}
+
+func (r *RepoImpl) GetUserGroupRoles(ctx context.Context, groupCode string) ([]string, error) {
+	if groupCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
+	}
+
+	var roleCodes []string
+	if err := r.DB.WithContext(ctx).Model(&models.Role{}).
+		Select("roles.code").
+		Joins("JOIN role_group ON roles.id = role_group.role_id").
+		Joins("JOIN user_group ON role_group.group_id = user_group.id").
+		Where("user_group.code = ? AND role_group.status = 1 AND user_group.is_deleted = false", groupCode).
+		Pluck("roles.code", &roleCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group roles: ", err)
+	}
+	return roleCodes, nil
 }
