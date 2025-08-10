@@ -95,11 +95,51 @@ func main() {
 		authGroup.Use(middleware.ParseToken())
 		// 刷新token
 		authGroup.Use(middleware.RefreshToken())
+		// 权限管理
 		authGroup.GET("/permission/:perm_code", auth.GetPermission)
 		authGroup.GET("/permission", auth.GetPermissions)
 		authGroup.POST("/permission", auth.CreatePermission)
 		authGroup.PUT("/permission/:perm_code", auth.UpdatePermission)
 		authGroup.DELETE("/permission/:perm_code", auth.DeletePermission)
+
+		// 角色管理
+		authGroup.POST("/role", auth.CreateRole)
+		authGroup.GET("/role", auth.ListRoles)
+		authGroup.GET("/role/:role_code", auth.GetRole)
+		authGroup.PUT("/role/:role_code", auth.UpdateRole)
+		authGroup.DELETE("/role/:role_code", auth.DeleteRole)
+
+		// 角色权限管理
+		authGroup.GET("/role/:role_code/permission", auth.GetRolePermissions)
+		authGroup.POST("/role/:role_code/permission", auth.GrantPermissionToRole)
+		authGroup.DELETE("/role/:role_code/permission", auth.RevokePermissionFromRole)
+
+		// 用户角色管理
+		authGroup.GET("/user/:user_id/role", auth.GetUserRoles)
+		authGroup.POST("/user/:user_id/role", auth.AssignRoleToUser)
+		authGroup.DELETE("/user/:user_id/role", auth.RemoveRoleFromUser)
+
+		// 用户组管理
+		authGroup.POST("/group", auth.CreateUserGroup)
+		authGroup.GET("/group", auth.ListUserGroups)
+		authGroup.GET("/group/:group_code", auth.GetUserGroup)
+		authGroup.PUT("/group/:group_code", auth.UpdateUserGroup)
+		authGroup.DELETE("/group/:group_code", auth.DeleteUserGroup)
+		authGroup.GET("/group/:group_code/members", auth.GetUserGroupMembers)
+		authGroup.GET("/group/:group_code/permissions", auth.GetUserGroupPermissions)
+
+		// 用户组角色管理
+		authGroup.POST("/group/:group_code/role", auth.AssignRoleToUserGroup)
+		authGroup.DELETE("/group/:group_code/role", auth.RemoveRoleFromUserGroup)
+
+		// 用户-用户组管理
+		authGroup.GET("/user/:user_id/group", auth.GetUserGroups)
+		authGroup.POST("/group/:group_code/member", auth.AssignUserToGroup)
+		authGroup.DELETE("/group/:group_code/member", auth.RemoveUserFromGroup)
+
+		// 用户权限
+		authGroup.GET("/user/:user_id/permission", auth.GetUserPermissions)
+
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}

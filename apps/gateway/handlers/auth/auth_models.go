@@ -82,7 +82,7 @@ type User struct {
 	Nickname string `json:"nickname"`
 	Email    string `json:"email"`
 	Phone    string `json:"phone"`
-	Gender   int    `json:"gender"`
+	Gender   uint64 `json:"gender"`
 	Avatar   string `json:"avatar"`
-	Status   bool   `json:"status"`
+	Status   uint64 `json:"status"`
 }
