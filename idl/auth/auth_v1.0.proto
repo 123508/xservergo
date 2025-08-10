@@ -33,6 +33,7 @@ service AuthService {
   rpc DeleteUserGroup(DeleteUserGroupReq) returns (OperationResult){}                             // 删除用户组
   rpc GetUserGroup(GetUserGroupReq) returns (UserGroup){}                                         // 查询用户组
   rpc GetUserGroupMembers(GetUserGroupMembersReq) returns (GetUserGroupMembersResp){}             // 查询用户组成员
+  rpc GetUserGroupRoles(GetUserGroupRolesReq) returns (GetUserGroupRolesResp){}                   // 查询用户组角色
   rpc AssignRoleToUserGroup(AssignRoleToUserGroupReq) returns (OperationResult){}                 // 给用户组分配角色
   rpc RemoveRoleFromUserGroup(RemoveRoleFromUserGroupReq) returns (OperationResult){}             // 移除用户组的角色
   rpc GetUserGroupPermissions(GetUserGroupPermissionsReq) returns (GetUserGroupPermissionsResp){} // 查询用户组权限
@@ -237,6 +238,15 @@ message GetUserGroupReq{
 message GetUserGroupMembersReq{
   string user_group_code=2;    // 用户组唯一标识符
   string request_user_id=3;     // 查询者用户ID(16字节UUID)
+}
+
+message GetUserGroupRolesReq{
+  string user_group_code=2;    // 用户组唯一标识符
+  string request_user_id=3;     // 查询者用户ID(16字节UUID)
+}
+
+message GetUserGroupRolesResp{
+  repeated Role roles=1;
 }
 
 message AssignRoleToUserGroupReq{

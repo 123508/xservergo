@@ -33,22 +33,11 @@ func GetUserGroups(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	userGroups := make([]UserGroup, 0, len(resp.UserGroups))
-	for _, ug := range resp.UserGroups {
-		userGroups = append(userGroups, UserGroup{
-			ID:       ug.Id,
-			Name:     ug.GroupName,
-			Code:     ug.Code,
-			Status:   ug.Status,
-			ParentID: ug.ParentId,
-		})
-	}
-
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code": 0,
 		"msg":  "获取用户组列表成功",
 		"data": map[string]interface{}{
-			"user_groups": userGroups,
+			"user_groups": resp.UserGroups,
 		},
 	})
 }

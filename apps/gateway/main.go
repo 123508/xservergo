@@ -129,6 +129,7 @@ func main() {
 		authGroup.GET("/group/:group_code/permissions", auth.GetUserGroupPermissions)
 
 		// 用户组角色管理
+		authGroup.GET("/group/:group_code/role", auth.GetUserGroupRoles)
 		authGroup.POST("/group/:group_code/role", auth.AssignRoleToUserGroup)
 		authGroup.DELETE("/group/:group_code/role", auth.RemoveRoleFromUserGroup)
 

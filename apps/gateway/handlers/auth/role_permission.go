@@ -33,26 +33,11 @@ func GetRolePermissions(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	permissions := make([]Permission, 0, len(resp.Permissions))
-	for _, perm := range resp.Permissions {
-		permissions = append(permissions, Permission{
-			ID:          perm.Id,
-			Code:        perm.Code,
-			Name:        perm.PermissionName,
-			Description: perm.Description,
-			ParentID:    perm.ParentId,
-			Type:        permissionTypeToString(perm.Type),
-			Resource:    perm.Resource,
-			Method:      perm.Method,
-			Status:      perm.Status,
-		})
-	}
-
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code": 0,
 		"msg":  "获取角色权限成功",
 		"data": map[string]interface{}{
-			"permissions": permissions,
+			"permissions": resp.Permissions,
 		},
 	})
 }

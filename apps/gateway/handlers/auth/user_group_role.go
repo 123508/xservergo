@@ -107,3 +107,30 @@ func RemoveRoleFromUserGroup(ctx context.Context, c *app.RequestContext) {
 		})
 	}
 }
+
+func GetUserGroupRoles(ctx context.Context, c *app.RequestContext) {
+	groupCode := c.Param("group_code")
+	if groupCode == "" {
+		c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"code": http.StatusBadRequest,
+			"msg":  "用户组代码不能为空",
+		})
+		return
+	}
+
+	userID := ctx.Value("userId").(string)
+
+	resp, err := infra.AuthClient.GetUserGroupRoles(ctx, &auth.GetUserGroupRolesReq{
+		UserGroupCode: groupCode,
+		RequestUserId: userID,
+	})
+	if err != nil {
+		c.JSON(common.ParseGRPCError(err))
+		return
+	}
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"code": 0,
+		"msg":  "获取用户组角色成功",
+		"data": resp.Roles,
+	})
+}

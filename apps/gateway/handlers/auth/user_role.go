@@ -33,22 +33,11 @@ func GetUserRoles(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	roles := make([]Role, 0, len(resp.Roles))
-	for _, role := range resp.Roles {
-		roles = append(roles, Role{
-			ID:          role.Id,
-			Code:        role.Code,
-			Name:        role.RoleName,
-			Description: role.Description,
-			Status:      role.Status,
-		})
-	}
-
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code": 0,
 		"msg":  "获取用户角色成功",
 		"data": map[string]interface{}{
-			"roles": roles,
+			"roles": resp.Roles,
 		},
 	})
 }

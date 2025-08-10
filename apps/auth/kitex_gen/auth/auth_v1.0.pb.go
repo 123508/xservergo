@@ -931,6 +931,50 @@ func (x *GetUserGroupMembersReq) GetRequestUserId() string {
 	return ""
 }
 
+type GetUserGroupRolesReq struct {
+	UserGroupCode string `protobuf:"bytes,2,opt,name=user_group_code" json:"user_group_code,omitempty"` // 用户组唯一标识符
+	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 查询者用户ID(16字节UUID)
+}
+
+func (x *GetUserGroupRolesReq) Reset() { *x = GetUserGroupRolesReq{} }
+
+func (x *GetUserGroupRolesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetUserGroupRolesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserGroupRolesReq) GetUserGroupCode() string {
+	if x != nil {
+		return x.UserGroupCode
+	}
+	return ""
+}
+
+func (x *GetUserGroupRolesReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetUserGroupRolesResp struct {
+	Roles []*Role `protobuf:"bytes,1,rep,name=roles" json:"roles,omitempty"`
+}
+
+func (x *GetUserGroupRolesResp) Reset() { *x = GetUserGroupRolesResp{} }
+
+func (x *GetUserGroupRolesResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetUserGroupRolesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetUserGroupRolesResp) GetRoles() []*Role {
+	if x != nil {
+		return x.Roles
+	}
+	return nil
+}
+
 type AssignRoleToUserGroupReq struct {
 	UserGroupCode string `protobuf:"bytes,2,opt,name=user_group_code" json:"user_group_code,omitempty"` // 用户组唯一标识符
 	RoleCode      string `protobuf:"bytes,3,opt,name=role_code" json:"role_code,omitempty"`             // 角色唯一标识符
@@ -1690,6 +1734,7 @@ type AuthService interface {
 	DeleteUserGroup(ctx context.Context, req *DeleteUserGroupReq) (res *OperationResult, err error)
 	GetUserGroup(ctx context.Context, req *GetUserGroupReq) (res *UserGroup, err error)
 	GetUserGroupMembers(ctx context.Context, req *GetUserGroupMembersReq) (res *GetUserGroupMembersResp, err error)
+	GetUserGroupRoles(ctx context.Context, req *GetUserGroupRolesReq) (res *GetUserGroupRolesResp, err error)
 	AssignRoleToUserGroup(ctx context.Context, req *AssignRoleToUserGroupReq) (res *OperationResult, err error)
 	RemoveRoleFromUserGroup(ctx context.Context, req *RemoveRoleFromUserGroupReq) (res *OperationResult, err error)
 	GetUserGroupPermissions(ctx context.Context, req *GetUserGroupPermissionsReq) (res *GetUserGroupPermissionsResp, err error)
