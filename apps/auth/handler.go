@@ -715,6 +715,7 @@ func (s *AuthServiceImpl) ListRoles(ctx context.Context, req *auth.ListRolesReq)
 			Code:        role.Code,
 			RoleName:    role.Name,
 			Description: role.Description,
+			Status:      role.Status == 1,
 		})
 	}
 
@@ -733,9 +734,16 @@ func (s *AuthServiceImpl) ListUserGroups(ctx context.Context, req *auth.ListUser
 	var authUserGroups []*auth.UserGroup
 	for _, group := range userGroups {
 		id := marshalUID(ctx, &group.ID)
+		parentId := ""
+		if group.ParentID != nil {
+			parentId = group.ParentID.MarshalBase64()
+		}
 		authUserGroups = append(authUserGroups, &auth.UserGroup{
 			Id:        id,
+			Code:      group.Code,
 			GroupName: group.Name,
+			Status:    group.Status == 1,
+			ParentId:  parentId,
 		})
 	}
 
@@ -754,12 +762,16 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 	var authPermissions []*auth.Permission
 	for _, perm := range permissions {
 		id := marshalUID(ctx, &perm.ID)
+		parentId := ""
+		if perm.ParentID != nil {
+			parentId = perm.ParentID.MarshalBase64()
+		}
 		authPermissions = append(authPermissions, &auth.Permission{
 			Id:             id,
 			Code:           perm.Code,
 			PermissionName: perm.Name,
 			Description:    perm.Description,
-			ParentId:       marshalUID(ctx, perm.ParentID),
+			ParentId:       parentId,
 			Type:           permissionTypeFromString(string(perm.Type)),
 			Resource:       perm.Resource,
 			Method:         perm.Method,

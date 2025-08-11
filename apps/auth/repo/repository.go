@@ -948,7 +948,7 @@ func (r *RepoImpl) GetRoleList(ctx context.Context, page uint32, pageSize uint32
 	var roles []*models.Role
 	offset := (page - 1) * pageSize
 
-	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Find(&roles).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Where("is_deleted = false").Find(&roles).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role list: ", err)
 	}
 	return roles, nil
@@ -965,7 +965,7 @@ func (r *RepoImpl) GetPermissionList(ctx context.Context, page uint32, pageSize 
 	var permissions []*models.Permission
 	offset := (page - 1) * pageSize
 
-	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Find(&permissions).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Where("is_deleted = false").Find(&permissions).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission list: ", err)
 	}
 	return permissions, nil
@@ -982,7 +982,7 @@ func (r *RepoImpl) GetUserGroupList(ctx context.Context, page uint32, pageSize u
 	var userGroups []*models.UserGroup
 	offset := (page - 1) * pageSize
 
-	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Find(&userGroups).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Where("is_deleted = false").Find(&userGroups).Error; err != nil {
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group list: ", err)
 	}
 	return userGroups, nil
