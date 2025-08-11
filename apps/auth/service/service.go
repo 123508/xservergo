@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/123508/xservergo/kitex_gen/user"
@@ -70,7 +72,7 @@ type AuthService interface {
 	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup, operatorId *util.UUID) (*models.UserGroup, error)
 	// DeleteUserGroup 删除用户组
 	DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error
-	// GetUserGroupByName 获取用户组
+	// GetUserGroupByCode 获取用户组
 	GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error)
@@ -673,9 +675,41 @@ func (s *ServiceImpl) CanAccess(ctx context.Context, userID util.UUID, resource 
 		return false
 	}
 
-	res := s.authRepo.CanAccess(ctx, userID, resource, method)
+	//res := s.authRepo.CanAccess(ctx, userID, resource, method)
 
-	return res
+	perms, err := s.authRepo.GetUserPermissions(ctx, userID)
+	if err != nil {
+		logs.ErrorLogger.Error("获取用户权限错误:", zap.Error(err))
+		return false
+	}
+
+	for _, perm := range perms {
+		permission := &models.Permission{Code: perm}
+		permission, err = s.authRepo.GetPermissionByCode(ctx, perm)
+		if permission == nil || err != nil || method != permission.Method {
+			continue
+		}
+
+		// 正则匹配
+		// 将通配符模式转换为正则表达式
+		// 将 * 替换为 [^:]+ （匹配除冒号外的任意字符）
+		// 转义其他特殊字符
+		pattern := regexp.QuoteMeta(permission.Resource)
+		pattern = strings.ReplaceAll(pattern, "\\*", "[^:]+")
+
+		// 添加行首行尾锚点确保完全匹配
+		pattern = "^" + pattern + "$"
+		matched, err := regexp.MatchString(pattern, resource)
+		if err != nil {
+			logs.ErrorLogger.Error("正则表达式匹配错误:", zap.Error(err))
+			continue
+		}
+		if matched {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *ServiceImpl) GetRoleList(ctx context.Context, page, pageSize uint32) ([]*models.Role, error) {

@@ -688,8 +688,9 @@ func TestAuthServiceImpl_ListFunctions(t *testing.T) {
 
 func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	permissionCode := "test_permission_for_checks"
-	resource := "/test/permission_checks"
+	resource := "test:permission:*:checks"
 	method := "GET"
+	roleCode := "test_role_for_checks"
 
 	// Setup: Create a permission
 	createPermReq := &auth.CreatePermissionReq{
@@ -724,7 +725,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	// 2. CanAccess (without permission)
 	canAccessReq := &auth.CanAccessReq{
 		TargetUserId: userIdBase64,
-		Resource:     resource,
+		Resource:     "test:permission:test1:checks",
 		Method:       method,
 	}
 	canAccessResp, err := authClient.CanAccess(context.Background(), canAccessReq)
@@ -736,8 +737,7 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	}
 	t.Log("CanAccess (before grant) check successful")
 
-	// Setup: Create a role and grant permission to it
-	roleCode := "test_role_for_checks"
+	// Setup: Create a role and grant permission to i
 	createRoleReq := &auth.CreateRoleReq{
 		Role:          &auth.Role{Code: roleCode, RoleName: "Test Role for Checks"},
 		RequestUserId: userIdBase64,
