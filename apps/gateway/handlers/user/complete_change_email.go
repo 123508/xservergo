@@ -2,11 +2,12 @@ package user
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/123508/xservergo/apps/gateway/common"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/user"
 	"github.com/cloudwego/hertz/pkg/app"
-	"net/http"
 )
 
 func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
@@ -15,8 +16,8 @@ func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
 
 	if userId == nil || version == nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -26,8 +27,8 @@ func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
 
 	if !ok || !ok1 {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -36,8 +37,8 @@ func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
 
 	if err := c.Bind(req); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -56,8 +57,8 @@ func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"code":    http.StatusOK,
-		"message": "修改成功",
-		"data":    resp,
+		"code": 0,
+		"msg":  "修改成功",
+		"data": resp,
 	})
 }

@@ -2,11 +2,12 @@ package user
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/123508/xservergo/apps/gateway/common"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/user"
 	"github.com/cloudwego/hertz/pkg/app"
-	"net/http"
 )
 
 func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
@@ -15,8 +16,8 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 
 	if userId == nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -25,8 +26,8 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 
 	if !ok {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -34,8 +35,8 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 	mobilePre := &QrMobileReq{}
 	if err := c.Bind(mobilePre); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"code":    http.StatusBadRequest,
-			"message": "请求参数错误",
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
 		})
 		return
 	}
@@ -51,7 +52,7 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"code":    http.StatusOK,
-		"message": "成功取消",
+		"code": 0,
+		"msg":  "成功取消",
 	})
 }

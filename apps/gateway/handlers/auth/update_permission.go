@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -13,7 +15,7 @@ func UpdatePermission(ctx context.Context, c *app.RequestContext) {
 
 	var permission Permission
 	if err := c.Bind(&permission); err != nil {
-		c.JSON(400, map[string]string{"error": "参数错误"})
+		c.JSON(http.StatusBadRequest, map[string]string{"error": "参数错误"})
 		return
 	}
 
@@ -33,11 +35,11 @@ func UpdatePermission(ctx context.Context, c *app.RequestContext) {
 
 	resp, err := infra.AuthClient.UpdatePermission(ctx, req)
 	if err != nil {
-		c.JSON(500, map[string]string{"error": "权限更新失败", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, map[string]string{"error": "权限更新失败", "details": err.Error()})
 		return
 	}
-	c.JSON(200, map[string]interface{}{
-		"code": 200,
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"code": 0,
 		"msg":  "权限更新成功",
 		"data": Permission{
 			ID:          resp.Id,

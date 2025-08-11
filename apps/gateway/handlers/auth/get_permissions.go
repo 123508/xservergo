@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	"github.com/123508/xservergo/apps/gateway/infra"
@@ -14,8 +15,8 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil {
-		c.JSON(400, map[string]interface{}{
-			"code":   400,
+		c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"code":   10,
 			"msg":    "无效的页码",
 			"detail": err.Error(),
 		})
@@ -23,8 +24,8 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 	}
 	pageSize, err := strconv.Atoi(c.Query("page_size"))
 	if err != nil {
-		c.JSON(400, map[string]interface{}{
-			"code":   400,
+		c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"code":   11,
 			"msg":    "无效的每页条数",
 			"detail": err.Error(),
 		})
@@ -39,8 +40,8 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 
 	permissions, err := infra.AuthClient.ListPermissions(ctx, listPermissionsReq)
 	if err != nil {
-		c.JSON(500, map[string]interface{}{
-			"code":   500,
+		c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"code":   12,
 			"msg":    "获取权限列表失败",
 			"detail": err.Error(),
 		})
@@ -62,8 +63,8 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 		})
 	}
 
-	c.JSON(200, map[string]interface{}{
-		"code": 200,
+	c.JSON(http.StatusOK, map[string]interface{}{
+		"code": 0,
 		"msg":  "获取权限列表成功",
 		"data": map[string]interface{}{
 			"perms": perms,
