@@ -692,10 +692,10 @@ func (s *ServiceImpl) CanAccess(ctx context.Context, userID util.UUID, resource 
 
 		// 正则匹配
 		// 将通配符模式转换为正则表达式
-		// 将 * 替换为 [^:]+ （匹配除冒号外的任意字符）
+		// 将 * 替换为 [^/]+ （匹配除斜杠外的任意字符）
 		// 转义其他特殊字符
 		pattern := regexp.QuoteMeta(permission.Resource)
-		pattern = strings.ReplaceAll(pattern, "\\*", "[^:]+")
+		pattern = strings.ReplaceAll(pattern, "\\*", "[^/]+")
 
 		// 添加行首行尾锚点确保完全匹配
 		pattern = "^" + pattern + "$"
