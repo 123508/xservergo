@@ -76,8 +76,8 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 	})
 
 	if err != nil {
-		logs.ErrorLogger.Error("创建用户对象错误", zap.Error(err))
-		return cerrors.NewSQLError(http.StatusInternalServerError, "创建用户错误", err)
+		logs.ErrorLogger.Error("创建用户失败", zap.Error(err))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "创建用户失败", err)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 	var row models.User
 
 	queryStmt := `select 
-    id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
+    id, username, nickname, email,phone, gender, avatar, status, created_at,updated_at,version
 		from users where email = ? and is_deleted = 0 limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, email).Scan(&row).Error; err != nil {
@@ -129,7 +129,7 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在")
 	}
 
 	return &row, nil
@@ -149,7 +149,7 @@ func (r *RepoImpl) GetUserByPhone(ctx context.Context, phone string) (*models.Us
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在")
 	}
 
 	return &row, nil
@@ -170,7 +170,7 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 	}
 
 	if row.ID.IsZero() {
-		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在或已注销")
+		return nil, cerrors.NewParamError(http.StatusNotFound, "用户不存在")
 	}
 
 	return &row, nil
@@ -310,6 +310,7 @@ func (r *RepoImpl) ResetEmail(ctx context.Context, userID util.UUID, email strin
 }
 
 func (r *RepoImpl) ResetPhone(ctx context.Context, userID util.UUID, phone string, version int, requestUserId util.UUID) (int, error) {
+
 	setStmt := `update users 
 						set phone = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
 						where id = ? and version = ? and is_deleted = 0`

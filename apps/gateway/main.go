@@ -34,7 +34,8 @@ func main() {
 		defer wg.Done()
 		hertzAddr := fmt.Sprintf("%s:%d", config.Conf.HertzConfig.Host, config.Conf.HertzConfig.Port)
 		hz := server.New(server.WithHostPorts(hertzAddr))
-
+		//注册跨域中间件
+		hz.Use(middleware.CORSConfig())
 		// 注册 Prometheus 中间件
 		middleware.RegisterPrometheus(hz)
 

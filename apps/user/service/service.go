@@ -91,7 +91,7 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 		return err, ""
 	}
 
-	if u == nil || uLogin == nil || u.Gender == 0 {
+	if u == nil || uLogin == nil || u.UserName == "" {
 		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
@@ -104,7 +104,7 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 	uLogin.Password = Encryption(uLogin.Password)
 
 	if err := s.userRepo.CreateUser(ctx, u, uLogin); err != nil {
-		return ParseRepoErrorToCommonError(err, "用户注册失败"), requestId
+		return ParseRepoErrorToCommonError(err, "注册用户失败"), requestId
 	}
 
 	return nil, requestId
@@ -115,10 +115,6 @@ func (s *ServiceImpl) EmailLogin(ctx context.Context, email, pwd string) (*model
 	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
 	if err != nil {
 		return nil, nil, err, ""
-	}
-
-	if email == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
 	usr, err := s.userRepo.GetUserByEmail(ctx, email)
@@ -134,10 +130,6 @@ func (s *ServiceImpl) PhoneLogin(ctx context.Context, phone, pwd string) (*model
 		return nil, nil, err, ""
 	}
 
-	if phone == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
-	}
-
 	usr, err := s.userRepo.GetUserByPhone(ctx, phone)
 
 	return s.LoginWithResp(ctx, usr, pwd, err, true, requestId)
@@ -149,10 +141,6 @@ func (s *ServiceImpl) UserNameLogin(ctx context.Context, username, pwd string) (
 
 	if err != nil {
 		return nil, nil, err, ""
-	}
-
-	if username == "" || pwd == "" {
-		return nil, nil, cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", "", nil), requestId
 	}
 
 	usr, err := s.userRepo.GetUserByUsername(ctx, username)
@@ -1358,8 +1346,13 @@ func (s *ServiceImpl) VerityRequestID(ctx context.Context, requestId string) err
 }
 
 func (s *ServiceImpl) CleanCache(ctx context.Context, usr *models.User) {
-	s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "id", usr.ID.String()))
-	s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "username", usr.UserName))
-	s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "email", usr.Email))
-	s.Rds.Del(ctx, util.TakeKey("userservice", "user", "detail", "phone", usr.Phone))
+
+	pipe := s.Rds.Pipeline()
+
+	pipe.Del(ctx, util.TakeKey("userservice", "user", "detail", "id", usr.ID.String()))
+	pipe.Del(ctx, util.TakeKey("userservice", "user", "detail", "username", usr.UserName))
+	pipe.Del(ctx, util.TakeKey("userservice", "user", "detail", "email", usr.Email))
+	pipe.Del(ctx, util.TakeKey("userservice", "user", "detail", "phone", usr.Phone))
+
+	pipe.Exec(ctx)
 }
