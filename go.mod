@@ -3,6 +3,7 @@ module github.com/123508/xservergo
 go 1.23.3
 
 require (
+	github.com/badoux/checkmail v1.2.4
 	github.com/cloudwego/hertz v0.10.1
 	github.com/cloudwego/kitex v0.14.1
 	github.com/cloudwego/prutal v0.1.2
@@ -11,6 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hertz-contrib/cors v0.1.0
 	github.com/kitex-contrib/registry-etcd v0.2.6
+	github.com/nyaruka/phonenumbers v1.6.5
 	github.com/prometheus/client_golang v1.18.0
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/sirupsen/logrus v1.9.2
@@ -25,7 +27,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/badoux/checkmail v1.2.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.2 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
@@ -61,7 +62,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nyaruka/phonenumbers v1.6.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect

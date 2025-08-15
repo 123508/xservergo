@@ -38,6 +38,8 @@ func main() {
 		hz.Use(middleware.CORSConfig())
 		// 注册 Prometheus 中间件
 		middleware.RegisterPrometheus(hz)
+		//注册日志中间件
+		hz.Use(middleware.RequestLogger())
 
 		// 用户服务
 		userGroup := hz.Group("/user")

@@ -32,7 +32,7 @@ func initAccessLogger() {
 	// 创建核心列表
 	var cores []zapcore.Core
 
-	// 控制台核心（支持显式禁用）
+	// 控制台核心(支持显式禁用)
 	if shouldEnableStdOut() {
 		if consoleCore, err := createConsoleCore(); err == nil {
 			cores = append(cores, consoleCore)
@@ -41,7 +41,7 @@ func initAccessLogger() {
 		}
 	}
 
-	// 文件核心（支持显式禁用）
+	// 文件核心(支持显式禁用)
 	if shouldEnableFileOutput() {
 		if fileCore, err := createFileCore(); err == nil {
 			cores = append(cores, fileCore)
