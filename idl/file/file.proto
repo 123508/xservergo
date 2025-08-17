@@ -1,0 +1,255 @@
+syntax = "proto3";
+
+package file;
+
+option go_package = "/file";
+
+// ====================== 服务定义 ====================== //
+service FileService {
+  // ---------- 文件上传模块 ---------- //
+  rpc InitUpload(InitUploadReq) returns (InitUploadResp);           // 初始化上传
+  rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);        // 上传分片
+  rpc CompleteUpload(CompleteUploadReq) returns (FileMeta);             // 完成上传
+  rpc FastUpload(FastUploadReq) returns (FileMeta);                     // 秒传
+
+  //外部存储上传
+  rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);           // 获取预签名上传URL
+  rpc RegisterUploadedFile(RegisterUploadReq) returns (FileMeta);       // 注册外部上传文件
+
+  // ---------- 文件操作模块 ---------- //
+  rpc CreateFolder(CreateFolderReq) returns (FileMeta);                 // 创建目录
+  rpc RenameFile(RenameFileReq) returns (FileMeta);                     // 重命名文件
+  rpc MoveFile(MoveFileReq) returns (FileMeta);                         // 移动文件
+  rpc CopyFile(CopyFileReq) returns (FileMeta);                         // 复制文件
+
+  // ---------- 回收站管理模块 ---------- //
+  rpc TrashFile(FileReq) returns (FileMeta);                            // 移入回收站
+  rpc DeleteFilePermanently(FileReq) returns (Empty);   // 彻底删除
+  rpc RestoreFile(FileReq) returns (FileMeta);                          // 恢复文件
+  rpc GetTrashedFiles(UserReq) returns (ListDirectoryResp);         // 获取回收站文件
+
+  // ---------- 文件查询模块 ---------- //
+  rpc GetFileMeta(FileReq) returns (FileMeta);                          // 获取文件元数据
+  rpc ListDirectory(ListDirectoryReq) returns (ListDirectoryResp);  // 列出目录内容
+  rpc SearchFiles(SearchFilesReq) returns (SearchFilesResp);        // 搜索文件
+
+  // ---------- 文件预览模块 ---------- //
+  rpc GetPreviewUrl(FileReq) returns (PreviewResp);                 // 获取预览URL
+  rpc GetTranscodeStatus(FileReq) returns (TranscodeStatusResp);    // 获取转码状态
+  rpc GenerateDocumentPreview(FileReq) returns (PreviewResp);       // 生成文档预览
+
+  // ---------- 存储管理模块 ---------- //
+  rpc CleanExpiredTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理过期回收站
+  rpc GetStorageQuota(UserReq) returns (StorageQuotaResp);          // 获取存储配额
+  rpc DeduplicateFiles(UserReq) returns (DeduplicationResp);        // 文件去重
+}
+
+// ====================== 数据结构 ====================== //
+
+// ---------- 通用结构 ---------- //
+message FileMeta {
+  bytes file_id = 1;        // 文件ID (UUID格式)
+  bytes user_id = 2;        // 用户ID
+  string file_md5 = 3;      // 文件MD5
+  bytes parent_id = 4;      // 父目录ID
+  uint64 file_size = 5;     // 文件大小
+  string file_name = 6;     // 文件名
+  string file_cover = 7;    // 封面URL
+  string file_path = 8;     // 存储路径
+  string created_at = 9;
+  string updated_at = 10;
+  string deleted_at = 11;
+  bool is_directory = 12;         // 是否目录
+  FileCategory file_category = 13; // 文件大类
+  string file_type = 14;          // 文件扩展名
+
+  enum FileStatus {
+    DELETED = 0;      // 已删除
+    TRASHED = 1;      // 回收站
+    NORMAL = 2;       // 正常
+    TRANSCODING = 3;  // 转码中
+    TRANSCODE_FAILED = 4; // 转码失败
+  }
+  FileStatus status = 15;
+
+  // 预览相关信息
+  message PreviewInfo {
+    string preview_url = 1;          // 预览URL
+    uint32 preview_page_count = 2;   // 文档页数
+    bool requires_transcode = 3;     // 是否需要转码
+  }
+  PreviewInfo preview = 16;
+}
+
+// 文件大类枚举
+enum FileCategory {
+  CATEGORY_UNKNOWN = 0;
+  VIDEO = 1;        // 视频
+  AUDIO = 2;        // 音频
+  IMAGE = 3;        // 图片
+  DOCUMENT = 4;     // 文档
+  ARCHIVE = 5;      // 压缩包
+  OTHER = 6;        // 其他
+}
+
+message Empty{}
+
+// ---------- 上传相关 ---------- //
+message InitUploadReq {
+  bytes user_id = 1;
+  string file_name = 2;
+  bytes parent_id = 3;
+  uint64 file_size = 4;
+  string file_md5 = 5;
+}
+
+message InitUploadResp {
+  string upload_id = 1;      // 上传会话ID
+  uint32 chunk_size = 2;     // 建议的分片大小
+  repeated uint32 existing_chunks = 3; // 已存在的分片索引
+}
+
+message UploadChunkReq {
+  string upload_id = 1;
+  uint32 chunk_index = 2;
+  bytes content = 3;         // 分片内容
+  string chunk_md5 = 4;      // 分片MD5校验
+}
+
+message UploadChunkResp {
+  uint32 chunk_index = 1;
+  bool verified = 2;         // 分片校验结果
+}
+
+message CompleteUploadReq {
+  string upload_id = 1;
+  string file_md5 = 2;       // 完整文件MD5
+}
+
+message FastUploadReq {
+  bytes user_id = 1;
+  bytes parent_id = 2;
+  string file_md5 = 3;       // 已知文件的MD5
+  string file_name = 4;
+}
+
+// 外部存储上传相关
+message UploadUrlReq {
+  bytes user_id = 1;
+  string file_name = 2;
+  bytes parent_id = 3;
+  uint64 file_size = 4;
+  string file_md5 = 5;
+}
+
+message UploadUrlResp {
+  string upload_id = 1;
+  string pre_signed_url = 2; // 有效期5分钟的预签名URL
+  uint64 expires_at = 3;
+}
+
+message RegisterUploadReq {
+  string upload_id = 1;
+  string object_key = 2; // 对象存储中的路径
+  string file_md5 = 3; // 文件MD5验证
+}
+
+// ---------- 文件操作 ---------- //
+message CreateFolderReq {
+  bytes user_id = 1;
+  string folder_name = 2;
+  bytes parent_id = 3;
+}
+
+message RenameFileReq {
+  bytes file_id = 1;
+  string new_name = 2;
+}
+
+message MoveFileReq {
+  bytes file_id = 1;
+  bytes new_parent_id = 2;
+}
+
+message CopyFileReq {
+  bytes file_id = 1;
+  bytes target_parent_id = 2;
+}
+
+// ---------- 回收站管理 ---------- //
+message FileReq {
+  bytes file_id = 1;
+}
+
+// ---------- 文件查询 ---------- //
+message ListDirectoryReq {
+  bytes user_id = 1;
+  bytes parent_id = 2;        // 为空时列出根目录
+  uint32 page = 3;            // 分页页码
+  uint32 page_size = 4;       // 每页数量
+  bool include_trashed = 5;   // 是否包含回收站文件
+}
+
+message ListDirectoryResp {
+  repeated FileMeta files = 1;
+  uint32 total_count = 2;
+  uint32 page = 3;
+  uint32 page_size = 4;
+}
+
+message SearchFilesReq {
+  bytes user_id = 1;
+  string keyword = 2;
+  FileCategory category = 3;  // 可选：按类别过滤
+  uint32 page = 4;
+  uint32 page_size = 5;
+}
+
+message SearchFilesResp {
+  repeated FileMeta files = 1;
+  uint32 total_count = 2;
+}
+
+message UserReq {
+  bytes user_id = 1;
+}
+
+// ---------- 文件预览 ---------- //
+message PreviewResp {
+  string preview_url = 1;     // 预览URL (带签名)
+  int32 expire_seconds = 2;   // URL有效期(秒)
+  FileMeta.PreviewInfo preview_info = 3;
+}
+
+message TranscodeStatusResp {
+  enum Status {
+    PENDING = 0;    // 排队中
+    PROCESSING = 1; // 处理中
+    COMPLETED = 2;  // 已完成
+    FAILED = 3;     // 失败
+  }
+  Status status = 1;
+  string message = 2;         // 失败原因
+  int32 progress = 3;         // 进度百分比
+}
+
+// ---------- 存储管理 ---------- //
+message CleanTrashReq {
+  int32 days = 1; // 清理超过N天的回收站文件
+}
+
+message CleanTrashResp {
+  uint32 deleted_count = 1; // 删除的文件数
+  uint64 freed_space = 2;   // 释放的空间(字节)
+}
+
+message StorageQuotaResp {
+  uint64 used_bytes = 1;    // 已使用空间
+  uint64 quota_bytes = 2;   // 总配额
+  double usage_percent = 3; // 使用百分比
+}
+
+message DeduplicationResp {
+  uint32 duplicate_count = 1; // 发现的重复文件数
+  uint64 saved_space = 2;     // 节省的空间
+}

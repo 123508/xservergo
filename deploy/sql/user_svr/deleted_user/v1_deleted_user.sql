@@ -7,14 +7,7 @@ create table if not exists deleted_users(
     username varchar(60) not null default '' comment '用户名称',
     nickname varchar(60) not null default '' comment '用户昵称',
     email varchar(255) not null default '' comment '用户邮箱',
-
-    -- 手机号码存储
-    country varchar(3) not null comment '国家代码' default '86',
-    phone varchar(20) not null  comment '用户手机号',
-    phone_e164 varchar(18) generated always as (
-        CONCAT('+', country, phone)
-        ) stored not null unique comment 'E.164完整格式',
-
+    phone varchar(20) not null  comment '用户手机号', -- E.164格式标准存储
     gender tinyint(1) not null default 0 comment '用户性别:0未知  1男  2女',
     avatar varchar(1000) comment '用户头像',
     status tinyint(1) not null default 0 comment '用户状态:0正常 1冻结',
