@@ -48,10 +48,10 @@ service FileService {
 
 // ---------- 通用结构 ---------- //
 message FileMeta {
-  bytes file_id = 1;        // 文件ID (UUID格式)
-  bytes user_id = 2;        // 用户ID
+  string file_id = 1;        // 文件ID (UUID格式)
+  string user_id = 2;        // 用户ID
   string file_md5 = 3;      // 文件MD5
-  bytes parent_id = 4;      // 父目录ID
+  string parent_id = 4;      // 父目录ID
   uint64 file_size = 5;     // 文件大小
   string file_name = 6;     // 文件名
   string file_cover = 7;    // 封面URL
@@ -75,7 +75,7 @@ message FileMeta {
   // 预览相关信息
   message PreviewInfo {
     string preview_url = 1;          // 预览URL
-    uint32 preview_page_count = 2;   // 文档页数
+    uint64 preview_page_count = 2;   // 文档页数
     bool requires_transcode = 3;     // 是否需要转码
   }
   PreviewInfo preview = 16;
@@ -96,129 +96,145 @@ message Empty{}
 
 // ---------- 上传相关 ---------- //
 message InitUploadReq {
-  bytes user_id = 1;
+  string target_user_id=1;
   string file_name = 2;
-  bytes parent_id = 3;
+  string parent_id = 3;
   uint64 file_size = 4;
   string file_md5 = 5;
+  string request_user_id=6;
 }
 
 message InitUploadResp {
   string upload_id = 1;      // 上传会话ID
-  uint32 chunk_size = 2;     // 建议的分片大小
-  repeated uint32 existing_chunks = 3; // 已存在的分片索引
+  uint64 chunk_size = 2;     // 建议的分片大小
+  repeated uint64 existing_chunks = 3; // 已存在的分片索引
+  string request_user_id=4;
 }
 
 message UploadChunkReq {
   string upload_id = 1;
-  uint32 chunk_index = 2;
+  uint64 chunk_index = 2;
   bytes content = 3;         // 分片内容
   string chunk_md5 = 4;      // 分片MD5校验
+  string request_user_id=5;
 }
 
 message UploadChunkResp {
-  uint32 chunk_index = 1;
+  uint64 chunk_index = 1;
   bool verified = 2;         // 分片校验结果
+  string request_user_id=3;
 }
 
 message CompleteUploadReq {
   string upload_id = 1;
   string file_md5 = 2;       // 完整文件MD5
+  string request_user_id=3;
 }
 
 message FastUploadReq {
-  bytes user_id = 1;
-  bytes parent_id = 2;
+  string target_user_id = 1;
+  string parent_id = 2;
   string file_md5 = 3;       // 已知文件的MD5
   string file_name = 4;
+  string request_user_id=5;
 }
 
 // 外部存储上传相关
 message UploadUrlReq {
-  bytes user_id = 1;
+  string target_user_id = 1;
   string file_name = 2;
-  bytes parent_id = 3;
+  string parent_id = 3;
   uint64 file_size = 4;
   string file_md5 = 5;
+  string request_user_id=6;
 }
 
 message UploadUrlResp {
   string upload_id = 1;
   string pre_signed_url = 2; // 有效期5分钟的预签名URL
   uint64 expires_at = 3;
+  string request_user_id=4;
 }
 
 message RegisterUploadReq {
   string upload_id = 1;
   string object_key = 2; // 对象存储中的路径
   string file_md5 = 3; // 文件MD5验证
+  string request_user_id=4;
 }
 
 // ---------- 文件操作 ---------- //
 message CreateFolderReq {
-  bytes user_id = 1;
+  string target_user_id = 1;
   string folder_name = 2;
-  bytes parent_id = 3;
+  string parent_id = 3;
+  string request_user_id=4;
 }
 
 message RenameFileReq {
-  bytes file_id = 1;
+  string file_id = 1;
   string new_name = 2;
+  string request_user_id=3;
 }
 
 message MoveFileReq {
-  bytes file_id = 1;
-  bytes new_parent_id = 2;
+  string file_id = 1;
+  string new_parent_id = 2;
+  string request_user_id=3;
 }
 
 message CopyFileReq {
-  bytes file_id = 1;
-  bytes target_parent_id = 2;
+  string file_id = 1;
+  string target_parent_id = 2;
+  string request_user_id=3;
 }
 
 // ---------- 回收站管理 ---------- //
 message FileReq {
-  bytes file_id = 1;
+  string file_id = 1;
+  string request_user_id=2;
 }
 
 // ---------- 文件查询 ---------- //
 message ListDirectoryReq {
-  bytes user_id = 1;
-  bytes parent_id = 2;        // 为空时列出根目录
+  string target_user_id = 1;
+  string parent_id = 2;        // 为空时列出根目录
   uint32 page = 3;            // 分页页码
   uint32 page_size = 4;       // 每页数量
   bool include_trashed = 5;   // 是否包含回收站文件
+  string request_user_id=6;
 }
 
 message ListDirectoryResp {
   repeated FileMeta files = 1;
-  uint32 total_count = 2;
-  uint32 page = 3;
-  uint32 page_size = 4;
+  uint64 total_count = 2;
+  uint64 page = 3;
+  uint64 page_size = 4;
 }
 
 message SearchFilesReq {
-  bytes user_id = 1;
   string keyword = 2;
   FileCategory category = 3;  // 可选：按类别过滤
-  uint32 page = 4;
-  uint32 page_size = 5;
+  uint64 page = 4;
+  uint64 page_size = 5;
+  string request_user_id=6;
 }
 
 message SearchFilesResp {
   repeated FileMeta files = 1;
-  uint32 total_count = 2;
+  uint64 total_count = 2;
 }
 
 message UserReq {
-  bytes user_id = 1;
+  string request_user_id=1;
 }
 
 // ---------- 文件预览 ---------- //
 message PreviewResp {
   string preview_url = 1;     // 预览URL (带签名)
-  int32 expire_seconds = 2;   // URL有效期(秒)
+  uint64 expire_seconds = 2;   // URL有效期(秒)
   FileMeta.PreviewInfo preview_info = 3;
+  string request_user_id=4;
 }
 
 message TranscodeStatusResp {
@@ -230,16 +246,18 @@ message TranscodeStatusResp {
   }
   Status status = 1;
   string message = 2;         // 失败原因
-  int32 progress = 3;         // 进度百分比
+  int64 progress = 3;         // 进度百分比
+  string request_user_id=4;
 }
 
 // ---------- 存储管理 ---------- //
 message CleanTrashReq {
   int32 days = 1; // 清理超过N天的回收站文件
+  string request_user_id=2;
 }
 
 message CleanTrashResp {
-  uint32 deleted_count = 1; // 删除的文件数
+  uint64 deleted_count = 1; // 删除的文件数
   uint64 freed_space = 2;   // 释放的空间(字节)
 }
 
@@ -250,6 +268,6 @@ message StorageQuotaResp {
 }
 
 message DeduplicationResp {
-  uint32 duplicate_count = 1; // 发现的重复文件数
+  uint64 duplicate_count = 1; // 发现的重复文件数
   uint64 saved_space = 2;     // 节省的空间
 }
