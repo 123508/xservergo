@@ -2,7 +2,7 @@ package condition
 
 import (
 	"fmt"
-	"github.com/123508/xservergo/pkg/component/pub"
+	"github.com/123508/xservergo/pkg/util/component/pub"
 	"reflect"
 	"strings"
 )

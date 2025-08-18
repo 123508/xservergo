@@ -7,10 +7,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/123508/xservergo/pkg/util/id"
 	"time"
 
 	"github.com/123508/xservergo/pkg/config"
-	"github.com/123508/xservergo/pkg/util"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
@@ -23,9 +23,9 @@ func Md5Hash(s string) string {
 }
 
 type AccessTokenClaims struct {
-	UserId util.UUID `json:"user_id"`
-	Perms  []string  `json:"perms"`
-	PVer   uint64    `json:"p_ver"`
+	UserId id.UUID  `json:"user_id"`
+	Perms  []string `json:"perms"`
+	PVer   uint64   `json:"p_ver"`
 	jwt.RegisteredClaims
 }
 
@@ -33,7 +33,7 @@ var frontendSecretKey = config.Conf.Jwt.AdminSecretKey
 
 // GenerateJWT 产生一个jwt令牌
 func GenerateJWT(
-	userId util.UUID,
+	userId id.UUID,
 	perms []string,
 	version uint64,
 ) (string, error) {

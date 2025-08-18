@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/123508/xservergo/pkg/util"
+	"github.com/123508/xservergo/pkg/util/id"
 )
 
 // PermissionType 权限类型枚举
@@ -19,11 +19,11 @@ const (
 )
 
 type Permission struct {
-	ID          util.UUID      `gorm:"column:id;comment '权限ID'"`
+	ID          id.UUID        `gorm:"column:id;comment '权限ID'"`
 	Code        string         `gorm:"column:code;comment '权限唯一标识符'"`
 	Name        string         `gorm:"column:name;comment '权限名称'"`
 	Description string         `gorm:"column:description;comment '权限详细描述'"`
-	ParentID    *util.UUID     `gorm:"column:parent_id;comment '父级ID,没有就置空'"`
+	ParentID    *id.UUID       `gorm:"column:parent_id;comment '父级ID,没有就置空'"`
 	Type        PermissionType `gorm:"column:type;comment '权限类型'"`
 	Resource    string         `gorm:"column:resource;comment '权限对应资源'"`
 	Method      string         `gorm:"column:method;comment '权限对应方法类型'"`

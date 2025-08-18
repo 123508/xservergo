@@ -20,6 +20,9 @@ create table if not exists file(
     is_directory tinyint(1) not null default 0 comment '0:文件 1:目录',
     file_category tinyint(10) unsigned comment '文件分类:1视频 2音频 3图片 4文件 5其他',
     file_type tinyint(5)  comment '1视频 2音频 3图片 4pdf 5doc 6excel 7txt 8code 9zip 10其他',
+    is_public tinyint(1) comment '0不公开 1公开',
+    permission_overridden tinyint(1) not null default 0 comment '权限覆盖标记: 0-继承权限 1-独立权限',
+    permission_path_hash binary(32) comment '权限路径摘要(SHA-256)',
 
     status tinyint(1) default null comment '标记删除: 0删除 1回收站 2正常 3转码中 4转码失败',
     store_type tinyint(1) comment '1本地 2云存储',

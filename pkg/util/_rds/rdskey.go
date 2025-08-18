@@ -1,8 +1,9 @@
-package util
+package _rds
 
 import (
 	"context"
 	"fmt"
+	"github.com/123508/xservergo/pkg/util/id"
 	"github.com/redis/go-redis/v9"
 	"strconv"
 	"strings"
@@ -34,8 +35,8 @@ func TakeKey(data ...any) string {
 			builder.WriteString(strconv.FormatInt(v.(time.Time).Unix(), 10))
 		case byte:
 			builder.WriteString(strconv.FormatInt(int64(v.(byte)), 10))
-		case UUID:
-			builder.WriteString(v.(UUID).String())
+		case id.UUID:
+			builder.WriteString(v.(id.UUID).String())
 		case interface{}:
 			builder.WriteString(fmt.Sprintf("%v", v))
 		}

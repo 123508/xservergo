@@ -2,21 +2,21 @@ package main
 
 import (
 	"context"
+	"github.com/123508/xservergo/pkg/util/id"
 	"testing"
 
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/kitex_gen/auth/authservice"
 	"github.com/123508/xservergo/pkg/cli"
-	"github.com/123508/xservergo/pkg/util"
 )
 
 var authClient authservice.Client
-var userId util.UUID
+var userId id.UUID
 var userIdBase64 string
 
 func init() {
 	authClient = cli.InitAuthService()
-	userId, _ = util.FromString("01987a69-f9d4-7008-a2a0-d055abeb7790")
+	userId, _ = id.FromString("01987a69-f9d4-7008-a2a0-d055abeb7790")
 	userIdBase64 = userId.MarshalBase64()
 }
 

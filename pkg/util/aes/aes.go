@@ -1,4 +1,4 @@
-package util
+package aes
 
 import (
 	"bytes"
@@ -60,19 +60,23 @@ func DecryptAES(encrypted string) ([]byte, error) {
 // PKCS#7填充函数 (保持不变)
 func pkcs7Pad(data []byte, blockSize int) []byte {
 	padding := blockSize - len(data)%blockSize
+	//Repeat()函数的功能是把切片[]byte{byte(padding)}复制padding个，然后合并成新的字节切片返回
 	padText := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(data, padText...)
 }
 
 // PKCS#7去填充函数 (保持不变)
 func pkcs7Unpad(data []byte) []byte {
+	//获取数据长度
 	length := len(data)
 	if length == 0 {
 		return data
 	}
+	//获取填充字符串长度
 	padding := int(data[length-1])
 	if padding < 1 || padding > aes.BlockSize {
 		return data
 	}
+	//截取切片，删除填充字节，并且返回明文
 	return data[:length-padding]
 }

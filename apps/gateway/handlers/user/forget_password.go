@@ -25,7 +25,7 @@ func ForgetPassword(ctx context.Context, c *app.RequestContext) {
 	}
 
 	if fog.Phone != "" {
-		ForgetReq.Identify = &user.ForgotPasswordReq_Email{Email: fog.Phone}
+		ForgetReq.Identify = &user.ForgotPasswordReq_Phone{Phone: fog.Phone}
 	} else {
 		if fog.Email != "" {
 			ForgetReq.Identify = &user.ForgotPasswordReq_Email{Email: fog.Email}

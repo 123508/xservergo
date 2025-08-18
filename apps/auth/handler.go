@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 
 	"github.com/123508/xservergo/apps/auth/service"
 	auth "github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/models"
-	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -61,12 +61,12 @@ func permissionTypeFromInt(t auth.Permission_Type) models.PermissionType {
 	}
 }
 
-func unmarshalParentUID(ctx context.Context, uid string) (*util.UUID, error) {
+func unmarshalParentUID(ctx context.Context, uid string) (*id.UUID, error) {
 	if uid == "" || len(uid) == 0 {
 		return nil, nil
 	}
 
-	Uid := util.NewUUID()
+	Uid := id.NewUUID()
 	if err := Uid.UnmarshalBase64(uid); err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
@@ -74,21 +74,21 @@ func unmarshalParentUID(ctx context.Context, uid string) (*util.UUID, error) {
 	return &Uid, nil
 }
 
-func unmarshalRequestUID(ctx context.Context, uid string) (*util.UUID, error) {
+func unmarshalRequestUID(ctx context.Context, uid string) (*id.UUID, error) {
 
 	if uid == "" || len(uid) == 0 {
-		return &util.SystemUUID, nil
+		return &id.SystemUUID, nil
 	}
 
-	Uid := util.NewUUID()
+	Uid := id.NewUUID()
 	if err := Uid.UnmarshalBase64(uid); err != nil {
-		return &util.SystemUUID, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+		return &id.SystemUUID, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
 	return &Uid, nil
 }
 
-func marshalUID(ctx context.Context, uid *util.UUID) string {
+func marshalUID(ctx context.Context, uid *id.UUID) string {
 
 	if uid == nil {
 		return ""
@@ -128,7 +128,7 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 	}
 
 	permission := models.Permission{
-		ID:          util.NewUUID(),
+		ID:          id.NewUUID(),
 		Code:        req.Permission.Code,
 		Name:        req.Permission.PermissionName,
 		Description: req.Permission.Description,
@@ -183,7 +183,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 	if !req.Permission.Status {
 		status = 0
 	}
-	permissionId := util.UUID{}
+	permissionId := id.UUID{}
 	if req.Permission.Id != "" {
 		if err := permissionId.UnmarshalBase64(req.Permission.Id); err != nil {
 			return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
@@ -274,7 +274,7 @@ func (s *AuthServiceImpl) CreateRole(ctx context.Context, req *auth.CreateRoleRe
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	role := models.Role{
-		ID:          util.NewUUID(),
+		ID:          id.NewUUID(),
 		Code:        req.Role.Code,
 		Name:        req.Role.RoleName,
 		Description: req.Role.Description,
@@ -489,7 +489,7 @@ func (s *AuthServiceImpl) CreateUserGroup(ctx context.Context, req *auth.CreateU
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 	userGroup := models.UserGroup{
-		ID:   util.NewUUID(),
+		ID:   id.NewUUID(),
 		Code: req.GetUserGroup().GetCode(),
 		Name: req.GetUserGroup().GetGroupName(),
 		AuditFields: models.AuditFields{

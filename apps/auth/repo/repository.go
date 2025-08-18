@@ -2,10 +2,9 @@ package repo
 
 import (
 	"context"
+	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 	"time"
-
-	"github.com/123508/xservergo/pkg/util"
 
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/models"
@@ -20,9 +19,9 @@ type AuthRepository interface {
 	// UpdatePermission 更新权限
 	UpdatePermission(ctx context.Context, permission *models.Permission) error
 	// DeletePermission 删除权限
-	DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error
+	DeletePermission(ctx context.Context, permissionCode string, operatorId *id.UUID) error
 	// GetPermissionByID 根据权限ID获取权限
-	GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error)
+	GetPermissionByID(ctx context.Context, permissionID id.UUID) (*models.Permission, error)
 	// GetPermissionByCode 根据权限代码获取权限
 	GetPermissionByCode(ctx context.Context, permissionCode string) (*models.Permission, error)
 
@@ -31,64 +30,64 @@ type AuthRepository interface {
 	// UpdateRole 更新角色
 	UpdateRole(ctx context.Context, role *models.Role) error
 	// DeleteRole 删除角色
-	DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error
+	DeleteRole(ctx context.Context, roleCode string, operatorId *id.UUID) error
 	// GetRoleByID 根据角色ID获取角色
 	GetRoleByID(ctx context.Context, roleID []byte) (*models.Role, error)
 	// GetRoleByCode 根据角色代码获取角色
 	GetRoleByCode(ctx context.Context, roleCode string) (*models.Role, error)
 
 	// GrantPermissionToRole 授予权限给角色
-	GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error
+	GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *id.UUID) error
 	// RevokePermissionFromRole 撤销角色的权限
-	RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error
+	RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *id.UUID) error
 	// GetRolePermission 获取角色的权限
 	// 返回权限代码列表
 	GetRolePermission(ctx context.Context, roleCode string) ([]string, error)
 
 	// AssignRoleToUser 分配角色给用户
-	AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
+	AssignRoleToUser(ctx context.Context, roleCode string, userID id.UUID, operatorId *id.UUID) error
 	// RevokeRoleFromUser 撤销用户的角色
-	RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error
+	RevokeRoleFromUser(ctx context.Context, roleCode string, userID id.UUID, operatorId *id.UUID) error
 	// GetUserRoles 获取用户的角色
-	GetUserRoles(ctx context.Context, userID util.UUID) ([]string, error)
+	GetUserRoles(ctx context.Context, userID id.UUID) ([]string, error)
 
 	// CreateUserGroup 创建用户组
 	CreateUserGroup(ctx context.Context, userGroup *models.UserGroup) error
 	// UpdateUserGroup 更新用户组
 	UpdateUserGroup(ctx context.Context, userGroup *models.UserGroup) error
 	// DeleteUserGroup 删除用户组
-	DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error
+	DeleteUserGroup(ctx context.Context, groupCode string, operatorId *id.UUID) error
 	// GetUserGroupByID 根据用户组ID获取用户组
 	GetUserGroupByID(ctx context.Context, groupID []byte) (*models.UserGroup, error)
 	// GetUserGroupByCode 根据用户组代码获取用户组
 	GetUserGroupByCode(ctx context.Context, groupCode string) (*models.UserGroup, error)
 	// GetUserGroupMembers 获取用户组成员
 	// 返回成员用户名列表
-	GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error)
+	GetUserGroupMembers(ctx context.Context, groupCode string) ([]id.UUID, error)
 	// GetUserGroupRoles 获取用户组的角色
 	GetUserGroupRoles(ctx context.Context, groupCode string) ([]string, error)
 	// AssignRoleToUserGroup 分配角色到用户组
-	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
+	AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *id.UUID) error
 	// RemoveRoleFromUserGroup 从用户组中移除角色
-	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error
+	RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *id.UUID) error
 	// GetUserGroupPermissions 获取用户组的权限
 	GetUserGroupPermissions(ctx context.Context, groupCode string) ([]string, error)
 
 	// AssignUserToGroup 分配用户到用户组
-	AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
+	AssignUserToGroup(ctx context.Context, userID id.UUID, groupCode string, operatorId *id.UUID) error
 	// RevokeUserFromGroup 撤销用户组中的用户
-	RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error
+	RevokeUserFromGroup(ctx context.Context, userID id.UUID, groupCode string, operatorId *id.UUID) error
 	// GetUserGroups 获取用户所属的用户组
 	// 返回用户组名称列表
-	GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error)
+	GetUserGroups(ctx context.Context, userID id.UUID) ([]string, error)
 
 	// GetUserPermissions 获取用户的权限
 	// 返回权限代码列表
-	GetUserPermissions(ctx context.Context, userID util.UUID) ([]string, error)
+	GetUserPermissions(ctx context.Context, userID id.UUID) ([]string, error)
 	// HasPermission 检查用户是否有特定权限
-	HasPermission(ctx context.Context, userID util.UUID, permissionCode string) bool
+	HasPermission(ctx context.Context, userID id.UUID, permissionCode string) bool
 	// CanAccess 检查用户是否可以以某种方法访问特定资源
-	CanAccess(ctx context.Context, userID util.UUID, resource string, method string) bool
+	CanAccess(ctx context.Context, userID id.UUID, resource string, method string) bool
 
 	// GetRoleList 获取角色列表
 	GetRoleList(ctx context.Context, page uint32, pageSize uint32) ([]*models.Role, error)
@@ -136,7 +135,7 @@ func (r *RepoImpl) UpdatePermission(ctx context.Context, permission *models.Perm
 	return nil
 }
 
-func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, operatorId *id.UUID) error {
 	if permissionCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
 	}
@@ -147,8 +146,8 @@ func (r *RepoImpl) DeletePermission(ctx context.Context, permissionCode string, 
 	return nil
 }
 
-func (r *RepoImpl) GetPermissionByID(ctx context.Context, permissionID util.UUID) (*models.Permission, error) {
-	if permissionID == (util.UUID{}) {
+func (r *RepoImpl) GetPermissionByID(ctx context.Context, permissionID id.UUID) (*models.Permission, error) {
+	if permissionID == (id.UUID{}) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "permission ID cannot be empty")
 	}
 
@@ -196,7 +195,7 @@ func (r *RepoImpl) UpdateRole(ctx context.Context, role *models.Role) error {
 	return nil
 }
 
-func (r *RepoImpl) DeleteRole(ctx context.Context, roleCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) DeleteRole(ctx context.Context, roleCode string, operatorId *id.UUID) error {
 	if roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code cannot be empty")
 	}
@@ -237,7 +236,7 @@ func (r *RepoImpl) GetRoleByCode(ctx context.Context, roleCode string) (*models.
 	return &role, nil
 }
 
-func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode string, roleCode string, operatorId *id.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
@@ -291,7 +290,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 	return nil
 }
 
-func (r *RepoImpl) RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) RevokePermissionFromRole(ctx context.Context, permissionCode string, roleCode string, operatorId *id.UUID) error {
 	if permissionCode == "" || roleCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "permission code and role code cannot be empty")
 	}
@@ -374,8 +373,8 @@ func (r *RepoImpl) GetRolePermission(ctx context.Context, roleCode string) ([]st
 	return allPermissionCodes, nil
 }
 
-func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
-	if roleCode == "" || userID == (util.UUID{}) {
+func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID id.UUID, operatorId *id.UUID) error {
+	if roleCode == "" || userID == (id.UUID{}) {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
 
@@ -420,8 +419,8 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 	return nil
 }
 
-func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID util.UUID, operatorId *util.UUID) error {
-	if roleCode == "" || userID == (util.UUID{}) {
+func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, userID id.UUID, operatorId *id.UUID) error {
+	if roleCode == "" || userID == (id.UUID{}) {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and userID cannot be empty")
 	}
 
@@ -446,8 +445,8 @@ func (r *RepoImpl) RevokeRoleFromUser(ctx context.Context, roleCode string, user
 	return nil
 }
 
-func (r *RepoImpl) GetUserRoles(ctx context.Context, userID util.UUID) ([]string, error) {
-	if userID == (util.UUID{}) {
+func (r *RepoImpl) GetUserRoles(ctx context.Context, userID id.UUID) ([]string, error) {
+	if userID == (id.UUID{}) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
@@ -484,7 +483,7 @@ func (r *RepoImpl) UpdateUserGroup(ctx context.Context, userGroup *models.UserGr
 	return nil
 }
 
-func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) DeleteUserGroup(ctx context.Context, groupCode string, operatorId *id.UUID) error {
 	if groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
@@ -530,12 +529,12 @@ func (r *RepoImpl) GetUserGroupByCode(ctx context.Context, groupCode string) (*m
 	return &userGroup, nil
 }
 
-func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupCode string) ([]util.UUID, error) {
+func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupCode string) ([]id.UUID, error) {
 	if groupCode == "" {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "group code cannot be empty")
 	}
 
-	var userIDList []util.UUID
+	var userIDList []id.UUID
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
 		Select("user_group_relation.user_id").
 		Joins("JOIN user_group_relation ON user_group.id = user_group_relation.group_id").
@@ -546,7 +545,7 @@ func (r *RepoImpl) GetUserGroupMembers(ctx context.Context, groupCode string) ([
 	return userIDList, nil
 }
 
-func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *id.UUID) error {
 	if roleCode == "" || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group code cannot be empty")
 	}
@@ -601,7 +600,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 	return nil
 }
 
-func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *util.UUID) error {
+func (r *RepoImpl) RemoveRoleFromUserGroup(ctx context.Context, roleCode string, groupCode string, operatorId *id.UUID) error {
 	if roleCode == "" || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "role code and group name cannot be empty")
 	}
@@ -654,8 +653,8 @@ func (r *RepoImpl) GetUserGroupPermissions(ctx context.Context, groupCode string
 	return permissionCodes, nil
 }
 
-func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupCode == "" {
+func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID id.UUID, groupCode string, operatorId *id.UUID) error {
+	if userID == (id.UUID{}) || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group name cannot be empty")
 	}
 
@@ -700,8 +699,8 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID util.UUID, grou
 	return nil
 }
 
-func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, groupCode string, operatorId *util.UUID) error {
-	if userID == (util.UUID{}) || groupCode == "" {
+func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID id.UUID, groupCode string, operatorId *id.UUID) error {
+	if userID == (id.UUID{}) || groupCode == "" {
 		return cerrors.NewParamError(http.StatusBadRequest, "userID and group code cannot be empty")
 	}
 
@@ -726,8 +725,8 @@ func (r *RepoImpl) RevokeUserFromGroup(ctx context.Context, userID util.UUID, gr
 	return nil
 }
 
-func (r *RepoImpl) GetUserGroups(ctx context.Context, userID util.UUID) ([]string, error) {
-	if userID == (util.UUID{}) {
+func (r *RepoImpl) GetUserGroups(ctx context.Context, userID id.UUID) ([]string, error) {
+	if userID == (id.UUID{}) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
@@ -742,8 +741,8 @@ func (r *RepoImpl) GetUserGroups(ctx context.Context, userID util.UUID) ([]strin
 	return groupCodes, nil
 }
 
-func (r *RepoImpl) GetUserPermissions(ctx context.Context, userID util.UUID) ([]string, error) {
-	if userID == (util.UUID{}) {
+func (r *RepoImpl) GetUserPermissions(ctx context.Context, userID id.UUID) ([]string, error) {
+	if userID == (id.UUID{}) {
 		return nil, cerrors.NewParamError(http.StatusBadRequest, "userID cannot be empty")
 	}
 
@@ -777,7 +776,7 @@ func (r *RepoImpl) GetUserPermissions(ctx context.Context, userID util.UUID) ([]
 }
 
 // getUserDirectPermissions 获取用户通过直接角色分配获得的权限
-func (r *RepoImpl) getUserDirectPermissions(ctx context.Context, userID util.UUID) ([]string, error) {
+func (r *RepoImpl) getUserDirectPermissions(ctx context.Context, userID id.UUID) ([]string, error) {
 	relos := make([]string, 0)
 	if err := r.DB.WithContext(ctx).Model(&models.Role{}).
 		Select("roles.code").
@@ -807,7 +806,7 @@ func (r *RepoImpl) getUserDirectPermissions(ctx context.Context, userID util.UUI
 }
 
 // getUserGroupPermissions 获取用户通过用户组获得的权限
-func (r *RepoImpl) getUserGroupPermissions(ctx context.Context, userID util.UUID) ([]string, error) {
+func (r *RepoImpl) getUserGroupPermissions(ctx context.Context, userID id.UUID) ([]string, error) {
 	// 递归查询用户组和父用户组
 	var groupIDs []interface{}
 	if err := r.DB.WithContext(ctx).Model(&models.UserGroup{}).
@@ -879,8 +878,8 @@ func (r *RepoImpl) getUserGroupPermissions(ctx context.Context, userID util.UUID
 	return uniquePermissions, nil
 }
 
-func (r *RepoImpl) HasPermission(ctx context.Context, userID util.UUID, permissionCode string) bool {
-	if userID == (util.UUID{}) || permissionCode == "" {
+func (r *RepoImpl) HasPermission(ctx context.Context, userID id.UUID, permissionCode string) bool {
+	if userID == (id.UUID{}) || permissionCode == "" {
 		return false
 	}
 
@@ -897,8 +896,8 @@ func (r *RepoImpl) HasPermission(ctx context.Context, userID util.UUID, permissi
 	return false
 }
 
-func (r *RepoImpl) CanAccess(ctx context.Context, userID util.UUID, resource string, method string) bool {
-	if userID == (util.UUID{}) || resource == "" || method == "" {
+func (r *RepoImpl) CanAccess(ctx context.Context, userID id.UUID, resource string, method string) bool {
+	if userID == (id.UUID{}) || resource == "" || method == "" {
 		return false
 	}
 

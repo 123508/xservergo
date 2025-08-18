@@ -21,6 +21,7 @@ service FileService {
   rpc RenameFile(RenameFileReq) returns (FileMeta);                     // 重命名文件
   rpc MoveFile(MoveFileReq) returns (FileMeta);                         // 移动文件
   rpc CopyFile(CopyFileReq) returns (FileMeta);                         // 复制文件
+  rpc UpdateFilePublic(UpdateFilePublicReq) returns (FileMeta);         // 修改文件公开状态
 
   // ---------- 回收站管理模块 ---------- //
   rpc TrashFile(FileReq) returns (FileMeta);                            // 移入回收站
@@ -60,6 +61,7 @@ message FileMeta {
   string updated_at = 10;
   string deleted_at = 11;
   bool is_directory = 12;         // 是否目录
+  bool is_public = 17;            // 是否公开
   FileCategory file_category = 13; // 文件大类
   string file_type = 14;          // 文件扩展名
 
@@ -188,6 +190,22 @@ message CopyFileReq {
   string target_parent_id = 2;
   string request_user_id=3;
 }
+
+message UpdateFilePublicReq{
+  string file_id=1;
+  string target_user_id=2;
+
+  // 文件公开状态枚举
+  enum FilePublicStatus {
+    PRIVATE = 0;
+    PUBLIC = 1;
+  }
+
+  FilePublicStatus is_public=3;
+  string request_user_id=4;
+}
+
+
 
 // ---------- 回收站管理 ---------- //
 message FileReq {

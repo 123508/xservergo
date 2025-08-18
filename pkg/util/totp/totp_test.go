@@ -1,4 +1,4 @@
-package util
+package totp
 
 import (
 	"encoding/base32"

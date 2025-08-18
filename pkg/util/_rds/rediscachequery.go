@@ -1,11 +1,11 @@
-package util
+package _rds
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/123508/xservergo/pkg/component/pub"
 	"github.com/123508/xservergo/pkg/logs"
+	"github.com/123508/xservergo/pkg/util/component/pub"
 	"go.uber.org/zap"
 
 	"github.com/redis/go-redis/v9"
@@ -54,7 +54,7 @@ func (c *ListCacheComponent[Id, Item]) checkAndRepair() error {
 	}
 
 	if c.Rds == nil {
-		return errors.New("rds is nil")
+		return errors.New("_rds is nil")
 	}
 
 	if c.Ctx == nil {

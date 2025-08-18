@@ -2,7 +2,7 @@ package sort
 
 import (
 	"fmt"
-	"github.com/123508/xservergo/pkg/component/pub"
+	"github.com/123508/xservergo/pkg/util/component/pub"
 	"regexp"
 	"strings"
 )

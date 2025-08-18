@@ -1,10 +1,10 @@
-package util
+package qr
 
 import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/123508/xservergo/pkg/component/serializer"
+	serializer2 "github.com/123508/xservergo/pkg/util/component/serializer"
 	"github.com/google/uuid"
 	qrcode "github.com/skip2/go-qrcode"
 	"image/color"
@@ -53,7 +53,7 @@ func (q *QRLoginSession) checkAndRepair() {
 
 func (q *QRLoginSession) Serialize() (string, error) {
 	q.checkAndRepair()
-	wrapper := serializer.NewSerializerWrapper(serializer.JSON)
+	wrapper := serializer2.NewSerializerWrapper(serializer2.JSON)
 	serialize, err := wrapper.Serialize(q)
 	return string(serialize), err
 }
@@ -73,7 +73,7 @@ func (q *QRLoginSession) GenerateQR(
 }
 
 func (q *QRLoginSession) DeSerialize(data string) error {
-	wrapper := serializer.NewSerializerWrapper(serializer.JSON)
+	wrapper := serializer2.NewSerializerWrapper(serializer2.JSON)
 	return wrapper.Deserialize([]byte(data), q)
 }
 

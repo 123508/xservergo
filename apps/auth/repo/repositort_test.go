@@ -2,16 +2,16 @@ package repo
 
 import (
 	"context"
+	"github.com/123508/xservergo/pkg/util/id"
 	"testing"
 	"time"
 
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/models"
-	"github.com/123508/xservergo/pkg/util"
 )
 
 var testRepo AuthRepository
-var testUserId, _ = util.FromString("01983738-ba08-73f7-97a4-9c9972075337")
+var testUserId, _ = id.FromString("01983738-ba08-73f7-97a4-9c9972075337")
 var timeNow = time.Now()
 var version = 1
 
@@ -30,8 +30,8 @@ func setupTestDB(t *testing.T) AuthRepository {
 
 func TestCreatePermission(t *testing.T) {
 	repo := setupTestDB(t)
-	uid := util.NewUUID()
-	parentId := util.NewUUID()
+	uid := id.NewUUID()
+	parentId := id.NewUUID()
 	permission := &models.Permission{
 		ID:          parentId,
 		Code:        "test_permission_create",
@@ -59,7 +59,7 @@ func TestCreatePermission(t *testing.T) {
 	}
 
 	childPermission := &models.Permission{
-		ID:          util.NewUUID(),
+		ID:          id.NewUUID(),
 		Code:        "test_permission_create_child",
 		Name:        "Test Permission Create Child",
 		Description: "Permission for testing create child purposes",
@@ -87,11 +87,11 @@ func TestCreatePermission(t *testing.T) {
 
 func TestUpdatePermission(t *testing.T) {
 	repo := setupTestDB(t)
-	uid := util.NewUUID()
+	uid := id.NewUUID()
 
 	// 先创建一个权限
 	permission := &models.Permission{
-		ID:          util.NewUUID(),
+		ID:          id.NewUUID(),
 		Code:        "test_permission_update",
 		Name:        "Test Permission Update",
 		Description: "Permission for testing update purposes",
@@ -178,12 +178,12 @@ func TestGetPermissionByID(t *testing.T) {
 
 func TestCreateRole(t *testing.T) {
 	repo := setupTestDB(t)
-	uid := util.NewUUID()
+	uid := id.NewUUID()
 
 	timeNow := time.Now()
 
 	role := &models.Role{
-		ID:          util.NewUUID(),
+		ID:          id.NewUUID(),
 		Code:        "test_role_admin",
 		Name:        "Test Admin Role",
 		Description: "Role for testing admin purposes",
@@ -281,10 +281,10 @@ func TestGetRolePermission(t *testing.T) {
 
 func TestCreateUserGroup(t *testing.T) {
 	repo := setupTestDB(t)
-	uid := util.NewUUID()
+	uid := id.NewUUID()
 
 	userGroup := &models.UserGroup{
-		ID:     util.NewUUID(),
+		ID:     id.NewUUID(),
 		Name:   "test_admin_group",
 		Code:   "test_admin_group_code",
 		Status: 1,

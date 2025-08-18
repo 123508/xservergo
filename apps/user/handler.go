@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"github.com/123508/xservergo/pkg/util/component/serializer"
+	"github.com/123508/xservergo/pkg/util/id"
+	"github.com/123508/xservergo/pkg/util/validate"
 	"net/http"
 	"time"
 
 	"github.com/123508/xservergo/apps/user/service"
 	"github.com/123508/xservergo/pkg/cerrors"
-	"github.com/123508/xservergo/pkg/component/serializer"
 	"github.com/123508/xservergo/pkg/models"
-	"github.com/123508/xservergo/pkg/util"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
@@ -48,13 +49,13 @@ func parseServiceErrToHandlerError(ctx context.Context, err error, requestId str
 	return resp, cerrors.NewGRPCError(code, message)
 }
 
-func unmarshalUID(ctx context.Context, uid string, version uint64) (*user.OperationResult, error, util.UUID) {
+func unmarshalUID(ctx context.Context, uid string, version uint64) (*user.OperationResult, error, id.UUID) {
 
 	if uid == "" || len(uid) == 0 {
-		return nil, nil, util.SystemUUID
+		return nil, nil, id.SystemUUID
 	}
 
-	Uid := util.NewUUID()
+	Uid := id.NewUUID()
 	if err := Uid.UnmarshalBase64(uid); err != nil {
 
 		resp := &user.OperationResult{
@@ -75,7 +76,7 @@ func unmarshalUID(ctx context.Context, uid string, version uint64) (*user.Operat
 	return nil, nil, Uid
 }
 
-func marshalUID(ctx context.Context, uid util.UUID) string {
+func marshalUID(ctx context.Context, uid id.UUID) string {
 	return uid.MarshalBase64()
 }
 
@@ -93,7 +94,7 @@ func NewUserServiceImpl(database *gorm.DB, rds *redis.Client) *UserServiceImpl {
 // Register implements the UserServiceImpl interface.
 func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (resp *user.OperationResult, err error) {
 
-	if !util.IsValidateUsername(req.Username) {
+	if !validate.IsValidateUsername(req.Username) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -103,7 +104,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		}, nil
 	}
 
-	if !util.IsValidateGender(req.Gender) {
+	if !validate.IsValidateGender(req.Gender) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -116,7 +117,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	//校验手机号(手机号可以被跳过)
 
 	if req.Phone != "" {
-		if ok, _, _ := util.IsValidateE164Phone(req.Phone); !ok {
+		if ok, _, _ := validate.IsValidateE164Phone(req.Phone); !ok {
 			return &user.OperationResult{
 				Success:   false,
 				Code:      http.StatusBadRequest,
@@ -128,7 +129,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	}
 
 	//校验邮箱(邮箱可以被跳过)
-	if req.Email != "" && !util.IsValidateEmail(req.Email) {
+	if req.Email != "" && !validate.IsValidateEmail(req.Email) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -183,7 +184,7 @@ func (s *UserServiceImpl) EmailLogin(ctx context.Context, req *user.EmailLoginRe
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名或者密码不能为空")
 	}
 
-	if !util.IsValidateEmail(req.Email) {
+	if !validate.IsValidateEmail(req.Email) {
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
 	}
 
@@ -215,7 +216,7 @@ func (s *UserServiceImpl) PhoneLogin(ctx context.Context, req *user.PhoneLoginRe
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名或者密码不能为空")
 	}
 
-	if ok, _, _ := util.IsValidateE164Phone(req.Phone); !ok {
+	if ok, _, _ := validate.IsValidateE164Phone(req.Phone); !ok {
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
 	}
 
@@ -255,7 +256,7 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名或者密码不能为空")
 	}
 
-	if !util.IsValidateUsername(req.Username) {
+	if !validate.IsValidateUsername(req.Username) {
 		return &user.LoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名格式错误")
 	}
 
@@ -290,7 +291,7 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 // SmsLogin implements the UserServiceImpl interface.
 func (s *UserServiceImpl) SmsLogin(ctx context.Context, req *user.SmsLoginReq) (resp *user.SmsLoginResp, err error) {
 
-	if ok, _, _ := util.IsValidateE164Phone(req.Phone); !ok {
+	if ok, _, _ := validate.IsValidateE164Phone(req.Phone); !ok {
 		return &user.SmsLoginResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
 	}
 
@@ -598,13 +599,13 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 // ForgotPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPasswordReq) (resp *user.OperationResult, err error) {
 	var ok bool
-	var uid util.UUID
+	var uid id.UUID
 	var requestId string
 
 	if req.GetUsername() != "" {
 		username := req.GetUsername()
 
-		if !util.IsValidateUsername(username) {
+		if !validate.IsValidateUsername(username) {
 			return &user.OperationResult{
 				Success:   false,
 				Code:      http.StatusBadRequest,
@@ -614,43 +615,47 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 			}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名格式错误")
 		}
 		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, username, service.USERNAME, serializer.JSON, req.Type)
-	} else if req.GetEmail() != "" {
-
-		email := req.GetEmail()
-
-		if !util.IsValidateEmail(email) {
-			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "邮箱格式错误",
-				Timestamp: time.Now().String(),
-				Version:   0,
-			}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
-		}
-
-		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
-	} else if req.GetPhone() != "" {
-
-		phone := req.GetPhone()
-
-		if ok, _, _ := util.IsValidateE164Phone(phone); !ok {
-			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "手机号格式错误",
-				Timestamp: time.Now().String(),
-				Version:   0,
-			}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
-		}
-
-		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
 	} else {
-		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "参数错误",
-			Timestamp: time.Now().String(),
-		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+		if req.GetEmail() != "" {
+
+			email := req.GetEmail()
+
+			if !validate.IsValidateEmail(email) {
+				return &user.OperationResult{
+					Success:   false,
+					Code:      http.StatusBadRequest,
+					Message:   "邮箱格式错误",
+					Timestamp: time.Now().String(),
+					Version:   0,
+				}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
+			}
+
+			ok, uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
+		} else {
+			if req.GetPhone() != "" {
+
+				phone := req.GetPhone()
+
+				if ok, _, _ := validate.IsValidateE164Phone(phone); !ok {
+					return &user.OperationResult{
+						Success:   false,
+						Code:      http.StatusBadRequest,
+						Message:   "手机号格式错误",
+						Timestamp: time.Now().String(),
+						Version:   0,
+					}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
+				}
+
+				ok, uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
+			} else {
+				return &user.OperationResult{
+					Success:   false,
+					Code:      http.StatusBadRequest,
+					Message:   "参数错误",
+					Timestamp: time.Now().String(),
+				}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
+			}
+		}
 	}
 
 	if err != nil {
@@ -699,7 +704,7 @@ func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPass
 // StartBindEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBindEmailReq) (resp *user.OperationResult, err error) {
 
-	if !util.IsValidateEmail(req.NewEmail) {
+	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -739,7 +744,7 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 // CompleteBindEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.CompleteBindEmailReq) (resp *user.OperationResult, err error) {
 
-	if !util.IsValidateEmail(req.NewEmail) {
+	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -807,7 +812,7 @@ func (s *UserServiceImpl) StartChangeEmail(ctx context.Context, req *user.StartC
 // VerifyNewEmail implements the UserServiceImpl interface.
 func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNewEmailReq) (resp *user.OperationResult, err error) {
 
-	if !util.IsValidateEmail(req.NewEmail) {
+	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -879,7 +884,7 @@ func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.Com
 // StartBindPhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBindPhoneReq) (resp *user.OperationResult, err error) {
 
-	if ok, _, _ := util.IsValidateE164Phone(req.NewPhone); !ok {
+	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -920,7 +925,7 @@ func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBin
 // CompleteBindPhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.CompleteBindPhoneReq) (resp *user.OperationResult, err error) {
 
-	if ok, _, _ := util.IsValidateE164Phone(req.NewPhone); !ok {
+	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -990,7 +995,7 @@ func (s *UserServiceImpl) StartChangePhone(ctx context.Context, req *user.StartC
 // VerifyNewPhone implements the UserServiceImpl interface.
 func (s *UserServiceImpl) VerifyNewPhone(ctx context.Context, req *user.VerifyNewPhoneReq) (resp *user.OperationResult, err error) {
 
-	if ok, _, _ := util.IsValidateE164Phone(req.NewPhone); !ok {
+	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,
@@ -1139,7 +1144,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 		username := req.GetUsername()
 
-		if !util.IsValidateUsername(username) {
+		if !validate.IsValidateUsername(username) {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
 					Success:   false,
@@ -1156,7 +1161,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 		email := req.GetEmail()
 
-		if !util.IsValidateEmail(email) {
+		if !validate.IsValidateEmail(email) {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
 					Success:   false,
@@ -1173,7 +1178,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 		phone := req.GetPhone()
 
-		if ok, _, _ := util.IsValidateE164Phone(phone); !ok {
+		if ok, _, _ := validate.IsValidateE164Phone(phone); !ok {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
 					Success:   false,
@@ -1241,7 +1246,7 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 // UpdateUserInfo implements the UserServiceImpl interface.
 func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUserInfoReq) (resp *user.OperationResult, err error) {
 
-	if !util.IsValidateGender(req.Gender) {
+	if !validate.IsValidateGender(req.Gender) {
 		return &user.OperationResult{
 			Success:   false,
 			Code:      http.StatusBadRequest,

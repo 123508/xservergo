@@ -3,12 +3,12 @@ package repo
 import (
 	"context"
 	"errors"
+	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
-	"github.com/123508/xservergo/pkg/util"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -16,20 +16,20 @@ import (
 type UserRepository interface {
 	GetDB() *gorm.DB
 	CreateUser(ctx context.Context, user *models.User, uLogin *models.UserLogin) error
-	ComparePassword(ctx context.Context, userID util.UUID, password string) (bool, error)
-	GetUserByID(ctx context.Context, userID util.UUID) (*models.User, error)
+	ComparePassword(ctx context.Context, userID id.UUID, password string) (bool, error)
+	GetUserByID(ctx context.Context, userID id.UUID) (*models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
-	UpdateUser(ctx context.Context, user *models.User, requestUserId util.UUID) (int, error)
-	DeleteUser(ctx context.Context, userID util.UUID, requestUserId util.UUID) error
+	UpdateUser(ctx context.Context, user *models.User, requestUserId id.UUID) (int, error)
+	DeleteUser(ctx context.Context, userID id.UUID, requestUserId id.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
-	UpdatePassword(ctx context.Context, userID util.UUID, password string) error
-	ResetEmail(ctx context.Context, userID util.UUID, email string, version int, requestUserId util.UUID) (int, error)
-	ResetPhone(ctx context.Context, userID util.UUID, phone string, version int, requestUserId util.UUID) (int, error)
-	FreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error)
-	UnfreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error)
-	AddVersion(ctx context.Context, userId util.UUID) error
+	UpdatePassword(ctx context.Context, userID id.UUID, password string) error
+	ResetEmail(ctx context.Context, userID id.UUID, email string, version int, requestUserId id.UUID) (int, error)
+	ResetPhone(ctx context.Context, userID id.UUID, phone string, version int, requestUserId id.UUID) (int, error)
+	FreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error)
+	UnfreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error)
+	AddVersion(ctx context.Context, userId id.UUID) error
 }
 
 type RepoImpl struct {
@@ -83,7 +83,7 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
 	return nil
 }
 
-func (r *RepoImpl) ComparePassword(ctx context.Context, userID util.UUID, password string) (bool, error) {
+func (r *RepoImpl) ComparePassword(ctx context.Context, userID id.UUID, password string) (bool, error) {
 	var res int
 
 	compStmt := `select exists(
@@ -99,7 +99,7 @@ func (r *RepoImpl) ComparePassword(ctx context.Context, userID util.UUID, passwo
 	return res != 0, nil
 }
 
-func (r *RepoImpl) GetUserByID(ctx context.Context, userID util.UUID) (*models.User, error) {
+func (r *RepoImpl) GetUserByID(ctx context.Context, userID id.UUID) (*models.User, error) {
 
 	var row models.User
 
@@ -176,7 +176,7 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 	return &row, nil
 }
 
-func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId util.UUID) (int, error) {
+func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId id.UUID) (int, error) {
 	// 1. 构建更新字段Map
 	updates := make(map[string]interface{})
 
@@ -221,7 +221,7 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 	return *u.Version + 1, nil
 }
 
-func (r *RepoImpl) DeleteUser(ctx context.Context, userID util.UUID, requestUserId util.UUID) error {
+func (r *RepoImpl) DeleteUser(ctx context.Context, userID id.UUID, requestUserId id.UUID) error {
 
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
@@ -265,7 +265,7 @@ func (r *RepoImpl) ListUsers(ctx context.Context,
 	return users, nil
 }
 
-func (r *RepoImpl) UpdatePassword(ctx context.Context, userID util.UUID, password string) error {
+func (r *RepoImpl) UpdatePassword(ctx context.Context, userID id.UUID, password string) error {
 
 	updateStmt := `update user_login 
 set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
@@ -287,7 +287,7 @@ set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
 	return nil
 }
 
-func (r *RepoImpl) ResetEmail(ctx context.Context, userID util.UUID, email string, version int, requestUserId util.UUID) (int, error) {
+func (r *RepoImpl) ResetEmail(ctx context.Context, userID id.UUID, email string, version int, requestUserId id.UUID) (int, error) {
 
 	setStmt := `update users 
 						set email = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
@@ -309,7 +309,7 @@ func (r *RepoImpl) ResetEmail(ctx context.Context, userID util.UUID, email strin
 	return version + 1, nil
 }
 
-func (r *RepoImpl) ResetPhone(ctx context.Context, userID util.UUID, phone string, version int, requestUserId util.UUID) (int, error) {
+func (r *RepoImpl) ResetPhone(ctx context.Context, userID id.UUID, phone string, version int, requestUserId id.UUID) (int, error) {
 
 	setStmt := `update users 
 						set phone = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
@@ -331,7 +331,7 @@ func (r *RepoImpl) ResetPhone(ctx context.Context, userID util.UUID, phone strin
 	return version + 1, nil
 }
 
-func (r *RepoImpl) FreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error) {
+func (r *RepoImpl) FreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error) {
 
 	freezeStmt := `update users 
 						set status = 1 , version = version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
@@ -354,7 +354,7 @@ func (r *RepoImpl) FreezeUser(ctx context.Context, userID util.UUID, version int
 	return version + 1, nil
 }
 
-func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID util.UUID, version int, requestUserId util.UUID) (int, error) {
+func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error) {
 
 	unFreezeStmt := `update users 
 						set status = 0 , version = version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
@@ -377,7 +377,7 @@ func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID util.UUID, version i
 	return version + 1, nil
 }
 
-func (r *RepoImpl) AddVersion(ctx context.Context, userId util.UUID) error {
+func (r *RepoImpl) AddVersion(ctx context.Context, userId id.UUID) error {
 	addStmt := `update users
 					set version = version + 1 , updated_at = CURRENT_TIMESTAMP
 					where id = ? and is_deleted = 0`
