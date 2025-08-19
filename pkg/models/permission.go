@@ -28,6 +28,7 @@ type Permission struct {
 	Resource    string         `gorm:"column:resource;comment '权限对应资源'"`
 	Method      string         `gorm:"column:method;comment '权限对应方法类型'"`
 	Status      int8           `gorm:"column:status;comment '权限是否启用:0不启用 1启用'"`
+	NeedPolicy  bool           `gorm:"column:need_policy;comment '是否需要策略'"`
 	AuditFields
 }
 

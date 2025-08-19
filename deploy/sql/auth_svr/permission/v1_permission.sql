@@ -24,6 +24,7 @@ create table if not exists permission (
     resource varchar(200) not null default '' comment '权限对应资源',
     method varchar(15) not null default '' comment '权限对应方法类型',
     status tinyint(1) not null default 0 comment '权限是否启用:0不启用 1启用',
+    need_policy boolean default false comment '是否需要策略校验,默认不需要',
 
     -- 时间戳
     created_at datetime(3) not null default current_timestamp(3) comment '创建时间',
