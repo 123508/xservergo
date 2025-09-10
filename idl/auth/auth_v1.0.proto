@@ -46,7 +46,7 @@ service AuthService {
   // 用户权限相关
   rpc GetUserPermissions(GetUserPermissionsReq) returns(GetUserPermissionsResp){}                 // 查询用户所有权限（含角色、用户组下权限）
   rpc HasPermission(HasPermissionReq) returns (HasPermissionResp){}                               // 判断用户是否拥有某个权限
-  rpc CanAccess(CanAccessReq) returns (CanAccessResp){}                                           // 判断用户是否可对某资源执行操作
+  rpc CanAccess(CanAccessReq) returns (CanAccessResp){}                                           // 判断用户是否可对某资源执行操作(ROAC)
 
   // 查询辅助
   rpc ListRoles(ListRolesReq) returns (ListRolesResp){}                                           // 查询所有角色
@@ -57,6 +57,25 @@ service AuthService {
   rpc IssueToken(IssueTokenReq) returns (IssueTokenResp){}                                        // 分发token
   rpc RefreshToken(RefreshTokenReq) returns (RefreshTokenResp) {}                                 // 刷新token
   rpc VerifyToken(VerifyTokenReq) returns (VerifyTokenResp) {}                                    // 验证+解析token
+
+  // ABAC 策略相关
+  rpc CreatePolicy(CreatePolicyReq) returns (OperationResult){}                                   // 创建策略
+  rpc UpdatePolicy(UpdatePolicyReq) returns (OperationResult){}                                   // 更新策略
+  rpc DeletePolicy(DeletePolicyReq) returns (OperationResult){}                                   // 删除策略
+  rpc GetPolicy(GetPolicyReq) returns (GetPolicyResp){}                                           // 查询策略
+  rpc ListPolicies(ListPoliciesReq) returns (ListPoliciesResp){}                                  // 查询所有策略
+
+  // ABAC 策略规则相关
+  rpc CreatePolicyRule(CreatePolicyRuleReq) returns (OperationResult){}                           // 创建策略规则
+  rpc UpdatePolicyRule(UpdatePolicyRuleReq) returns (OperationResult){}                           // 更新策略规则
+  rpc DeletePolicyRule(DeletePolicyRuleReq) returns (OperationResult){}                           // 删除策略规则
+  rpc GetPolicyRule(GetPolicyRuleReq) returns (GetPolicyRuleResp){}                               // 查询策略规则
+  rpc ListPolicyRules(ListPolicyRulesReq) returns (ListPolicyRulesResp){}                         // 查询策略所有的策略规则
+
+  // 权限-策略相关
+  rpc GetPermissionPolicies(GetPermissionPoliciesReq) returns (GetPermissionPoliciesResp){}       // 查询权限的所有策略
+  rpc AttachPolicyToPermission(AttachPolicyToPermissionReq) returns (OperationResult){}           // 给权限分配策略
+  rpc DetachPolicyFromPermission(DetachPolicyFromPermissionReq) returns (OperationResult){}       // 移除权限的策略
 }
 
 // ====================== 数据结构 ====================== //
@@ -98,7 +117,8 @@ message Permission{
   Type type=6;                   // 权限类型
   string resource=7;             // 权限对应资源
   string method=8;               // 权限对应方法
-  bool   status=9;               // 权限是否启用： true=启用, false=禁用
+  bool status=9;                 // 权限是否启用： true=启用, false=禁用
+  bool need_policy=10;           // 是否需要策略检验
 }
 
 message UserGroup {
@@ -121,6 +141,24 @@ message UserInfo {
   string created_at = 9;
   string updated_at = 10;
   bool is_deleted = 11;          // 是否已删除
+}
+
+message Policy {
+  string id = 1;                  // uuid主键, 16字节
+  string policy_code = 2;         // 策略唯一标识符
+  string policy_name = 3;         // 策略名称
+  string description = 4;         // 策略描述
+  bool status = 5;                // 策略状态： true=启用, false=禁用
+}
+
+message PolicyRule {
+  string id = 1;                  // uuid主键, 16字节
+  string policy_code = 2;         // 所属策略唯一标识符
+  string attribute_type = 3;      // 属性类型
+  string attribute_key = 4;       // 属性键
+  string attribute_value = 5;     // 属性值
+  string operator = 6;            // 操作符
+  bool status = 7;                // 规则是否启用
 }
 
 // ---------- 权限相关 ---------- //
@@ -394,4 +432,92 @@ message VerifyTokenResp{
   repeated string permissions=2;
   uint64 version=3;
   int64 ttl=4;
+}
+
+message CreatePolicyReq{
+  Policy policy = 1;
+  string request_user_id = 2;
+}
+
+message UpdatePolicyReq{
+  Policy policy = 1;
+  string request_user_id = 2;
+}
+
+message DeletePolicyReq{
+  string policy_code = 1;
+  string request_user_id = 2;
+}
+
+message GetPolicyReq{
+  string policy_code = 1;
+  string request_user_id = 2;
+}
+
+message GetPolicyResp{
+  Policy policy = 1;
+}
+
+message ListPoliciesReq{
+  uint32 page = 1;
+  uint32 page_size = 2;
+  string request_user_id = 3;
+}
+
+message ListPoliciesResp{
+  repeated Policy policies = 1;
+}
+
+message CreatePolicyRuleReq{
+  PolicyRule rule = 1;
+  string request_user_id = 2;
+}
+
+message UpdatePolicyRuleReq{
+  PolicyRule rule = 1;
+  string request_user_id = 2;
+}
+
+message DeletePolicyRuleReq{
+  string rule_id = 1;
+  string request_user_id = 2;
+}
+
+message GetPolicyRuleReq{
+  string rule_id = 1;
+  string request_user_id = 2;
+}
+
+message GetPolicyRuleResp{
+  PolicyRule rule = 1;
+}
+
+message ListPolicyRulesReq{
+  string policy_code = 1;
+  string request_user_id = 2;
+}
+
+message ListPolicyRulesResp{
+  repeated PolicyRule rules = 1;
+}
+
+message GetPermissionPoliciesReq{
+  string permission_code = 1;
+  string request_user_id = 2;
+}
+
+message GetPermissionPoliciesResp{
+  repeated Policy policies = 1;
+}
+
+message AttachPolicyToPermissionReq{
+  string permission_code = 1;
+  string policy_code = 2;
+  string request_user_id = 3;
+}
+
+message DetachPolicyFromPermissionReq{
+  string permission_code = 1;
+  string policy_code = 2;
+  string request_user_id = 3;
 }

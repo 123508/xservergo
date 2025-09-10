@@ -37,7 +37,10 @@ func TestAuthServiceImpl_PermissionLifecycle(t *testing.T) {
 		RequestUserId: userIdBase64,
 	}
 
-	createResp, err := authClient.CreatePermission(context.Background(), createPermissionReq)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "test", "TestContent")
+
+	createResp, err := authClient.CreatePermission(ctx, createPermissionReq)
 	if err != nil {
 		t.Fatalf("CreatePermission failed: %v", err)
 	}
