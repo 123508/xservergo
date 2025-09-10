@@ -2,9 +2,10 @@ package repo
 
 import (
 	"context"
-	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 	"time"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/models"
@@ -95,6 +96,35 @@ type AuthRepository interface {
 	GetPermissionList(ctx context.Context, page uint32, pageSize uint32) ([]*models.Permission, error)
 	// GetUserGroupList 获取用户组列表
 	GetUserGroupList(ctx context.Context, page uint32, pageSize uint32) ([]*models.UserGroup, error)
+
+	// CreatePolicy 创建策略
+	CreatePolicy(ctx context.Context, policy *models.Policy) error
+	// UpdatePolicy 更新策略
+	UpdatePolicy(ctx context.Context, policy *models.Policy) error
+	// DeletePolicy 删除策略
+	DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error
+	// GetPolicyByCode 查询策略
+	GetPolicyByCode(ctx context.Context, policyCode string) (*models.Policy, error)
+	// GetPolicyList 查询策略列表
+	GetPolicyList(ctx context.Context, page uint32, pageSize uint32) ([]*models.Policy, error)
+
+	// CreatePolicyRule 创建策略规则
+	CreatePolicyRule(ctx context.Context, rule *models.PolicyRule) error
+	// UpdatePolicyRule 更新策略规则
+	UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule) error
+	// DeletePolicyRule 删除策略规则
+	DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error
+	// GetPolicyRuleByID 查询策略规则
+	GetPolicyRuleByID(ctx context.Context, ruleID id.UUID) (*models.PolicyRule, error)
+	// ListPolicyRules 查询策略的所有规则
+	ListPolicyRules(ctx context.Context, policyCode string) ([]*models.PolicyRule, error)
+
+	// GetPermissionPolicies 查询权限的所有策略代码
+	GetPermissionPolicies(ctx context.Context, permissionCode string) ([]string, error)
+	// AttachPolicyToPermission 给权限分配策略
+	AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
+	// DetachPolicyFromPermission 移除权限的策略
+	DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
 }
 
 type RepoImpl struct {
@@ -1002,4 +1032,69 @@ func (r *RepoImpl) GetUserGroupRoles(ctx context.Context, groupCode string) ([]s
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group roles: ", err)
 	}
 	return roleCodes, nil
+}
+
+func (r *RepoImpl) CreatePolicy(ctx context.Context, policy *models.Policy) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) UpdatePolicy(ctx context.Context, policy *models.Policy) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) GetPolicyByCode(ctx context.Context, policyCode string) (*models.Policy, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) GetPolicyList(ctx context.Context, page uint32, pageSize uint32) ([]*models.Policy, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) CreatePolicyRule(ctx context.Context, rule *models.PolicyRule) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) GetPolicyRuleByID(ctx context.Context, ruleID id.UUID) (*models.PolicyRule, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) ListPolicyRules(ctx context.Context, policyCode string) ([]*models.PolicyRule, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) GetPermissionPolicies(ctx context.Context, permissionCode string) ([]string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *RepoImpl) DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
 }

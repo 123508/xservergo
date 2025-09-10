@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/kitex_gen/user"
 	"github.com/123508/xservergo/pkg/cli"
@@ -105,6 +106,35 @@ type AuthService interface {
 	GetPermissionList(ctx context.Context, page, pageSize uint32) ([]*models.Permission, error)
 	// GetUserGroupList 获取用户组列表
 	GetUserGroupList(ctx context.Context, page, pageSize uint32) ([]*models.UserGroup, error)
+
+	// CreatePolicy 创建策略
+	CreatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error
+	// UpdatePolicy 更新策略
+	UpdatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error
+	// DeletePolicy 删除策略
+	DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error
+	// GetPolicyByCode 查询策略
+	GetPolicyByCode(ctx context.Context, policyCode string, operatorId *id.UUID) (*models.Policy, error)
+	// GetPolicyList 查询策略列表
+	GetPolicyList(ctx context.Context, page uint32, pageSize uint32, operatorId *id.UUID) ([]*models.Policy, error)
+
+	// CreatePolicyRule 创建策略规则
+	CreatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error
+	// UpdatePolicyRule 更新策略规则
+	UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error
+	// DeletePolicyRule 删除策略规则
+	DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error
+	// GetPolicyRuleByID 查询策略规则
+	GetPolicyRuleByID(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) (*models.PolicyRule, error)
+	// ListPolicyRules 查询策略的所有规则
+	ListPolicyRules(ctx context.Context, policyCode string, operatorId *id.UUID) ([]*models.PolicyRule, error)
+
+	// GetPermissionPolicies 查询权限的所有策略代码
+	GetPermissionPolicies(ctx context.Context, permissionCode string, operatorId *id.UUID) ([]string, error)
+	// AttachPolicyToPermission 给权限分配策略
+	AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
+	// DetachPolicyFromPermission 移除权限的策略
+	DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
 }
 
 var UserClient = cli.InitUserService()
@@ -765,4 +795,69 @@ func (s *ServiceImpl) GetUserGroupRoles(ctx context.Context, groupCode string) (
 	}
 
 	return roles, nil
+}
+
+func (s *ServiceImpl) CreatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) UpdatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) GetPolicyByCode(ctx context.Context, policyCode string, operatorId *id.UUID) (*models.Policy, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) GetPolicyList(ctx context.Context, page uint32, pageSize uint32, operatorId *id.UUID) ([]*models.Policy, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) CreatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) GetPolicyRuleByID(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) (*models.PolicyRule, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) ListPolicyRules(ctx context.Context, policyCode string, operatorId *id.UUID) ([]*models.PolicyRule, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) GetPermissionPolicies(ctx context.Context, permissionCode string, operatorId *id.UUID) ([]string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *ServiceImpl) DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	//TODO implement me
+	panic("implement me")
 }
