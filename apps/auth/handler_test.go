@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"github.com/123508/xservergo/pkg/util/id"
 	"testing"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/kitex_gen/auth"
 	"github.com/123508/xservergo/kitex_gen/auth/authservice"
@@ -794,5 +795,182 @@ func TestAuthServiceImpl_PermissionChecks(t *testing.T) {
 	// Teardown
 	_, _ = authClient.RemoveRoleFromUser(context.Background(), &auth.RemoveRoleFromUserReq{TargetUserId: userIdBase64, RoleCode: roleCode, RequestUserId: userIdBase64})
 	_, _ = authClient.DeleteRole(context.Background(), &auth.DeleteRoleReq{RoleCode: roleCode, RequestUserId: userIdBase64})
+	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBase64})
+}
+
+func TestAuthServiceImpl_PolicyLifecycle(t *testing.T) {
+	policyCode := "test_policy_code"
+	permissionCode := "test_permission_code"
+
+	// 1. CreatePolicy
+	createPolicyReq := &auth.CreatePolicyReq{
+		Policy: &auth.Policy{
+			PolicyCode:  policyCode,
+			PolicyName:  "Test Policy",
+			Description: "Policy for testing",
+			Status:      true,
+		},
+		RequestUserId: userIdBase64,
+	}
+	createResp, err := authClient.CreatePolicy(context.Background(), createPolicyReq)
+	if err != nil || !createResp.Success {
+		t.Fatalf("CreatePolicy failed: %v", err)
+	}
+
+	// 2. UpdatePolicy
+	updatePolicyReq := &auth.UpdatePolicyReq{
+		Policy: &auth.Policy{
+			PolicyCode:  policyCode,
+			PolicyName:  "Test Policy Updated",
+			Description: "Updated policy for testing",
+			Status:      true,
+		},
+		RequestUserId: userIdBase64,
+	}
+	updateResp, err := authClient.UpdatePolicy(context.Background(), updatePolicyReq)
+	if err != nil || !updateResp.Success {
+		t.Fatalf("UpdatePolicy failed: %v", err)
+	}
+
+	// 3. GetPolicy
+	getPolicyReq := &auth.GetPolicyReq{PolicyCode: policyCode}
+	getResp, err := authClient.GetPolicy(context.Background(), getPolicyReq)
+	if err != nil || getResp.Policy.PolicyName != "Test Policy Updated" {
+		t.Fatalf("GetPolicy failed: %v", err)
+	}
+
+	// 4. DeletePolicy
+	deletePolicyReq := &auth.DeletePolicyReq{
+		PolicyCode:    policyCode,
+		RequestUserId: userIdBase64,
+	}
+	deleteResp, err := authClient.DeletePolicy(context.Background(), deletePolicyReq)
+	if err != nil || !deleteResp.Success {
+		t.Fatalf("DeletePolicy failed: %v", err)
+	}
+
+	// 5. Create Policy Rule
+	_, _ = authClient.CreatePolicy(context.Background(), createPolicyReq)
+	createRuleReq := &auth.CreatePolicyRuleReq{
+		Rule: &auth.PolicyRule{
+			PolicyCode:     policyCode,
+			AttributeType:  "String",
+			AttributeKey:   "Test",
+			AttributeValue: "Value",
+			Operator:       "=",
+			Status:         true,
+		},
+		RequestUserId: userIdBase64,
+	}
+	createRuleResp, err := authClient.CreatePolicyRule(context.Background(), createRuleReq)
+	if err != nil || !createRuleResp.Success {
+		t.Fatalf("CreatePolicyRule failed: %v", err)
+	}
+
+	// 6. List Policy Rules
+	listRulesReq := &auth.ListPolicyRulesReq{
+		PolicyCode:    policyCode,
+		RequestUserId: userIdBase64,
+	}
+	listRulesResp, err := authClient.ListPolicyRules(context.Background(), listRulesReq)
+	if err != nil || len(listRulesResp.Rules) == 0 {
+		t.Fatalf("ListPolicyRules failed: %v", err)
+	}
+	ruleId := listRulesResp.Rules[0].Id
+	t.Logf("Policy Rules: %v", listRulesResp.Rules)
+
+	// 7. Update Policy Rule
+	updateRuleReq := &auth.UpdatePolicyRuleReq{
+		Rule: &auth.PolicyRule{
+			Id:             ruleId,
+			PolicyCode:     policyCode,
+			AttributeType:  "String",
+			AttributeKey:   "Test",
+			AttributeValue: "NewValue",
+			Operator:       "=",
+			Status:         true,
+		},
+		RequestUserId: userIdBase64,
+	}
+	updateRuleResp, err := authClient.UpdatePolicyRule(context.Background(), updateRuleReq)
+	if err != nil || !updateRuleResp.Success {
+		t.Fatalf("UpdatePolicyRule failed: %v", err)
+	}
+
+	// 8. Get Policy Rule
+	getRuleReq := &auth.GetPolicyRuleReq{
+		RuleId:        ruleId,
+		RequestUserId: userIdBase64,
+	}
+	getRuleResp, err := authClient.GetPolicyRule(context.Background(), getRuleReq)
+	if err != nil || getRuleResp.Rule.AttributeValue != "NewValue" {
+		t.Fatalf("GetPolicyRule failed: %v", err)
+	}
+
+	// 9. Attach Policy to Permission
+	createPermissionReq := &auth.CreatePermissionReq{
+		Permission: &auth.Permission{
+			Code:           permissionCode,
+			PermissionName: "Test Permission for Policy",
+			Description:    "Permission to test policy attachment",
+			ParentId:       "",
+			Type:           0,
+			Resource:       "test",
+			Method:         "test",
+			Status:         true,
+			NeedPolicy:     true,
+		},
+		RequestUserId: userIdBase64,
+	}
+	_, err = authClient.CreatePermission(context.Background(), createPermissionReq)
+	if err != nil {
+		t.Fatalf("CreatePermission failed: %v", err)
+	}
+	attachReq := &auth.AttachPolicyToPermissionReq{
+		PolicyCode:     policyCode,
+		PermissionCode: permissionCode,
+		RequestUserId:  userIdBase64,
+	}
+	attachResp, err := authClient.AttachPolicyToPermission(context.Background(), attachReq)
+	if err != nil || !attachResp.Success {
+		t.Fatalf("AttachPolicyToPermission failed: %v", err)
+	}
+
+	// 10. get policy for permission
+	getPermissionPolicyReq := &auth.GetPermissionPoliciesReq{
+		PermissionCode: permissionCode,
+		RequestUserId:  userIdBase64,
+	}
+	getPermissionPolicyResp, err := authClient.GetPermissionPolicies(context.Background(), getPermissionPolicyReq)
+	if err != nil || len(getPermissionPolicyResp.Policies) != 1 {
+		t.Fatalf("GetPermissionPolicies failed: %v", err)
+	}
+
+	// 11. Detach Policy from Permission
+	detachReq := &auth.DetachPolicyFromPermissionReq{
+		PolicyCode:     policyCode,
+		PermissionCode: permissionCode,
+		RequestUserId:  userIdBase64,
+	}
+	detachResp, err := authClient.DetachPolicyFromPermission(context.Background(), detachReq)
+	if err != nil || !detachResp.Success {
+		t.Fatalf("DetachPolicyFromPermission failed: %v", err)
+	}
+	getPermissionPolicyResp, err = authClient.GetPermissionPolicies(context.Background(), getPermissionPolicyReq)
+	if err != nil || len(getPermissionPolicyResp.Policies) != 0 {
+		t.Fatalf("GetPermissionPolicies after detach failed: %v", err)
+	}
+
+	// 12. Delete Policy Rule
+	deleteRuleReq := &auth.DeletePolicyRuleReq{
+		RuleId:        ruleId,
+		RequestUserId: userIdBase64,
+	}
+	deleteRuleResp, err := authClient.DeletePolicyRule(context.Background(), deleteRuleReq)
+	if err != nil || !deleteRuleResp.Success {
+		t.Fatalf("DeletePolicyRule failed: %v", err)
+	}
+
+	_, _ = authClient.DeletePolicy(context.Background(), deletePolicyReq)
 	_, _ = authClient.DeletePermission(context.Background(), &auth.DeletePermissionReq{PermissionCode: permissionCode, RequestUserId: userIdBase64})
 }

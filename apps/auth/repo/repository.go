@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -1035,66 +1036,213 @@ func (r *RepoImpl) GetUserGroupRoles(ctx context.Context, groupCode string) ([]s
 }
 
 func (r *RepoImpl) CreatePolicy(ctx context.Context, policy *models.Policy) error {
-	//TODO implement me
-	panic("implement me")
+	if policy == nil {
+		return cerrors.NewParamError(http.StatusBadRequest, "policy cannot be nil")
+	}
+
+	policy.ID = id.NewUUID()
+	if err := r.DB.WithContext(ctx).Create(policy).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to create policy: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) UpdatePolicy(ctx context.Context, policy *models.Policy) error {
-	//TODO implement me
-	panic("implement me")
+	if policy == nil {
+		return cerrors.NewParamError(http.StatusBadRequest, "policy cannot be nil")
+	}
+
+	if err := r.DB.WithContext(ctx).Model(&models.Policy{}).Where("code = ? and is_deleted = false", policy.Code).Updates(policy).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update policy: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	if policyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "policy code cannot be empty")
+	}
+
+	// 软删除：设置 deleted_at 字段为当前时间
+	if err := r.DB.WithContext(ctx).Model(&models.Policy{}).Where("code = ? and is_deleted = false", policyCode).Updates(map[string]interface{}{
+		"deleted_at": time.Now(),
+		"updated_by": operatorId,
+	}).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to delete policy: ", err)
+	}
+
+	return nil
 }
 
 func (r *RepoImpl) GetPolicyByCode(ctx context.Context, policyCode string) (*models.Policy, error) {
-	//TODO implement me
-	panic("implement me")
+	if policyCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "policy code cannot be empty")
+	}
+
+	var policy models.Policy
+	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", policyCode).First(&policy).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get policy by code: ", err)
+	}
+	return &policy, nil
 }
 
 func (r *RepoImpl) GetPolicyList(ctx context.Context, page uint32, pageSize uint32) ([]*models.Policy, error) {
-	//TODO implement me
-	panic("implement me")
+	if page == 0 {
+		page = 1
+	}
+	if pageSize == 0 {
+		pageSize = 10
+	}
+
+	var policies []*models.Policy
+	offset := (page - 1) * pageSize
+
+	if err := r.DB.WithContext(ctx).Offset(int(offset)).Limit(int(pageSize)).Where("is_deleted = false").Find(&policies).Error; err != nil {
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get policy list: ", err)
+	}
+	return policies, nil
 }
 
 func (r *RepoImpl) CreatePolicyRule(ctx context.Context, rule *models.PolicyRule) error {
-	//TODO implement me
-	panic("implement me")
+	if rule == nil {
+		return cerrors.NewParamError(http.StatusBadRequest, "policy rule cannot be nil")
+	}
+
+	rule.ID = id.NewUUID()
+	if err := r.DB.WithContext(ctx).Create(rule).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to create policy rule: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule) error {
-	//TODO implement me
-	panic("implement me")
+	if rule == nil {
+		return cerrors.NewParamError(http.StatusBadRequest, "policy rule cannot be nil")
+	}
+
+	if err := r.DB.WithContext(ctx).Model(&models.PolicyRule{}).Where("id = ? and is_deleted = false", rule.ID).Updates(rule).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to update policy rule: ", err)
+	}
+	return nil
 }
 
 func (r *RepoImpl) DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	if ruleID == (id.UUID{}) {
+		return cerrors.NewParamError(http.StatusBadRequest, "rule ID cannot be empty")
+	}
+
+	// 软删除：设置 deleted_at 字段为当前时间
+	if err := r.DB.WithContext(ctx).Model(&models.PolicyRule{}).Where("id = ? and is_deleted = false", ruleID).Updates(map[string]interface{}{
+		"deleted_at": time.Now(),
+		"updated_by": operatorId,
+	}).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to delete policy rule: ", err)
+	}
+
+	return nil
 }
 
 func (r *RepoImpl) GetPolicyRuleByID(ctx context.Context, ruleID id.UUID) (*models.PolicyRule, error) {
-	//TODO implement me
-	panic("implement me")
+	if ruleID == (id.UUID{}) {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "rule ID cannot be empty")
+	}
+
+	var rule models.PolicyRule
+	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", ruleID).First(&rule).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // 记录未找到返回nil
+		}
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get policy rule by ID: ", err)
+	}
+	return &rule, nil
 }
 
 func (r *RepoImpl) ListPolicyRules(ctx context.Context, policyCode string) ([]*models.PolicyRule, error) {
-	//TODO implement me
-	panic("implement me")
+	if policyCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "policy code cannot be empty")
+	}
+
+	var rules []*models.PolicyRule
+	if err := r.DB.WithContext(ctx).Where("policy_code = ? AND is_deleted = false", policyCode).Find(&rules).Error; err != nil {
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to list policy rules: ", err)
+	}
+	return rules, nil
 }
 
 func (r *RepoImpl) GetPermissionPolicies(ctx context.Context, permissionCode string) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "permission code cannot be empty")
+	}
+
+	var policyCodes []string
+	if err := r.DB.WithContext(ctx).Model(&models.PermissionPolicyRelation{}).
+		Select("policy_code").
+		Where("permission_code = ? AND status = 1 AND is_deleted = false", permissionCode).
+		Pluck("policy_code", &policyCodes).Error; err != nil {
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission policies: ", err)
+	}
+	return policyCodes, nil
 }
 
 func (r *RepoImpl) AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" || policyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "permission code and policy code cannot be empty")
+	}
+
+	// 检查权限是否存在
+	_, err := r.GetPermissionByCode(ctx, permissionCode)
+	if err != nil {
+		return cerrors.NewParamError(http.StatusInternalServerError, "failed to get permission: "+err.Error())
+	}
+
+	// 检查策略是否存在
+	_, err = r.GetPolicyByCode(ctx, policyCode)
+	if err != nil {
+		return cerrors.NewParamError(http.StatusInternalServerError, "failed to get policy: "+err.Error())
+	}
+
+	// 检查是否已存在关联
+	var existing models.PermissionPolicyRelation
+	err = r.DB.WithContext(ctx).Where("permission_code = ? AND policy_code = ?", permissionCode, policyCode).First(&existing).Error
+	if err == nil {
+		// 如果已存在，更新状态为启用
+		existing.Status = 1
+		existing.UpdatedBy = operatorId
+		existing.DeletedAt = nil
+		r.DB.WithContext(ctx).Where("permission_code = ? AND policy_code = ?", permissionCode, policyCode).Save(&existing)
+		return nil
+	}
+
+	nowTime := time.Now()
+	r.DB.WithContext(ctx).Create(&models.PermissionPolicyRelation{
+		PermissionCode: permissionCode,
+		PolicyCode:     policyCode,
+		Status:         1,
+		AuditFields: models.AuditFields{
+			CreatedBy: operatorId,
+			Version:   &r.Version,
+			CreatedAt: &nowTime,
+		},
+	})
+	return nil
 }
 
 func (r *RepoImpl) DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
-	//TODO implement me
-	panic("implement me")
+	if permissionCode == "" || policyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "permission code and policy code cannot be empty")
+	}
+
+	// 软删除
+	if err := r.DB.WithContext(ctx).Model(&models.PermissionPolicyRelation{}).
+		Where("permission_code = ? AND policy_code = ? AND is_deleted = false", permissionCode, policyCode).
+		Updates(map[string]interface{}{
+			"deleted_at": time.Now(),
+			"updated_by": operatorId,
+		}).Error; err != nil {
+		return cerrors.NewSQLError(http.StatusInternalServerError, "failed to detach policy from permission: ", err)
+	}
+	return nil
 }

@@ -899,78 +899,327 @@ func (s *AuthServiceImpl) GetUserGroupRoles(ctx context.Context, req *auth.GetUs
 
 // CreatePolicy implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreatePolicy(ctx context.Context, req *auth.CreatePolicyReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	status := int8(1)
+	if !req.Policy.Status {
+		status = 0
+	}
+	err = s.authService.CreatePolicy(ctx, &models.Policy{
+		Code:        req.Policy.PolicyCode,
+		Name:        req.Policy.PolicyName,
+		Description: req.Policy.Description,
+		Status:      status,
+	}, operatorId)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // UpdatePolicy implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdatePolicy(ctx context.Context, req *auth.UpdatePolicyReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	status := int8(1)
+	if !req.Policy.Status {
+		status = 0
+	}
+	err = s.authService.UpdatePolicy(ctx, &models.Policy{
+		Code:        req.Policy.PolicyCode,
+		Name:        req.Policy.PolicyName,
+		Description: req.Policy.Description,
+		Status:      status,
+	}, operatorId)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // DeletePolicy implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeletePolicy(ctx context.Context, req *auth.DeletePolicyReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.DeletePolicy(ctx, req.PolicyCode, operatorId)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // GetPolicy implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetPolicy(ctx context.Context, req *auth.GetPolicyReq) (resp *auth.GetPolicyResp, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	policy, err := s.authService.GetPolicyByCode(ctx, req.PolicyCode, operatorId)
+	if err != nil {
+		return nil, err
+	}
+	return &auth.GetPolicyResp{
+		Policy: &auth.Policy{
+			PolicyCode:  policy.Code,
+			PolicyName:  policy.Name,
+			Description: policy.Description,
+			Status:      policy.Status == 1,
+		},
+	}, nil
 }
 
 // ListPolicies implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) ListPolicies(ctx context.Context, req *auth.ListPoliciesReq) (resp *auth.ListPoliciesResp, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	policies, err := s.authService.GetPolicyList(ctx, req.Page, req.PageSize, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取策略列表失败")
+	}
+
+	var authPolicies []*auth.Policy
+	for _, policy := range policies {
+		authPolicies = append(authPolicies, &auth.Policy{
+			PolicyCode:  policy.Code,
+			PolicyName:  policy.Name,
+			Description: policy.Description,
+			Status:      policy.Status == 1,
+		})
+	}
+
+	return &auth.ListPoliciesResp{
+		Policies: authPolicies,
+	}, nil
 }
 
 // CreatePolicyRule implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CreatePolicyRule(ctx context.Context, req *auth.CreatePolicyRuleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	status := int8(1)
+	if !req.Rule.Status {
+		status = 0
+	}
+	err = s.authService.CreatePolicyRule(ctx, &models.PolicyRule{
+		PolicyCode:     req.Rule.PolicyCode,
+		AttributeType:  models.AttributeType(req.Rule.AttributeType),
+		AttributeKey:   req.Rule.AttributeKey,
+		AttributeValue: req.Rule.AttributeValue,
+		Operator:       models.Operator(req.Rule.Operator),
+		Status:         status,
+	}, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // UpdatePolicyRule implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) UpdatePolicyRule(ctx context.Context, req *auth.UpdatePolicyRuleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	ruleId, err := unmarshalRequestUID(ctx, req.Rule.Id)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	status := int8(1)
+	if !req.Rule.Status {
+		status = 0
+	}
+	err = s.authService.UpdatePolicyRule(ctx, &models.PolicyRule{
+		ID:             *ruleId,
+		PolicyCode:     req.Rule.PolicyCode,
+		AttributeType:  models.AttributeType(req.Rule.AttributeType),
+		AttributeKey:   req.Rule.AttributeKey,
+		AttributeValue: req.Rule.AttributeValue,
+		Operator:       models.Operator(req.Rule.Operator),
+		Status:         status,
+	}, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // DeletePolicyRule implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DeletePolicyRule(ctx context.Context, req *auth.DeletePolicyRuleReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	ruleId, err := unmarshalRequestUID(ctx, req.RuleId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.DeletePolicyRule(ctx, *ruleId, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	resp = &auth.OperationResult{
+		Success: true,
+	}
+	return resp, nil
 }
 
 // GetPolicyRule implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetPolicyRule(ctx context.Context, req *auth.GetPolicyRuleReq) (resp *auth.GetPolicyRuleResp, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	ruleId, err := unmarshalRequestUID(ctx, req.RuleId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	rule, err := s.authService.GetPolicyRuleByID(ctx, *ruleId, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	uid := marshalUID(ctx, &rule.ID)
+	return &auth.GetPolicyRuleResp{
+		Rule: &auth.PolicyRule{
+			Id:             uid,
+			PolicyCode:     rule.PolicyCode,
+			AttributeType:  string(rule.AttributeType),
+			AttributeKey:   rule.AttributeKey,
+			AttributeValue: rule.AttributeValue,
+			Operator:       string(rule.Operator),
+			Status:         rule.Status == 1,
+		},
+	}, nil
 }
 
 // ListPolicyRules implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) ListPolicyRules(ctx context.Context, req *auth.ListPolicyRulesReq) (resp *auth.ListPolicyRulesResp, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	rules, err := s.authService.ListPolicyRules(ctx, req.PolicyCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+
+	var authRules []*auth.PolicyRule
+	for _, rule := range rules {
+		uid := marshalUID(ctx, &rule.ID)
+		authRules = append(authRules, &auth.PolicyRule{
+			Id:             uid,
+			PolicyCode:     rule.PolicyCode,
+			AttributeType:  string(rule.AttributeType),
+			AttributeKey:   rule.AttributeKey,
+			AttributeValue: rule.AttributeValue,
+			Operator:       string(rule.Operator),
+			Status:         rule.Status == 1,
+		})
+	}
+	return &auth.ListPolicyRulesResp{
+		Rules: authRules,
+	}, nil
 }
 
 // GetPermissionPolicies implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) GetPermissionPolicies(ctx context.Context, req *auth.GetPermissionPoliciesReq) (resp *auth.GetPermissionPoliciesResp, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	policies, err := s.authService.GetPermissionPolicies(ctx, req.PermissionCode, operatorId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "获取权限关联的策略失败")
+	}
+	var authPolicies []*auth.Policy
+	for _, p := range policies {
+		authPolicies = append(authPolicies, &auth.Policy{
+			PolicyCode: p,
+		})
+	}
+	return &auth.GetPermissionPoliciesResp{
+		Policies: authPolicies,
+	}, nil
 }
 
 // AttachPolicyToPermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) AttachPolicyToPermission(ctx context.Context, req *auth.AttachPolicyToPermissionReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.AttachPolicyToPermission(ctx, req.PermissionCode, req.PolicyCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
 
 // DetachPolicyFromPermission implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) DetachPolicyFromPermission(ctx context.Context, req *auth.DetachPolicyFromPermissionReq) (resp *auth.OperationResult, err error) {
-	// TODO: Your code here...
-	return
+	operatorId, err := unmarshalRequestUID(ctx, req.RequestUserId)
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
+	}
+	err = s.authService.DetachPolicyFromPermission(ctx, req.PermissionCode, req.PolicyCode, operatorId)
+	if err != nil {
+		var com *cerrors.CommonError
+		if errors.As(err, &com) {
+			return nil, cerrors.NewGRPCError(com.Code, com.Message)
+		}
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "服务器异常")
+	}
+	return &auth.OperationResult{
+		Success: true,
+	}, nil
 }
