@@ -34,10 +34,10 @@ create table if not exists policy_rule (
         '<=',          -- 小于等于
         'Contains',    -- 包含
         'StartsWith',  -- 以...开始
-        'EndsWith'     -- 以...结束
+        'EndsWith',     -- 以...结束
         'Regex',       -- 正则表达式匹配
         'In'           -- 在列表中
-    ) not null default 'Equal' comment '操作符',
+    ) not null default '=' comment '操作符',
     status tinyint(1) not null default 1 comment '规则是否启用:0不启用 1启用',
 
     -- 时间戳
