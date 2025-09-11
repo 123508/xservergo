@@ -260,6 +260,97 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"CreatePolicy": kitex.NewMethodInfo(
+		createPolicyHandler,
+		newCreatePolicyArgs,
+		newCreatePolicyResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"UpdatePolicy": kitex.NewMethodInfo(
+		updatePolicyHandler,
+		newUpdatePolicyArgs,
+		newUpdatePolicyResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"DeletePolicy": kitex.NewMethodInfo(
+		deletePolicyHandler,
+		newDeletePolicyArgs,
+		newDeletePolicyResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"GetPolicy": kitex.NewMethodInfo(
+		getPolicyHandler,
+		newGetPolicyArgs,
+		newGetPolicyResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"ListPolicies": kitex.NewMethodInfo(
+		listPoliciesHandler,
+		newListPoliciesArgs,
+		newListPoliciesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"CreatePolicyRule": kitex.NewMethodInfo(
+		createPolicyRuleHandler,
+		newCreatePolicyRuleArgs,
+		newCreatePolicyRuleResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"UpdatePolicyRule": kitex.NewMethodInfo(
+		updatePolicyRuleHandler,
+		newUpdatePolicyRuleArgs,
+		newUpdatePolicyRuleResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"DeletePolicyRule": kitex.NewMethodInfo(
+		deletePolicyRuleHandler,
+		newDeletePolicyRuleArgs,
+		newDeletePolicyRuleResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"GetPolicyRule": kitex.NewMethodInfo(
+		getPolicyRuleHandler,
+		newGetPolicyRuleArgs,
+		newGetPolicyRuleResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"ListPolicyRules": kitex.NewMethodInfo(
+		listPolicyRulesHandler,
+		newListPolicyRulesArgs,
+		newListPolicyRulesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"GetPermissionPolicies": kitex.NewMethodInfo(
+		getPermissionPoliciesHandler,
+		newGetPermissionPoliciesArgs,
+		newGetPermissionPoliciesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"AttachPolicyToPermission": kitex.NewMethodInfo(
+		attachPolicyToPermissionHandler,
+		newAttachPolicyToPermissionArgs,
+		newAttachPolicyToPermissionResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"DetachPolicyFromPermission": kitex.NewMethodInfo(
+		detachPolicyFromPermissionHandler,
+		newDetachPolicyFromPermissionArgs,
+		newDetachPolicyFromPermissionResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 }
 
 var (
@@ -4211,6 +4302,1449 @@ func (p *VerifyTokenResult) GetResult() interface{} {
 	return p.Success
 }
 
+func createPolicyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.CreatePolicyReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).CreatePolicy(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *CreatePolicyArgs:
+		success, err := handler.(auth.AuthService).CreatePolicy(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*CreatePolicyResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newCreatePolicyArgs() interface{} {
+	return &CreatePolicyArgs{}
+}
+
+func newCreatePolicyResult() interface{} {
+	return &CreatePolicyResult{}
+}
+
+type CreatePolicyArgs struct {
+	Req *auth.CreatePolicyReq
+}
+
+func (p *CreatePolicyArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *CreatePolicyArgs) Unmarshal(in []byte) error {
+	msg := new(auth.CreatePolicyReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var CreatePolicyArgs_Req_DEFAULT *auth.CreatePolicyReq
+
+func (p *CreatePolicyArgs) GetReq() *auth.CreatePolicyReq {
+	if !p.IsSetReq() {
+		return CreatePolicyArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *CreatePolicyArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CreatePolicyArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type CreatePolicyResult struct {
+	Success *auth.OperationResult
+}
+
+var CreatePolicyResult_Success_DEFAULT *auth.OperationResult
+
+func (p *CreatePolicyResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *CreatePolicyResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *CreatePolicyResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return CreatePolicyResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *CreatePolicyResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *CreatePolicyResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CreatePolicyResult) GetResult() interface{} {
+	return p.Success
+}
+
+func updatePolicyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.UpdatePolicyReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).UpdatePolicy(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *UpdatePolicyArgs:
+		success, err := handler.(auth.AuthService).UpdatePolicy(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*UpdatePolicyResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newUpdatePolicyArgs() interface{} {
+	return &UpdatePolicyArgs{}
+}
+
+func newUpdatePolicyResult() interface{} {
+	return &UpdatePolicyResult{}
+}
+
+type UpdatePolicyArgs struct {
+	Req *auth.UpdatePolicyReq
+}
+
+func (p *UpdatePolicyArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *UpdatePolicyArgs) Unmarshal(in []byte) error {
+	msg := new(auth.UpdatePolicyReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var UpdatePolicyArgs_Req_DEFAULT *auth.UpdatePolicyReq
+
+func (p *UpdatePolicyArgs) GetReq() *auth.UpdatePolicyReq {
+	if !p.IsSetReq() {
+		return UpdatePolicyArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *UpdatePolicyArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *UpdatePolicyArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type UpdatePolicyResult struct {
+	Success *auth.OperationResult
+}
+
+var UpdatePolicyResult_Success_DEFAULT *auth.OperationResult
+
+func (p *UpdatePolicyResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *UpdatePolicyResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *UpdatePolicyResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return UpdatePolicyResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *UpdatePolicyResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *UpdatePolicyResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *UpdatePolicyResult) GetResult() interface{} {
+	return p.Success
+}
+
+func deletePolicyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.DeletePolicyReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).DeletePolicy(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *DeletePolicyArgs:
+		success, err := handler.(auth.AuthService).DeletePolicy(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*DeletePolicyResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newDeletePolicyArgs() interface{} {
+	return &DeletePolicyArgs{}
+}
+
+func newDeletePolicyResult() interface{} {
+	return &DeletePolicyResult{}
+}
+
+type DeletePolicyArgs struct {
+	Req *auth.DeletePolicyReq
+}
+
+func (p *DeletePolicyArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *DeletePolicyArgs) Unmarshal(in []byte) error {
+	msg := new(auth.DeletePolicyReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var DeletePolicyArgs_Req_DEFAULT *auth.DeletePolicyReq
+
+func (p *DeletePolicyArgs) GetReq() *auth.DeletePolicyReq {
+	if !p.IsSetReq() {
+		return DeletePolicyArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *DeletePolicyArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *DeletePolicyArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type DeletePolicyResult struct {
+	Success *auth.OperationResult
+}
+
+var DeletePolicyResult_Success_DEFAULT *auth.OperationResult
+
+func (p *DeletePolicyResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *DeletePolicyResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *DeletePolicyResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return DeletePolicyResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *DeletePolicyResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *DeletePolicyResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *DeletePolicyResult) GetResult() interface{} {
+	return p.Success
+}
+
+func getPolicyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.GetPolicyReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).GetPolicy(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *GetPolicyArgs:
+		success, err := handler.(auth.AuthService).GetPolicy(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*GetPolicyResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newGetPolicyArgs() interface{} {
+	return &GetPolicyArgs{}
+}
+
+func newGetPolicyResult() interface{} {
+	return &GetPolicyResult{}
+}
+
+type GetPolicyArgs struct {
+	Req *auth.GetPolicyReq
+}
+
+func (p *GetPolicyArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *GetPolicyArgs) Unmarshal(in []byte) error {
+	msg := new(auth.GetPolicyReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var GetPolicyArgs_Req_DEFAULT *auth.GetPolicyReq
+
+func (p *GetPolicyArgs) GetReq() *auth.GetPolicyReq {
+	if !p.IsSetReq() {
+		return GetPolicyArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *GetPolicyArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *GetPolicyArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type GetPolicyResult struct {
+	Success *auth.GetPolicyResp
+}
+
+var GetPolicyResult_Success_DEFAULT *auth.GetPolicyResp
+
+func (p *GetPolicyResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *GetPolicyResult) Unmarshal(in []byte) error {
+	msg := new(auth.GetPolicyResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *GetPolicyResult) GetSuccess() *auth.GetPolicyResp {
+	if !p.IsSetSuccess() {
+		return GetPolicyResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *GetPolicyResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.GetPolicyResp)
+}
+
+func (p *GetPolicyResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *GetPolicyResult) GetResult() interface{} {
+	return p.Success
+}
+
+func listPoliciesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.ListPoliciesReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).ListPolicies(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *ListPoliciesArgs:
+		success, err := handler.(auth.AuthService).ListPolicies(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*ListPoliciesResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newListPoliciesArgs() interface{} {
+	return &ListPoliciesArgs{}
+}
+
+func newListPoliciesResult() interface{} {
+	return &ListPoliciesResult{}
+}
+
+type ListPoliciesArgs struct {
+	Req *auth.ListPoliciesReq
+}
+
+func (p *ListPoliciesArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *ListPoliciesArgs) Unmarshal(in []byte) error {
+	msg := new(auth.ListPoliciesReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var ListPoliciesArgs_Req_DEFAULT *auth.ListPoliciesReq
+
+func (p *ListPoliciesArgs) GetReq() *auth.ListPoliciesReq {
+	if !p.IsSetReq() {
+		return ListPoliciesArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *ListPoliciesArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *ListPoliciesArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type ListPoliciesResult struct {
+	Success *auth.ListPoliciesResp
+}
+
+var ListPoliciesResult_Success_DEFAULT *auth.ListPoliciesResp
+
+func (p *ListPoliciesResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *ListPoliciesResult) Unmarshal(in []byte) error {
+	msg := new(auth.ListPoliciesResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *ListPoliciesResult) GetSuccess() *auth.ListPoliciesResp {
+	if !p.IsSetSuccess() {
+		return ListPoliciesResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *ListPoliciesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.ListPoliciesResp)
+}
+
+func (p *ListPoliciesResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *ListPoliciesResult) GetResult() interface{} {
+	return p.Success
+}
+
+func createPolicyRuleHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.CreatePolicyRuleReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).CreatePolicyRule(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *CreatePolicyRuleArgs:
+		success, err := handler.(auth.AuthService).CreatePolicyRule(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*CreatePolicyRuleResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newCreatePolicyRuleArgs() interface{} {
+	return &CreatePolicyRuleArgs{}
+}
+
+func newCreatePolicyRuleResult() interface{} {
+	return &CreatePolicyRuleResult{}
+}
+
+type CreatePolicyRuleArgs struct {
+	Req *auth.CreatePolicyRuleReq
+}
+
+func (p *CreatePolicyRuleArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *CreatePolicyRuleArgs) Unmarshal(in []byte) error {
+	msg := new(auth.CreatePolicyRuleReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var CreatePolicyRuleArgs_Req_DEFAULT *auth.CreatePolicyRuleReq
+
+func (p *CreatePolicyRuleArgs) GetReq() *auth.CreatePolicyRuleReq {
+	if !p.IsSetReq() {
+		return CreatePolicyRuleArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *CreatePolicyRuleArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *CreatePolicyRuleArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type CreatePolicyRuleResult struct {
+	Success *auth.OperationResult
+}
+
+var CreatePolicyRuleResult_Success_DEFAULT *auth.OperationResult
+
+func (p *CreatePolicyRuleResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *CreatePolicyRuleResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *CreatePolicyRuleResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return CreatePolicyRuleResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *CreatePolicyRuleResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *CreatePolicyRuleResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *CreatePolicyRuleResult) GetResult() interface{} {
+	return p.Success
+}
+
+func updatePolicyRuleHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.UpdatePolicyRuleReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).UpdatePolicyRule(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *UpdatePolicyRuleArgs:
+		success, err := handler.(auth.AuthService).UpdatePolicyRule(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*UpdatePolicyRuleResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newUpdatePolicyRuleArgs() interface{} {
+	return &UpdatePolicyRuleArgs{}
+}
+
+func newUpdatePolicyRuleResult() interface{} {
+	return &UpdatePolicyRuleResult{}
+}
+
+type UpdatePolicyRuleArgs struct {
+	Req *auth.UpdatePolicyRuleReq
+}
+
+func (p *UpdatePolicyRuleArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *UpdatePolicyRuleArgs) Unmarshal(in []byte) error {
+	msg := new(auth.UpdatePolicyRuleReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var UpdatePolicyRuleArgs_Req_DEFAULT *auth.UpdatePolicyRuleReq
+
+func (p *UpdatePolicyRuleArgs) GetReq() *auth.UpdatePolicyRuleReq {
+	if !p.IsSetReq() {
+		return UpdatePolicyRuleArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *UpdatePolicyRuleArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *UpdatePolicyRuleArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type UpdatePolicyRuleResult struct {
+	Success *auth.OperationResult
+}
+
+var UpdatePolicyRuleResult_Success_DEFAULT *auth.OperationResult
+
+func (p *UpdatePolicyRuleResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *UpdatePolicyRuleResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *UpdatePolicyRuleResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return UpdatePolicyRuleResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *UpdatePolicyRuleResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *UpdatePolicyRuleResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *UpdatePolicyRuleResult) GetResult() interface{} {
+	return p.Success
+}
+
+func deletePolicyRuleHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.DeletePolicyRuleReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).DeletePolicyRule(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *DeletePolicyRuleArgs:
+		success, err := handler.(auth.AuthService).DeletePolicyRule(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*DeletePolicyRuleResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newDeletePolicyRuleArgs() interface{} {
+	return &DeletePolicyRuleArgs{}
+}
+
+func newDeletePolicyRuleResult() interface{} {
+	return &DeletePolicyRuleResult{}
+}
+
+type DeletePolicyRuleArgs struct {
+	Req *auth.DeletePolicyRuleReq
+}
+
+func (p *DeletePolicyRuleArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *DeletePolicyRuleArgs) Unmarshal(in []byte) error {
+	msg := new(auth.DeletePolicyRuleReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var DeletePolicyRuleArgs_Req_DEFAULT *auth.DeletePolicyRuleReq
+
+func (p *DeletePolicyRuleArgs) GetReq() *auth.DeletePolicyRuleReq {
+	if !p.IsSetReq() {
+		return DeletePolicyRuleArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *DeletePolicyRuleArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *DeletePolicyRuleArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type DeletePolicyRuleResult struct {
+	Success *auth.OperationResult
+}
+
+var DeletePolicyRuleResult_Success_DEFAULT *auth.OperationResult
+
+func (p *DeletePolicyRuleResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *DeletePolicyRuleResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *DeletePolicyRuleResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return DeletePolicyRuleResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *DeletePolicyRuleResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *DeletePolicyRuleResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *DeletePolicyRuleResult) GetResult() interface{} {
+	return p.Success
+}
+
+func getPolicyRuleHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.GetPolicyRuleReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).GetPolicyRule(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *GetPolicyRuleArgs:
+		success, err := handler.(auth.AuthService).GetPolicyRule(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*GetPolicyRuleResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newGetPolicyRuleArgs() interface{} {
+	return &GetPolicyRuleArgs{}
+}
+
+func newGetPolicyRuleResult() interface{} {
+	return &GetPolicyRuleResult{}
+}
+
+type GetPolicyRuleArgs struct {
+	Req *auth.GetPolicyRuleReq
+}
+
+func (p *GetPolicyRuleArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *GetPolicyRuleArgs) Unmarshal(in []byte) error {
+	msg := new(auth.GetPolicyRuleReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var GetPolicyRuleArgs_Req_DEFAULT *auth.GetPolicyRuleReq
+
+func (p *GetPolicyRuleArgs) GetReq() *auth.GetPolicyRuleReq {
+	if !p.IsSetReq() {
+		return GetPolicyRuleArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *GetPolicyRuleArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *GetPolicyRuleArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type GetPolicyRuleResult struct {
+	Success *auth.GetPolicyRuleResp
+}
+
+var GetPolicyRuleResult_Success_DEFAULT *auth.GetPolicyRuleResp
+
+func (p *GetPolicyRuleResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *GetPolicyRuleResult) Unmarshal(in []byte) error {
+	msg := new(auth.GetPolicyRuleResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *GetPolicyRuleResult) GetSuccess() *auth.GetPolicyRuleResp {
+	if !p.IsSetSuccess() {
+		return GetPolicyRuleResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *GetPolicyRuleResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.GetPolicyRuleResp)
+}
+
+func (p *GetPolicyRuleResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *GetPolicyRuleResult) GetResult() interface{} {
+	return p.Success
+}
+
+func listPolicyRulesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.ListPolicyRulesReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).ListPolicyRules(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *ListPolicyRulesArgs:
+		success, err := handler.(auth.AuthService).ListPolicyRules(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*ListPolicyRulesResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newListPolicyRulesArgs() interface{} {
+	return &ListPolicyRulesArgs{}
+}
+
+func newListPolicyRulesResult() interface{} {
+	return &ListPolicyRulesResult{}
+}
+
+type ListPolicyRulesArgs struct {
+	Req *auth.ListPolicyRulesReq
+}
+
+func (p *ListPolicyRulesArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *ListPolicyRulesArgs) Unmarshal(in []byte) error {
+	msg := new(auth.ListPolicyRulesReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var ListPolicyRulesArgs_Req_DEFAULT *auth.ListPolicyRulesReq
+
+func (p *ListPolicyRulesArgs) GetReq() *auth.ListPolicyRulesReq {
+	if !p.IsSetReq() {
+		return ListPolicyRulesArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *ListPolicyRulesArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *ListPolicyRulesArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type ListPolicyRulesResult struct {
+	Success *auth.ListPolicyRulesResp
+}
+
+var ListPolicyRulesResult_Success_DEFAULT *auth.ListPolicyRulesResp
+
+func (p *ListPolicyRulesResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *ListPolicyRulesResult) Unmarshal(in []byte) error {
+	msg := new(auth.ListPolicyRulesResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *ListPolicyRulesResult) GetSuccess() *auth.ListPolicyRulesResp {
+	if !p.IsSetSuccess() {
+		return ListPolicyRulesResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *ListPolicyRulesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.ListPolicyRulesResp)
+}
+
+func (p *ListPolicyRulesResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *ListPolicyRulesResult) GetResult() interface{} {
+	return p.Success
+}
+
+func getPermissionPoliciesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.GetPermissionPoliciesReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).GetPermissionPolicies(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *GetPermissionPoliciesArgs:
+		success, err := handler.(auth.AuthService).GetPermissionPolicies(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*GetPermissionPoliciesResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newGetPermissionPoliciesArgs() interface{} {
+	return &GetPermissionPoliciesArgs{}
+}
+
+func newGetPermissionPoliciesResult() interface{} {
+	return &GetPermissionPoliciesResult{}
+}
+
+type GetPermissionPoliciesArgs struct {
+	Req *auth.GetPermissionPoliciesReq
+}
+
+func (p *GetPermissionPoliciesArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *GetPermissionPoliciesArgs) Unmarshal(in []byte) error {
+	msg := new(auth.GetPermissionPoliciesReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var GetPermissionPoliciesArgs_Req_DEFAULT *auth.GetPermissionPoliciesReq
+
+func (p *GetPermissionPoliciesArgs) GetReq() *auth.GetPermissionPoliciesReq {
+	if !p.IsSetReq() {
+		return GetPermissionPoliciesArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *GetPermissionPoliciesArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *GetPermissionPoliciesArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type GetPermissionPoliciesResult struct {
+	Success *auth.GetPermissionPoliciesResp
+}
+
+var GetPermissionPoliciesResult_Success_DEFAULT *auth.GetPermissionPoliciesResp
+
+func (p *GetPermissionPoliciesResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *GetPermissionPoliciesResult) Unmarshal(in []byte) error {
+	msg := new(auth.GetPermissionPoliciesResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *GetPermissionPoliciesResult) GetSuccess() *auth.GetPermissionPoliciesResp {
+	if !p.IsSetSuccess() {
+		return GetPermissionPoliciesResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *GetPermissionPoliciesResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.GetPermissionPoliciesResp)
+}
+
+func (p *GetPermissionPoliciesResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *GetPermissionPoliciesResult) GetResult() interface{} {
+	return p.Success
+}
+
+func attachPolicyToPermissionHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.AttachPolicyToPermissionReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).AttachPolicyToPermission(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *AttachPolicyToPermissionArgs:
+		success, err := handler.(auth.AuthService).AttachPolicyToPermission(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*AttachPolicyToPermissionResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newAttachPolicyToPermissionArgs() interface{} {
+	return &AttachPolicyToPermissionArgs{}
+}
+
+func newAttachPolicyToPermissionResult() interface{} {
+	return &AttachPolicyToPermissionResult{}
+}
+
+type AttachPolicyToPermissionArgs struct {
+	Req *auth.AttachPolicyToPermissionReq
+}
+
+func (p *AttachPolicyToPermissionArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *AttachPolicyToPermissionArgs) Unmarshal(in []byte) error {
+	msg := new(auth.AttachPolicyToPermissionReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var AttachPolicyToPermissionArgs_Req_DEFAULT *auth.AttachPolicyToPermissionReq
+
+func (p *AttachPolicyToPermissionArgs) GetReq() *auth.AttachPolicyToPermissionReq {
+	if !p.IsSetReq() {
+		return AttachPolicyToPermissionArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *AttachPolicyToPermissionArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *AttachPolicyToPermissionArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type AttachPolicyToPermissionResult struct {
+	Success *auth.OperationResult
+}
+
+var AttachPolicyToPermissionResult_Success_DEFAULT *auth.OperationResult
+
+func (p *AttachPolicyToPermissionResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *AttachPolicyToPermissionResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *AttachPolicyToPermissionResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return AttachPolicyToPermissionResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *AttachPolicyToPermissionResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *AttachPolicyToPermissionResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *AttachPolicyToPermissionResult) GetResult() interface{} {
+	return p.Success
+}
+
+func detachPolicyFromPermissionHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(auth.DetachPolicyFromPermissionReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(auth.AuthService).DetachPolicyFromPermission(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *DetachPolicyFromPermissionArgs:
+		success, err := handler.(auth.AuthService).DetachPolicyFromPermission(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*DetachPolicyFromPermissionResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newDetachPolicyFromPermissionArgs() interface{} {
+	return &DetachPolicyFromPermissionArgs{}
+}
+
+func newDetachPolicyFromPermissionResult() interface{} {
+	return &DetachPolicyFromPermissionResult{}
+}
+
+type DetachPolicyFromPermissionArgs struct {
+	Req *auth.DetachPolicyFromPermissionReq
+}
+
+func (p *DetachPolicyFromPermissionArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *DetachPolicyFromPermissionArgs) Unmarshal(in []byte) error {
+	msg := new(auth.DetachPolicyFromPermissionReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var DetachPolicyFromPermissionArgs_Req_DEFAULT *auth.DetachPolicyFromPermissionReq
+
+func (p *DetachPolicyFromPermissionArgs) GetReq() *auth.DetachPolicyFromPermissionReq {
+	if !p.IsSetReq() {
+		return DetachPolicyFromPermissionArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *DetachPolicyFromPermissionArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *DetachPolicyFromPermissionArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type DetachPolicyFromPermissionResult struct {
+	Success *auth.OperationResult
+}
+
+var DetachPolicyFromPermissionResult_Success_DEFAULT *auth.OperationResult
+
+func (p *DetachPolicyFromPermissionResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *DetachPolicyFromPermissionResult) Unmarshal(in []byte) error {
+	msg := new(auth.OperationResult)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *DetachPolicyFromPermissionResult) GetSuccess() *auth.OperationResult {
+	if !p.IsSetSuccess() {
+		return DetachPolicyFromPermissionResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *DetachPolicyFromPermissionResult) SetSuccess(x interface{}) {
+	p.Success = x.(*auth.OperationResult)
+}
+
+func (p *DetachPolicyFromPermissionResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *DetachPolicyFromPermissionResult) GetResult() interface{} {
+	return p.Success
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -4566,6 +6100,136 @@ func (p *kClient) VerifyToken(ctx context.Context, Req *auth.VerifyTokenReq) (r 
 	_args.Req = Req
 	var _result VerifyTokenResult
 	if err = p.c.Call(ctx, "VerifyToken", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CreatePolicy(ctx context.Context, Req *auth.CreatePolicyReq) (r *auth.OperationResult, err error) {
+	var _args CreatePolicyArgs
+	_args.Req = Req
+	var _result CreatePolicyResult
+	if err = p.c.Call(ctx, "CreatePolicy", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) UpdatePolicy(ctx context.Context, Req *auth.UpdatePolicyReq) (r *auth.OperationResult, err error) {
+	var _args UpdatePolicyArgs
+	_args.Req = Req
+	var _result UpdatePolicyResult
+	if err = p.c.Call(ctx, "UpdatePolicy", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) DeletePolicy(ctx context.Context, Req *auth.DeletePolicyReq) (r *auth.OperationResult, err error) {
+	var _args DeletePolicyArgs
+	_args.Req = Req
+	var _result DeletePolicyResult
+	if err = p.c.Call(ctx, "DeletePolicy", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetPolicy(ctx context.Context, Req *auth.GetPolicyReq) (r *auth.GetPolicyResp, err error) {
+	var _args GetPolicyArgs
+	_args.Req = Req
+	var _result GetPolicyResult
+	if err = p.c.Call(ctx, "GetPolicy", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ListPolicies(ctx context.Context, Req *auth.ListPoliciesReq) (r *auth.ListPoliciesResp, err error) {
+	var _args ListPoliciesArgs
+	_args.Req = Req
+	var _result ListPoliciesResult
+	if err = p.c.Call(ctx, "ListPolicies", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CreatePolicyRule(ctx context.Context, Req *auth.CreatePolicyRuleReq) (r *auth.OperationResult, err error) {
+	var _args CreatePolicyRuleArgs
+	_args.Req = Req
+	var _result CreatePolicyRuleResult
+	if err = p.c.Call(ctx, "CreatePolicyRule", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) UpdatePolicyRule(ctx context.Context, Req *auth.UpdatePolicyRuleReq) (r *auth.OperationResult, err error) {
+	var _args UpdatePolicyRuleArgs
+	_args.Req = Req
+	var _result UpdatePolicyRuleResult
+	if err = p.c.Call(ctx, "UpdatePolicyRule", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) DeletePolicyRule(ctx context.Context, Req *auth.DeletePolicyRuleReq) (r *auth.OperationResult, err error) {
+	var _args DeletePolicyRuleArgs
+	_args.Req = Req
+	var _result DeletePolicyRuleResult
+	if err = p.c.Call(ctx, "DeletePolicyRule", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetPolicyRule(ctx context.Context, Req *auth.GetPolicyRuleReq) (r *auth.GetPolicyRuleResp, err error) {
+	var _args GetPolicyRuleArgs
+	_args.Req = Req
+	var _result GetPolicyRuleResult
+	if err = p.c.Call(ctx, "GetPolicyRule", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ListPolicyRules(ctx context.Context, Req *auth.ListPolicyRulesReq) (r *auth.ListPolicyRulesResp, err error) {
+	var _args ListPolicyRulesArgs
+	_args.Req = Req
+	var _result ListPolicyRulesResult
+	if err = p.c.Call(ctx, "ListPolicyRules", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetPermissionPolicies(ctx context.Context, Req *auth.GetPermissionPoliciesReq) (r *auth.GetPermissionPoliciesResp, err error) {
+	var _args GetPermissionPoliciesArgs
+	_args.Req = Req
+	var _result GetPermissionPoliciesResult
+	if err = p.c.Call(ctx, "GetPermissionPolicies", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) AttachPolicyToPermission(ctx context.Context, Req *auth.AttachPolicyToPermissionReq) (r *auth.OperationResult, err error) {
+	var _args AttachPolicyToPermissionArgs
+	_args.Req = Req
+	var _result AttachPolicyToPermissionResult
+	if err = p.c.Call(ctx, "AttachPolicyToPermission", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) DetachPolicyFromPermission(ctx context.Context, Req *auth.DetachPolicyFromPermissionReq) (r *auth.OperationResult, err error) {
+	var _args DetachPolicyFromPermissionArgs
+	_args.Req = Req
+	var _result DetachPolicyFromPermissionResult
+	if err = p.c.Call(ctx, "DetachPolicyFromPermission", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

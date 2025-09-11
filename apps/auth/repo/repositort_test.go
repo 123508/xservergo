@@ -2,9 +2,10 @@ package repo
 
 import (
 	"context"
-	"github.com/123508/xservergo/pkg/util/id"
 	"testing"
 	"time"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/models"
@@ -545,5 +546,58 @@ func TestDeleteUserGroup(t *testing.T) {
 		t.Errorf("failed to delete user group: %v", err)
 	} else {
 		t.Log("user group deleted successfully")
+	}
+}
+
+func TestRepoImpl_CreatePolicy(t *testing.T) {
+	timeNow := time.Now()
+	version := 1
+	policy := &models.Policy{
+		ID:          id.NewUUID(),
+		Code:        "test_policy",
+		Name:        "test_policy",
+		Description: "test_policy",
+		Status:      1,
+		AuditFields: models.AuditFields{
+			CreatedAt: &timeNow,
+			Version:   &version,
+		},
+	}
+	repo := setupTestDB(t)
+	err := repo.CreatePolicy(context.Background(), policy)
+	if err != nil {
+		t.Errorf("failed to create policy: %v", err)
+	} else {
+		t.Logf("policy created successfully: %+v", policy)
+	}
+}
+
+func TestRepoImpl_GetPermissionPolicies(t *testing.T) {
+	repo := setupTestDB(t)
+	policies, err := repo.GetPermissionPolicies(context.Background(), "test_permission_code")
+	if err != nil {
+		t.Errorf("failed to get permission policies: %v", err)
+	} else {
+		t.Logf("permission policies: %+v", policies)
+	}
+}
+
+func TestRepoImpl_AttachPolicyToPermission(t *testing.T) {
+	repo := setupTestDB(t)
+	err := repo.AttachPolicyToPermission(context.Background(), "test_permission_code", "test_policy_code", &testUserId)
+	if err != nil {
+		t.Errorf("failed to attach policy to permission: %v", err)
+	} else {
+		t.Log("policy attached to permission successfully")
+	}
+}
+
+func TestRepoImpl_DetachPolicyFromPermission(t *testing.T) {
+	repo := setupTestDB(t)
+	err := repo.DetachPolicyFromPermission(context.Background(), "test_permission_code", "test_policy_code", &testUserId)
+	if err != nil {
+		t.Errorf("failed to detach policy from permission: %v", err)
+	} else {
+		t.Log("policy detached from permission successfully")
 	}
 }

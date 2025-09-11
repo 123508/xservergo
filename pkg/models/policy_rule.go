@@ -1,6 +1,6 @@
 package models
 
-import "github.com/123508/xservergo/pkg/util"
+import "github.com/123508/xservergo/pkg/util/id"
 
 // AttributeType defines the type of attribute in a policy rule.
 type AttributeType string
@@ -43,7 +43,7 @@ const (
 
 // PolicyRule represents a rule within a policy.
 type PolicyRule struct {
-	ID             util.UUID     `gorm:"column:id;comment '策略规则id'"`
+	ID             id.UUID       `gorm:"column:id;comment '策略规则id'"`
 	PolicyCode     string        `gorm:"column:policy_code;comment '策略唯一标识符'"`
 	AttributeType  AttributeType `gorm:"column:attribute_type;comment '属性类型'"`
 	AttributeKey   string        `gorm:"column:attribute_key;comment '属性键'"`

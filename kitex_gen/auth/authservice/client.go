@@ -46,6 +46,19 @@ type Client interface {
 	IssueToken(ctx context.Context, Req *auth.IssueTokenReq, callOptions ...callopt.Option) (r *auth.IssueTokenResp, err error)
 	RefreshToken(ctx context.Context, Req *auth.RefreshTokenReq, callOptions ...callopt.Option) (r *auth.RefreshTokenResp, err error)
 	VerifyToken(ctx context.Context, Req *auth.VerifyTokenReq, callOptions ...callopt.Option) (r *auth.VerifyTokenResp, err error)
+	CreatePolicy(ctx context.Context, Req *auth.CreatePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	UpdatePolicy(ctx context.Context, Req *auth.UpdatePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	DeletePolicy(ctx context.Context, Req *auth.DeletePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	GetPolicy(ctx context.Context, Req *auth.GetPolicyReq, callOptions ...callopt.Option) (r *auth.GetPolicyResp, err error)
+	ListPolicies(ctx context.Context, Req *auth.ListPoliciesReq, callOptions ...callopt.Option) (r *auth.ListPoliciesResp, err error)
+	CreatePolicyRule(ctx context.Context, Req *auth.CreatePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	UpdatePolicyRule(ctx context.Context, Req *auth.UpdatePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	DeletePolicyRule(ctx context.Context, Req *auth.DeletePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	GetPolicyRule(ctx context.Context, Req *auth.GetPolicyRuleReq, callOptions ...callopt.Option) (r *auth.GetPolicyRuleResp, err error)
+	ListPolicyRules(ctx context.Context, Req *auth.ListPolicyRulesReq, callOptions ...callopt.Option) (r *auth.ListPolicyRulesResp, err error)
+	GetPermissionPolicies(ctx context.Context, Req *auth.GetPermissionPoliciesReq, callOptions ...callopt.Option) (r *auth.GetPermissionPoliciesResp, err error)
+	AttachPolicyToPermission(ctx context.Context, Req *auth.AttachPolicyToPermissionReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
+	DetachPolicyFromPermission(ctx context.Context, Req *auth.DetachPolicyFromPermissionReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -250,4 +263,69 @@ func (p *kAuthServiceClient) RefreshToken(ctx context.Context, Req *auth.Refresh
 func (p *kAuthServiceClient) VerifyToken(ctx context.Context, Req *auth.VerifyTokenReq, callOptions ...callopt.Option) (r *auth.VerifyTokenResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.VerifyToken(ctx, Req)
+}
+
+func (p *kAuthServiceClient) CreatePolicy(ctx context.Context, Req *auth.CreatePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CreatePolicy(ctx, Req)
+}
+
+func (p *kAuthServiceClient) UpdatePolicy(ctx context.Context, Req *auth.UpdatePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.UpdatePolicy(ctx, Req)
+}
+
+func (p *kAuthServiceClient) DeletePolicy(ctx context.Context, Req *auth.DeletePolicyReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.DeletePolicy(ctx, Req)
+}
+
+func (p *kAuthServiceClient) GetPolicy(ctx context.Context, Req *auth.GetPolicyReq, callOptions ...callopt.Option) (r *auth.GetPolicyResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetPolicy(ctx, Req)
+}
+
+func (p *kAuthServiceClient) ListPolicies(ctx context.Context, Req *auth.ListPoliciesReq, callOptions ...callopt.Option) (r *auth.ListPoliciesResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ListPolicies(ctx, Req)
+}
+
+func (p *kAuthServiceClient) CreatePolicyRule(ctx context.Context, Req *auth.CreatePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CreatePolicyRule(ctx, Req)
+}
+
+func (p *kAuthServiceClient) UpdatePolicyRule(ctx context.Context, Req *auth.UpdatePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.UpdatePolicyRule(ctx, Req)
+}
+
+func (p *kAuthServiceClient) DeletePolicyRule(ctx context.Context, Req *auth.DeletePolicyRuleReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.DeletePolicyRule(ctx, Req)
+}
+
+func (p *kAuthServiceClient) GetPolicyRule(ctx context.Context, Req *auth.GetPolicyRuleReq, callOptions ...callopt.Option) (r *auth.GetPolicyRuleResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetPolicyRule(ctx, Req)
+}
+
+func (p *kAuthServiceClient) ListPolicyRules(ctx context.Context, Req *auth.ListPolicyRulesReq, callOptions ...callopt.Option) (r *auth.ListPolicyRulesResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ListPolicyRules(ctx, Req)
+}
+
+func (p *kAuthServiceClient) GetPermissionPolicies(ctx context.Context, Req *auth.GetPermissionPoliciesReq, callOptions ...callopt.Option) (r *auth.GetPermissionPoliciesResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetPermissionPolicies(ctx, Req)
+}
+
+func (p *kAuthServiceClient) AttachPolicyToPermission(ctx context.Context, Req *auth.AttachPolicyToPermissionReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.AttachPolicyToPermission(ctx, Req)
+}
+
+func (p *kAuthServiceClient) DetachPolicyFromPermission(ctx context.Context, Req *auth.DetachPolicyFromPermissionReq, callOptions ...callopt.Option) (r *auth.OperationResult, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.DetachPolicyFromPermission(ctx, Req)
 }

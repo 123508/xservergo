@@ -161,6 +161,7 @@ type Permission struct {
 	Resource       string          `protobuf:"bytes,7,opt,name=resource" json:"resource,omitempty"`               // 权限对应资源
 	Method         string          `protobuf:"bytes,8,opt,name=method" json:"method,omitempty"`                   // 权限对应方法
 	Status         bool            `protobuf:"varint,9,opt,name=status" json:"status,omitempty"`                  // 权限是否启用： true=启用, false=禁用
+	NeedPolicy     bool            `protobuf:"varint,10,opt,name=need_policy" json:"need_policy,omitempty"`       // 是否需要策略检验
 }
 
 func (x *Permission) Reset() { *x = Permission{} }
@@ -228,6 +229,13 @@ func (x *Permission) GetMethod() string {
 func (x *Permission) GetStatus() bool {
 	if x != nil {
 		return x.Status
+	}
+	return false
+}
+
+func (x *Permission) GetNeedPolicy() bool {
+	if x != nil {
+		return x.NeedPolicy
 	}
 	return false
 }
@@ -374,6 +382,120 @@ func (x *UserInfo) GetUpdatedAt() string {
 func (x *UserInfo) GetIsDeleted() bool {
 	if x != nil {
 		return x.IsDeleted
+	}
+	return false
+}
+
+type Policy struct {
+	Id          string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`                   // uuid主键, 16字节
+	PolicyCode  string `protobuf:"bytes,2,opt,name=policy_code" json:"policy_code,omitempty"` // 策略唯一标识符
+	PolicyName  string `protobuf:"bytes,3,opt,name=policy_name" json:"policy_name,omitempty"` // 策略名称
+	Description string `protobuf:"bytes,4,opt,name=description" json:"description,omitempty"` // 策略描述
+	Status      bool   `protobuf:"varint,5,opt,name=status" json:"status,omitempty"`          // 策略状态： true=启用, false=禁用
+}
+
+func (x *Policy) Reset() { *x = Policy{} }
+
+func (x *Policy) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *Policy) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *Policy) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Policy) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *Policy) GetPolicyName() string {
+	if x != nil {
+		return x.PolicyName
+	}
+	return ""
+}
+
+func (x *Policy) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *Policy) GetStatus() bool {
+	if x != nil {
+		return x.Status
+	}
+	return false
+}
+
+type PolicyRule struct {
+	Id             string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`                           // uuid主键, 16字节
+	PolicyCode     string `protobuf:"bytes,2,opt,name=policy_code" json:"policy_code,omitempty"`         // 所属策略唯一标识符
+	AttributeType  string `protobuf:"bytes,3,opt,name=attribute_type" json:"attribute_type,omitempty"`   // 属性类型
+	AttributeKey   string `protobuf:"bytes,4,opt,name=attribute_key" json:"attribute_key,omitempty"`     // 属性键
+	AttributeValue string `protobuf:"bytes,5,opt,name=attribute_value" json:"attribute_value,omitempty"` // 属性值
+	Operator       string `protobuf:"bytes,6,opt,name=operator" json:"operator,omitempty"`               // 操作符
+	Status         bool   `protobuf:"varint,7,opt,name=status" json:"status,omitempty"`                  // 规则是否启用
+}
+
+func (x *PolicyRule) Reset() { *x = PolicyRule{} }
+
+func (x *PolicyRule) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PolicyRule) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PolicyRule) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetAttributeType() string {
+	if x != nil {
+		return x.AttributeType
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetAttributeKey() string {
+	if x != nil {
+		return x.AttributeKey
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetAttributeValue() string {
+	if x != nil {
+		return x.AttributeValue
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetOperator() string {
+	if x != nil {
+		return x.Operator
+	}
+	return ""
+}
+
+func (x *PolicyRule) GetStatus() bool {
+	if x != nil {
+		return x.Status
 	}
 	return false
 }
@@ -1714,6 +1836,448 @@ func (x *VerifyTokenResp) GetTtl() int64 {
 	return 0
 }
 
+type CreatePolicyReq struct {
+	Policy        *Policy `protobuf:"bytes,1,opt,name=policy" json:"policy,omitempty"`
+	RequestUserId string  `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *CreatePolicyReq) Reset() { *x = CreatePolicyReq{} }
+
+func (x *CreatePolicyReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreatePolicyReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreatePolicyReq) GetPolicy() *Policy {
+	if x != nil {
+		return x.Policy
+	}
+	return nil
+}
+
+func (x *CreatePolicyReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type UpdatePolicyReq struct {
+	Policy        *Policy `protobuf:"bytes,1,opt,name=policy" json:"policy,omitempty"`
+	RequestUserId string  `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *UpdatePolicyReq) Reset() { *x = UpdatePolicyReq{} }
+
+func (x *UpdatePolicyReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UpdatePolicyReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UpdatePolicyReq) GetPolicy() *Policy {
+	if x != nil {
+		return x.Policy
+	}
+	return nil
+}
+
+func (x *UpdatePolicyReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type DeletePolicyReq struct {
+	PolicyCode    string `protobuf:"bytes,1,opt,name=policy_code" json:"policy_code,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *DeletePolicyReq) Reset() { *x = DeletePolicyReq{} }
+
+func (x *DeletePolicyReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DeletePolicyReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DeletePolicyReq) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *DeletePolicyReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetPolicyReq struct {
+	PolicyCode    string `protobuf:"bytes,1,opt,name=policy_code" json:"policy_code,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *GetPolicyReq) Reset() { *x = GetPolicyReq{} }
+
+func (x *GetPolicyReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetPolicyReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPolicyReq) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *GetPolicyReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetPolicyResp struct {
+	Policy *Policy `protobuf:"bytes,1,opt,name=policy" json:"policy,omitempty"`
+}
+
+func (x *GetPolicyResp) Reset() { *x = GetPolicyResp{} }
+
+func (x *GetPolicyResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetPolicyResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPolicyResp) GetPolicy() *Policy {
+	if x != nil {
+		return x.Policy
+	}
+	return nil
+}
+
+type ListPoliciesReq struct {
+	Page          uint32 `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`
+	PageSize      uint32 `protobuf:"varint,2,opt,name=page_size" json:"page_size,omitempty"`
+	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *ListPoliciesReq) Reset() { *x = ListPoliciesReq{} }
+
+func (x *ListPoliciesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ListPoliciesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ListPoliciesReq) GetPage() uint32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListPoliciesReq) GetPageSize() uint32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListPoliciesReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type ListPoliciesResp struct {
+	Policies []*Policy `protobuf:"bytes,1,rep,name=policies" json:"policies,omitempty"`
+}
+
+func (x *ListPoliciesResp) Reset() { *x = ListPoliciesResp{} }
+
+func (x *ListPoliciesResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ListPoliciesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ListPoliciesResp) GetPolicies() []*Policy {
+	if x != nil {
+		return x.Policies
+	}
+	return nil
+}
+
+type CreatePolicyRuleReq struct {
+	Rule          *PolicyRule `protobuf:"bytes,1,opt,name=rule" json:"rule,omitempty"`
+	RequestUserId string      `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *CreatePolicyRuleReq) Reset() { *x = CreatePolicyRuleReq{} }
+
+func (x *CreatePolicyRuleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *CreatePolicyRuleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CreatePolicyRuleReq) GetRule() *PolicyRule {
+	if x != nil {
+		return x.Rule
+	}
+	return nil
+}
+
+func (x *CreatePolicyRuleReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type UpdatePolicyRuleReq struct {
+	Rule          *PolicyRule `protobuf:"bytes,1,opt,name=rule" json:"rule,omitempty"`
+	RequestUserId string      `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *UpdatePolicyRuleReq) Reset() { *x = UpdatePolicyRuleReq{} }
+
+func (x *UpdatePolicyRuleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UpdatePolicyRuleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UpdatePolicyRuleReq) GetRule() *PolicyRule {
+	if x != nil {
+		return x.Rule
+	}
+	return nil
+}
+
+func (x *UpdatePolicyRuleReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type DeletePolicyRuleReq struct {
+	RuleId        string `protobuf:"bytes,1,opt,name=rule_id" json:"rule_id,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *DeletePolicyRuleReq) Reset() { *x = DeletePolicyRuleReq{} }
+
+func (x *DeletePolicyRuleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DeletePolicyRuleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DeletePolicyRuleReq) GetRuleId() string {
+	if x != nil {
+		return x.RuleId
+	}
+	return ""
+}
+
+func (x *DeletePolicyRuleReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetPolicyRuleReq struct {
+	RuleId        string `protobuf:"bytes,1,opt,name=rule_id" json:"rule_id,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *GetPolicyRuleReq) Reset() { *x = GetPolicyRuleReq{} }
+
+func (x *GetPolicyRuleReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetPolicyRuleReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPolicyRuleReq) GetRuleId() string {
+	if x != nil {
+		return x.RuleId
+	}
+	return ""
+}
+
+func (x *GetPolicyRuleReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetPolicyRuleResp struct {
+	Rule *PolicyRule `protobuf:"bytes,1,opt,name=rule" json:"rule,omitempty"`
+}
+
+func (x *GetPolicyRuleResp) Reset() { *x = GetPolicyRuleResp{} }
+
+func (x *GetPolicyRuleResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *GetPolicyRuleResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPolicyRuleResp) GetRule() *PolicyRule {
+	if x != nil {
+		return x.Rule
+	}
+	return nil
+}
+
+type ListPolicyRulesReq struct {
+	PolicyCode    string `protobuf:"bytes,1,opt,name=policy_code" json:"policy_code,omitempty"`
+	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *ListPolicyRulesReq) Reset() { *x = ListPolicyRulesReq{} }
+
+func (x *ListPolicyRulesReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ListPolicyRulesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ListPolicyRulesReq) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *ListPolicyRulesReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type ListPolicyRulesResp struct {
+	Rules []*PolicyRule `protobuf:"bytes,1,rep,name=rules" json:"rules,omitempty"`
+}
+
+func (x *ListPolicyRulesResp) Reset() { *x = ListPolicyRulesResp{} }
+
+func (x *ListPolicyRulesResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *ListPolicyRulesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *ListPolicyRulesResp) GetRules() []*PolicyRule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+type GetPermissionPoliciesReq struct {
+	PermissionCode string `protobuf:"bytes,1,opt,name=permission_code" json:"permission_code,omitempty"`
+	RequestUserId  string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *GetPermissionPoliciesReq) Reset() { *x = GetPermissionPoliciesReq{} }
+
+func (x *GetPermissionPoliciesReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetPermissionPoliciesReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPermissionPoliciesReq) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *GetPermissionPoliciesReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type GetPermissionPoliciesResp struct {
+	Policies []*Policy `protobuf:"bytes,1,rep,name=policies" json:"policies,omitempty"`
+}
+
+func (x *GetPermissionPoliciesResp) Reset() { *x = GetPermissionPoliciesResp{} }
+
+func (x *GetPermissionPoliciesResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *GetPermissionPoliciesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *GetPermissionPoliciesResp) GetPolicies() []*Policy {
+	if x != nil {
+		return x.Policies
+	}
+	return nil
+}
+
+type AttachPolicyToPermissionReq struct {
+	PermissionCode string `protobuf:"bytes,1,opt,name=permission_code" json:"permission_code,omitempty"`
+	PolicyCode     string `protobuf:"bytes,2,opt,name=policy_code" json:"policy_code,omitempty"`
+	RequestUserId  string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *AttachPolicyToPermissionReq) Reset() { *x = AttachPolicyToPermissionReq{} }
+
+func (x *AttachPolicyToPermissionReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *AttachPolicyToPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *AttachPolicyToPermissionReq) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *AttachPolicyToPermissionReq) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *AttachPolicyToPermissionReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+type DetachPolicyFromPermissionReq struct {
+	PermissionCode string `protobuf:"bytes,1,opt,name=permission_code" json:"permission_code,omitempty"`
+	PolicyCode     string `protobuf:"bytes,2,opt,name=policy_code" json:"policy_code,omitempty"`
+	RequestUserId  string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+}
+
+func (x *DetachPolicyFromPermissionReq) Reset() { *x = DetachPolicyFromPermissionReq{} }
+
+func (x *DetachPolicyFromPermissionReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *DetachPolicyFromPermissionReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DetachPolicyFromPermissionReq) GetPermissionCode() string {
+	if x != nil {
+		return x.PermissionCode
+	}
+	return ""
+}
+
+func (x *DetachPolicyFromPermissionReq) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *DetachPolicyFromPermissionReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
 type AuthService interface {
 	CreatePermission(ctx context.Context, req *CreatePermissionReq) (res *Permission, err error)
 	UpdatePermission(ctx context.Context, req *UpdatePermissionReq) (res *Permission, err error)
@@ -1750,4 +2314,17 @@ type AuthService interface {
 	IssueToken(ctx context.Context, req *IssueTokenReq) (res *IssueTokenResp, err error)
 	RefreshToken(ctx context.Context, req *RefreshTokenReq) (res *RefreshTokenResp, err error)
 	VerifyToken(ctx context.Context, req *VerifyTokenReq) (res *VerifyTokenResp, err error)
+	CreatePolicy(ctx context.Context, req *CreatePolicyReq) (res *OperationResult, err error)
+	UpdatePolicy(ctx context.Context, req *UpdatePolicyReq) (res *OperationResult, err error)
+	DeletePolicy(ctx context.Context, req *DeletePolicyReq) (res *OperationResult, err error)
+	GetPolicy(ctx context.Context, req *GetPolicyReq) (res *GetPolicyResp, err error)
+	ListPolicies(ctx context.Context, req *ListPoliciesReq) (res *ListPoliciesResp, err error)
+	CreatePolicyRule(ctx context.Context, req *CreatePolicyRuleReq) (res *OperationResult, err error)
+	UpdatePolicyRule(ctx context.Context, req *UpdatePolicyRuleReq) (res *OperationResult, err error)
+	DeletePolicyRule(ctx context.Context, req *DeletePolicyRuleReq) (res *OperationResult, err error)
+	GetPolicyRule(ctx context.Context, req *GetPolicyRuleReq) (res *GetPolicyRuleResp, err error)
+	ListPolicyRules(ctx context.Context, req *ListPolicyRulesReq) (res *ListPolicyRulesResp, err error)
+	GetPermissionPolicies(ctx context.Context, req *GetPermissionPoliciesReq) (res *GetPermissionPoliciesResp, err error)
+	AttachPolicyToPermission(ctx context.Context, req *AttachPolicyToPermissionReq) (res *OperationResult, err error)
+	DetachPolicyFromPermission(ctx context.Context, req *DetachPolicyFromPermissionReq) (res *OperationResult, err error)
 }

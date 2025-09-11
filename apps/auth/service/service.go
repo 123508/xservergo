@@ -3,11 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/kitex_gen/user"
 	"github.com/123508/xservergo/pkg/cli"
@@ -105,6 +106,35 @@ type AuthService interface {
 	GetPermissionList(ctx context.Context, page, pageSize uint32) ([]*models.Permission, error)
 	// GetUserGroupList 获取用户组列表
 	GetUserGroupList(ctx context.Context, page, pageSize uint32) ([]*models.UserGroup, error)
+
+	// CreatePolicy 创建策略
+	CreatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error
+	// UpdatePolicy 更新策略
+	UpdatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error
+	// DeletePolicy 删除策略
+	DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error
+	// GetPolicyByCode 查询策略
+	GetPolicyByCode(ctx context.Context, policyCode string, operatorId *id.UUID) (*models.Policy, error)
+	// GetPolicyList 查询策略列表
+	GetPolicyList(ctx context.Context, page uint32, pageSize uint32, operatorId *id.UUID) ([]*models.Policy, error)
+
+	// CreatePolicyRule 创建策略规则
+	CreatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error
+	// UpdatePolicyRule 更新策略规则
+	UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error
+	// DeletePolicyRule 删除策略规则
+	DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error
+	// GetPolicyRuleByID 查询策略规则
+	GetPolicyRuleByID(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) (*models.PolicyRule, error)
+	// ListPolicyRules 查询策略的所有规则
+	ListPolicyRules(ctx context.Context, policyCode string, operatorId *id.UUID) ([]*models.PolicyRule, error)
+
+	// GetPermissionPolicies 查询权限的所有策略代码
+	GetPermissionPolicies(ctx context.Context, permissionCode string, operatorId *id.UUID) ([]string, error)
+	// AttachPolicyToPermission 给权限分配策略
+	AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
+	// DetachPolicyFromPermission 移除权限的策略
+	DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error
 }
 
 var UserClient = cli.InitUserService()
@@ -765,4 +795,187 @@ func (s *ServiceImpl) GetUserGroupRoles(ctx context.Context, groupCode string) (
 	}
 
 	return roles, nil
+}
+
+func (s *ServiceImpl) CreatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error {
+	if policy == nil {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	timeNow := time.Now()
+	policy.AuditFields = models.AuditFields{
+		Version:   &s.Version,
+		CreatedBy: operatorId,
+		CreatedAt: &timeNow,
+	}
+	err := s.authRepo.CreatePolicy(ctx, policy)
+	if err != nil {
+		logs.ErrorLogger.Error("创建策略错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "创建策略错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) UpdatePolicy(ctx context.Context, policy *models.Policy, operatorId *id.UUID) error {
+	if policy == nil || policy.Code == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	timeNow := time.Now()
+	policy.AuditFields = models.AuditFields{
+		UpdatedBy: operatorId,
+		UpdatedAt: &timeNow,
+		Version:   &s.Version,
+	}
+	err := s.authRepo.UpdatePolicy(ctx, policy)
+	if err != nil {
+		logs.ErrorLogger.Error("更新策略错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "更新策略错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) DeletePolicy(ctx context.Context, policyCode string, operatorId *id.UUID) error {
+	if policyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	err := s.authRepo.DeletePolicy(ctx, policyCode, operatorId)
+	if err != nil {
+		logs.ErrorLogger.Error("删除策略错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "删除策略错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) GetPolicyByCode(ctx context.Context, policyCode string, operatorId *id.UUID) (*models.Policy, error) {
+	if policyCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	policy, err := s.authRepo.GetPolicyByCode(ctx, policyCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取策略错误", "", err)
+	}
+
+	return policy, nil
+}
+
+func (s *ServiceImpl) GetPolicyList(ctx context.Context, page uint32, pageSize uint32, operatorId *id.UUID) ([]*models.Policy, error) {
+	policies, err := s.authRepo.GetPolicyList(ctx, page, pageSize)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略列表错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取策略列表错误", "", err)
+	}
+
+	return policies, nil
+}
+
+func (s *ServiceImpl) CreatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error {
+	if rule == nil || rule.PolicyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	// 检查关联的策略是否存在
+	_, err := s.authRepo.GetPolicyByCode(ctx, rule.PolicyCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "获取策略错误", "", err)
+	}
+
+	timeNow := time.Now()
+	rule.AuditFields = models.AuditFields{
+		Version:   &s.Version,
+		CreatedBy: operatorId,
+		CreatedAt: &timeNow,
+	}
+	err = s.authRepo.CreatePolicyRule(ctx, rule)
+	if err != nil {
+		logs.ErrorLogger.Error("创建策略规则错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "创建策略规则错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) UpdatePolicyRule(ctx context.Context, rule *models.PolicyRule, operatorId *id.UUID) error {
+	if rule == nil || rule.ID.IsZero() {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	timeNow := time.Now()
+	rule.AuditFields = models.AuditFields{
+		UpdatedBy: operatorId,
+		UpdatedAt: &timeNow,
+		Version:   &s.Version,
+	}
+	err := s.authRepo.UpdatePolicyRule(ctx, rule)
+	if err != nil {
+		logs.ErrorLogger.Error("更新策略规则错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "更新策略规则错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) DeletePolicyRule(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) error {
+	if ruleID.IsZero() {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	err := s.authRepo.DeletePolicyRule(ctx, ruleID, operatorId)
+	if err != nil {
+		logs.ErrorLogger.Error("删除策略规则错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "删除策略规则错误", "", err)
+	}
+	return nil
+}
+
+func (s *ServiceImpl) GetPolicyRuleByID(ctx context.Context, ruleID id.UUID, operatorId *id.UUID) (*models.PolicyRule, error) {
+	if ruleID.IsZero() {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	rule, err := s.authRepo.GetPolicyRuleByID(ctx, ruleID)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略规则错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取策略规则错误", "", err)
+	}
+
+	return rule, nil
+}
+
+func (s *ServiceImpl) ListPolicyRules(ctx context.Context, policyCode string, operatorId *id.UUID) ([]*models.PolicyRule, error) {
+	if policyCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	rules, err := s.authRepo.ListPolicyRules(ctx, policyCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略规则列表错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取策略规则列表错误", "", err)
+	}
+
+	return rules, nil
+}
+
+func (s *ServiceImpl) GetPermissionPolicies(ctx context.Context, permissionCode string, operatorId *id.UUID) ([]string, error) {
+	if permissionCode == "" {
+		return nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	policies, err := s.authRepo.GetPermissionPolicies(ctx, permissionCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取权限策略错误:", zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "获取权限策略错误", "", err)
+	}
+
+	return policies, nil
+}
+
+func (s *ServiceImpl) AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	return s.authRepo.AttachPolicyToPermission(ctx, permissionCode, policyCode, operatorId)
+}
+
+func (s *ServiceImpl) DetachPolicyFromPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	return s.authRepo.DetachPolicyFromPermission(ctx, permissionCode, policyCode, operatorId)
 }
