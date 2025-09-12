@@ -35,7 +35,7 @@ create table if not exists deleted_users(
     unique index users_udx_phone(phone,deleted_at_fixed),
     unique index users_udx_username(username,deleted_at_fixed),
 
-    constraint users_chk_status check ( status in(0,1) ),
-    constraint users_chk_gender check ( gender in(0,1,2) )
+    constraint deleted_users_chk_status check ( status in(0,1) ),
+    constraint deleted_users_chk_gender check ( gender in(0,1,2) )
 )engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci
     COMMENT='已删除用户表';
