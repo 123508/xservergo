@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/123508/xservergo/pkg/util/id"
@@ -22,6 +20,11 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
+
+type policyRule struct {
+	PolicyCode string
+	Rules      []*models.PolicyRule
+}
 
 type AuthService interface {
 	GetRedis() *redis.Client
@@ -98,7 +101,8 @@ type AuthService interface {
 	// HasPermission 检查用户是否有某个权限
 	HasPermission(ctx context.Context, userID id.UUID, permissionCode string) bool
 	// CanAccess 检查用户是否可以访问某个资源
-	CanAccess(ctx context.Context, userID id.UUID, resource string, method string) bool
+	// 返回值: 是否有权限, 是否需要策略, 相关策略列表
+	CanAccess(ctx context.Context, userID id.UUID, resource string, method string) (bool, bool, []policyRule, error)
 
 	// GetRoleList 获取角色列表
 	GetRoleList(ctx context.Context, page, pageSize uint32) ([]*models.Role, error)
@@ -700,46 +704,55 @@ func (s *ServiceImpl) HasPermission(ctx context.Context, userID id.UUID, permiss
 	return false
 }
 
-func (s *ServiceImpl) CanAccess(ctx context.Context, userID id.UUID, resource string, method string) bool {
+func (s *ServiceImpl) CanAccess(ctx context.Context, userID id.UUID, resource string, method string) (bool, bool, []policyRule, error) {
 	if userID.IsZero() || resource == "" || method == "" {
-		return false
+		return false, false, nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
-
-	//res := s.authRepo.CanAccess(ctx, userID, resource, method)
 
 	perms, err := s.authRepo.GetUserPermissions(ctx, userID)
 	if err != nil {
 		logs.ErrorLogger.Error("获取用户权限错误:", zap.Error(err))
-		return false
+		return false, false, nil, err
 	}
+
+	hasPerm := false
+	needPolicy := true
+	var polices []string
 
 	for _, perm := range perms {
 		permission := &models.Permission{Code: perm}
 		permission, err = s.authRepo.GetPermissionByCode(ctx, perm)
-		if permission == nil || err != nil || method != permission.Method {
+		if permission == nil || err != nil || method != permission.Method || resource != permission.Resource {
 			continue
 		}
 
-		// 正则匹配
-		// 将通配符模式转换为正则表达式
-		// 将 * 替换为 [^/]+ （匹配除斜杠外的任意字符）
-		// 转义其他特殊字符
-		pattern := regexp.QuoteMeta(permission.Resource)
-		pattern = strings.ReplaceAll(pattern, "\\*", "[^/]+")
+		hasPerm = true
+		if permission.NeedPolicy == false {
+			needPolicy = false
+		} else {
+			polices, err = s.GetPermissionPolicies(ctx, permission.Code, nil)
+			if err != nil {
+				logs.ErrorLogger.Error("获取权限策略错误:", zap.Error(err))
+				return false, false, nil, err
+			}
+		}
+		break
+	}
 
-		// 添加行首行尾锚点确保完全匹配
-		pattern = "^" + pattern + "$"
-		matched, err := regexp.MatchString(pattern, resource)
+	policyRules := make([]policyRule, len(polices))
+	for i, p := range polices {
+		rules, err := s.ListPolicyRules(ctx, p, nil)
 		if err != nil {
-			logs.ErrorLogger.Error("正则表达式匹配错误:", zap.Error(err))
-			continue
+			logs.ErrorLogger.Error("获取策略规则错误:", zap.Error(err))
+			return false, false, nil, err
 		}
-		if matched {
-			return true
+		policyRules[i] = policyRule{
+			PolicyCode: p,
+			Rules:      rules,
 		}
 	}
 
-	return false
+	return hasPerm, needPolicy, policyRules, nil
 }
 
 func (s *ServiceImpl) GetRoleList(ctx context.Context, page, pageSize uint32) ([]*models.Role, error) {

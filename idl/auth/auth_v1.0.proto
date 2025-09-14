@@ -367,6 +367,12 @@ message CanAccessReq{
 
 message CanAccessResp{
   bool ok=1;
+  bool need_policy=2;                    // 是否需要策略检验
+  message PolicyRules {
+    string policy_code = 1;              // 策略唯一标识符
+    repeated PolicyRule rules = 2;       // 该策略下的规则列表
+  }
+  repeated PolicyRules policy_rules = 3; // 相关策略及其规则列表
 }
 
 // ---------- 查询辅助 ---------- //

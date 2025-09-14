@@ -695,9 +695,33 @@ func (s *AuthServiceImpl) CanAccess(ctx context.Context, req *auth.CanAccessReq)
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	canAccess := s.authService.CanAccess(ctx, *targetUserId, req.GetResource(), req.GetMethod())
+	hasPerm, needPolicy, policyRules, err := s.authService.CanAccess(ctx, *targetUserId, req.GetResource(), req.GetMethod())
+	if err != nil {
+		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "权限校验失败")
+	}
+	pr := make([]*auth.CanAccessResp_PolicyRules, 0, len(policyRules))
+	for _, rule := range policyRules {
+		rules := make([]*auth.PolicyRule, 0, len(rule.Rules))
+		for _, r := range rule.Rules {
+			rules = append(rules, &auth.PolicyRule{
+				Id:             r.ID.MarshalBase64(),
+				PolicyCode:     rule.PolicyCode,
+				AttributeType:  string(r.AttributeType),
+				AttributeKey:   r.AttributeKey,
+				AttributeValue: r.AttributeValue,
+				Operator:       string(r.Operator),
+				Status:         r.Status == 1,
+			})
+		}
+		pr = append(pr, &auth.CanAccessResp_PolicyRules{
+			PolicyCode: rule.PolicyCode,
+			Rules:      rules,
+		})
+	}
 	return &auth.CanAccessResp{
-		Ok: canAccess,
+		Ok:          hasPerm,
+		NeedPolicy:  needPolicy,
+		PolicyRules: pr,
 	}, nil
 }
 

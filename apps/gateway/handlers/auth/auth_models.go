@@ -1,6 +1,10 @@
 package auth
 
-import "github.com/123508/xservergo/kitex_gen/auth"
+import (
+	"strconv"
+
+	"github.com/123508/xservergo/kitex_gen/auth"
+)
 
 func permissionTypeToString(typeInt auth.Permission_Type) string {
 	switch typeInt {
@@ -48,6 +52,14 @@ func permissionTypeFromString(typeStr string) auth.Permission_Type {
 	}
 }
 
+func parseUint32(s string, defaultVal uint32) uint32 {
+	val, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return defaultVal
+	}
+	return uint32(val)
+}
+
 type Permission struct {
 	ID          string `json:"id"`
 	Code        string `json:"code"`
@@ -85,4 +97,22 @@ type User struct {
 	Gender   uint64 `json:"gender"`
 	Avatar   string `json:"avatar"`
 	Status   uint64 `json:"status"`
+}
+
+type Policy struct {
+	ID          string `json:"id"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Status      bool   `json:"status"`
+}
+
+type PolicyRule struct {
+	ID             string `json:"id"`
+	PolicyCode     string `json:"policy_code"`
+	AttributeType  string `json:"attribute_type"`
+	AttributeKey   string `json:"attribute_key"`
+	AttributeValue string `json:"attribute_value"`
+	Operation      string `json:"operation"`
+	Status         bool   `json:"status"`
 }

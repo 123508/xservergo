@@ -1496,7 +1496,9 @@ func (x *CanAccessReq) GetUserStatus() uint64 {
 }
 
 type CanAccessResp struct {
-	Ok bool `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
+	Ok          bool                         `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
+	NeedPolicy  bool                         `protobuf:"varint,2,opt,name=need_policy" json:"need_policy,omitempty"`  // 是否需要策略检验
+	PolicyRules []*CanAccessResp_PolicyRules `protobuf:"bytes,3,rep,name=policy_rules" json:"policy_rules,omitempty"` // 相关策略及其规则列表
 }
 
 func (x *CanAccessResp) Reset() { *x = CanAccessResp{} }
@@ -1510,6 +1512,47 @@ func (x *CanAccessResp) GetOk() bool {
 		return x.Ok
 	}
 	return false
+}
+
+func (x *CanAccessResp) GetNeedPolicy() bool {
+	if x != nil {
+		return x.NeedPolicy
+	}
+	return false
+}
+
+func (x *CanAccessResp) GetPolicyRules() []*CanAccessResp_PolicyRules {
+	if x != nil {
+		return x.PolicyRules
+	}
+	return nil
+}
+
+type CanAccessResp_PolicyRules struct {
+	PolicyCode string        `protobuf:"bytes,1,opt,name=policy_code" json:"policy_code,omitempty"` // 策略唯一标识符
+	Rules      []*PolicyRule `protobuf:"bytes,2,rep,name=rules" json:"rules,omitempty"`             // 该策略下的规则列表
+}
+
+func (x *CanAccessResp_PolicyRules) Reset() { *x = CanAccessResp_PolicyRules{} }
+
+func (x *CanAccessResp_PolicyRules) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *CanAccessResp_PolicyRules) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *CanAccessResp_PolicyRules) GetPolicyCode() string {
+	if x != nil {
+		return x.PolicyCode
+	}
+	return ""
+}
+
+func (x *CanAccessResp_PolicyRules) GetRules() []*PolicyRule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
 }
 
 type ListRolesReq struct {
