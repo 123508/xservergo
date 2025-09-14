@@ -144,6 +144,13 @@ func main() {
 		// 用户权限
 		authGroup.GET("/user/:user_id/permission", auth.GetUserPermissions)
 
+		// 策略管理
+		authGroup.POST("/policy", auth.CreatePolicy)
+		authGroup.GET("/policy/:policy_code", auth.GetPolicy)
+		authGroup.GET("/policy", auth.ListPolicies)
+		authGroup.PUT("/policy", auth.UpdatePolicy)
+		authGroup.DELETE("/policy/:policy_code", auth.DeletePolicy)
+
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}
