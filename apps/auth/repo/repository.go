@@ -196,8 +196,8 @@ func (r *RepoImpl) GetPermissionByCode(ctx context.Context, permissionCode strin
 
 	var permission models.Permission
 	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", permissionCode).First(&permission).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get permission by code: ", err)
 	}
@@ -244,8 +244,8 @@ func (r *RepoImpl) GetRoleByID(ctx context.Context, roleID []byte) (*models.Role
 
 	var role models.Role
 	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", roleID).First(&role).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role by ID: ", err)
 	}
@@ -259,8 +259,8 @@ func (r *RepoImpl) GetRoleByCode(ctx context.Context, roleCode string) (*models.
 
 	var role models.Role
 	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", roleCode).First(&role).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get role by code: ", err)
 	}
@@ -537,8 +537,8 @@ func (r *RepoImpl) GetUserGroupByID(ctx context.Context, groupID []byte) (*model
 
 	var userGroup models.UserGroup
 	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", groupID).First(&userGroup).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by ID: ", err)
 	}
@@ -552,8 +552,8 @@ func (r *RepoImpl) GetUserGroupByCode(ctx context.Context, groupCode string) (*m
 
 	var userGroup models.UserGroup
 	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", groupCode).First(&userGroup).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil // 记录未找到返回nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get user group by code: ", err)
 	}
@@ -1082,7 +1082,7 @@ func (r *RepoImpl) GetPolicyByCode(ctx context.Context, policyCode string) (*mod
 	var policy models.Policy
 	if err := r.DB.WithContext(ctx).Where("code = ? and is_deleted = false", policyCode).First(&policy).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // 记录未找到返回nil
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get policy by code: ", err)
 	}
@@ -1153,7 +1153,7 @@ func (r *RepoImpl) GetPolicyRuleByID(ctx context.Context, ruleID id.UUID) (*mode
 	var rule models.PolicyRule
 	if err := r.DB.WithContext(ctx).Where("id = ? and is_deleted = false", ruleID).First(&rule).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // 记录未找到返回nil
+			return nil, err // 记录未找到返回nil
 		}
 		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "failed to get policy rule by ID: ", err)
 	}

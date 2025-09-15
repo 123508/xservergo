@@ -986,6 +986,24 @@ func (s *ServiceImpl) GetPermissionPolicies(ctx context.Context, permissionCode 
 }
 
 func (s *ServiceImpl) AttachPolicyToPermission(ctx context.Context, permissionCode string, policyCode string, operatorId *id.UUID) error {
+	if permissionCode == "" || policyCode == "" {
+		return cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
+	}
+
+	// 检查权限是否存在
+	_, err := s.authRepo.GetPermissionByCode(ctx, permissionCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取权限错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "获取权限错误", "", err)
+	}
+
+	// 检查策略是否存在
+	_, err = s.authRepo.GetPolicyByCode(ctx, policyCode)
+	if err != nil {
+		logs.ErrorLogger.Error("获取策略错误:", zap.Error(err))
+		return cerrors.NewCommonError(http.StatusInternalServerError, "获取策略错误", "", err)
+	}
+
 	return s.authRepo.AttachPolicyToPermission(ctx, permissionCode, policyCode, operatorId)
 }
 
