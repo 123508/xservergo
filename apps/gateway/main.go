@@ -158,6 +158,11 @@ func main() {
 		authGroup.GET("/policy_rule/:rule_id", auth.GetPolicyRule)
 		authGroup.GET("/policy/:policy_code/rules", auth.ListPolicyRules)
 
+		// 权限-策略关联管理
+		authGroup.GET("/permission/:perm_code/policies", auth.GetPermissionPolicies)
+		authGroup.POST("/permission/policy", auth.AttachPermissionToPolicy)
+		authGroup.DELETE("/permission/policy", auth.DetachPermissionFromPolicy)
+
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}
