@@ -113,6 +113,6 @@ type PolicyRule struct {
 	AttributeType  string `json:"attribute_type"`
 	AttributeKey   string `json:"attribute_key"`
 	AttributeValue string `json:"attribute_value"`
-	Operation      string `json:"operation"`
+	Operator       string `json:"operator"`
 	Status         bool   `json:"status"`
 }

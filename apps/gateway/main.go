@@ -151,6 +151,13 @@ func main() {
 		authGroup.PUT("/policy", auth.UpdatePolicy)
 		authGroup.DELETE("/policy/:policy_code", auth.DeletePolicy)
 
+		// 策略规则管理
+		authGroup.POST("/policy_rule", auth.CreatePolicyRule)
+		authGroup.PUT("/policy_rule", auth.UpdatePolicyRule)
+		authGroup.DELETE("/policy_rule/:rule_id", auth.DeletePolicyRule)
+		authGroup.GET("/policy_rule/:rule_id", auth.GetPolicyRule)
+		authGroup.GET("/policy/:policy_code/rules", auth.ListPolicyRules)
+
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}
