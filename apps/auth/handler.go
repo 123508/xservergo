@@ -138,6 +138,7 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 		Resource:    req.Permission.Resource,
 		Method:      req.Permission.Method,
 		Status:      status,
+		NeedPolicy:  req.Permission.NeedPolicy,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
 		},
@@ -165,6 +166,7 @@ func (s *AuthServiceImpl) CreatePermission(ctx context.Context, req *auth.Create
 		Resource:       newPermission.Resource,
 		Method:         newPermission.Method,
 		Status:         newPermission.Status == 1,
+		NeedPolicy:     newPermission.NeedPolicy,
 	}, nil
 }
 
@@ -200,6 +202,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		Resource:    req.Permission.Resource,
 		Method:      req.Permission.Method,
 		Status:      status,
+		NeedPolicy:  req.Permission.NeedPolicy,
 		AuditFields: models.AuditFields{
 			UpdatedBy: operatorId,
 		},
@@ -225,6 +228,7 @@ func (s *AuthServiceImpl) UpdatePermission(ctx context.Context, req *auth.Update
 		Resource:       newPermission.Resource,
 		Method:         newPermission.Method,
 		Status:         newPermission.Status == 1,
+		NeedPolicy:     newPermission.NeedPolicy,
 	}, nil
 }
 
@@ -265,6 +269,7 @@ func (s *AuthServiceImpl) GetPermission(ctx context.Context, req *auth.GetPermis
 		Resource:       permission.Resource,
 		Method:         permission.Method,
 		Status:         permission.Status == 1,
+		NeedPolicy:     permission.NeedPolicy,
 	}, nil
 }
 
@@ -691,11 +696,11 @@ func (s *AuthServiceImpl) HasPermission(ctx context.Context, req *auth.HasPermis
 
 // CanAccess implements the AuthServiceImpl interface.
 func (s *AuthServiceImpl) CanAccess(ctx context.Context, req *auth.CanAccessReq) (resp *auth.CanAccessResp, err error) {
-	targetUserId, err := unmarshalRequestUID(ctx, req.GetTargetUserId())
+	requestUserId, err := unmarshalRequestUID(ctx, req.GetRequestUserId())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
-	hasPerm, needPolicy, policyRules, err := s.authService.CanAccess(ctx, *targetUserId, req.GetResource(), req.GetMethod())
+	hasPerm, needPolicy, policyRules, err := s.authService.CanAccess(ctx, *requestUserId, req.GetResource(), req.GetMethod())
 	if err != nil {
 		return nil, cerrors.NewGRPCError(http.StatusInternalServerError, "权限校验失败")
 	}
@@ -801,6 +806,7 @@ func (s *AuthServiceImpl) ListPermissions(ctx context.Context, req *auth.ListPer
 			Resource:       perm.Resource,
 			Method:         perm.Method,
 			Status:         perm.Status == 1,
+			NeedPolicy:     perm.NeedPolicy,
 		})
 	}
 

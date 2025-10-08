@@ -70,6 +70,7 @@ type Permission struct {
 	Resource    string `json:"resource"`
 	Method      string `json:"method"`
 	Status      bool   `json:"status"`
+	NeedPolicy  bool   `json:"need_policy"`
 }
 
 type Role struct {

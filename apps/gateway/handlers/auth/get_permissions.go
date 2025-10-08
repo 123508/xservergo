@@ -60,6 +60,7 @@ func GetPermissions(ctx context.Context, c *app.RequestContext) {
 			Resource:    perm.Resource,
 			Method:      perm.Method,
 			Status:      perm.Status,
+			NeedPolicy:  perm.NeedPolicy,
 		})
 	}
 

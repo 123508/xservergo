@@ -36,6 +36,7 @@ func GetPermission(ctx context.Context, c *app.RequestContext) {
 			Resource:    resp.Resource,
 			Method:      resp.Method,
 			Status:      resp.Status,
+			NeedPolicy:  resp.NeedPolicy,
 		},
 	})
 }

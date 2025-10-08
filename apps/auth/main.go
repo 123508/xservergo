@@ -8,7 +8,6 @@ import (
 	authserver "github.com/123508/xservergo/kitex_gen/auth/authservice"
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
-	"github.com/123508/xservergo/pkg/kitex/middleware"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	etcd "github.com/kitex-contrib/registry-etcd"
@@ -88,7 +87,7 @@ func main() {
 				ServiceName: config.Conf.AuthConfig.ServiceName,
 			},
 		),
-		server.WithMiddleware(middleware.CanAccessMW), // 使用自定义中间件
+		//server.WithMiddleware(middleware.CanAccessMW), // 使用自定义中间件
 	)
 
 	err = svr.Run()

@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net"
+	"time"
+
 	user "github.com/123508/xservergo/kitex_gen/user/userservice"
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
@@ -10,9 +14,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
 	etcd "github.com/kitex-contrib/registry-etcd"
-	"log"
-	"net"
-	"time"
 )
 
 func main() {
@@ -52,6 +53,7 @@ func main() {
 		server.WithConnectionLimiter(limiter.NewConnectionLimiter(1000)), // 提高并发处理数
 		server.WithErrorHandler(middleware.ErrorLogHandler),
 		server.WithMiddleware(middleware.AccessLogHandler),
+		server.WithMiddleware(middleware.CanAccessMW),
 	)
 
 	err = svr.Run()

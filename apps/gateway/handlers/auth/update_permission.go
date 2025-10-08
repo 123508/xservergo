@@ -29,6 +29,7 @@ func UpdatePermission(ctx context.Context, c *app.RequestContext) {
 			Resource:       permission.Resource,
 			Method:         permission.Method,
 			Status:         permission.Status,
+			NeedPolicy:     permission.NeedPolicy,
 		},
 		RequestUserId: requestId,
 	}
@@ -51,6 +52,7 @@ func UpdatePermission(ctx context.Context, c *app.RequestContext) {
 			Resource:    resp.Resource,
 			Method:      resp.Method,
 			Status:      resp.Status,
+			NeedPolicy:  resp.NeedPolicy,
 		},
 	})
 }
