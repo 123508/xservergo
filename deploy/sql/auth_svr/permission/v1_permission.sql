@@ -22,7 +22,7 @@ create table if not exists permission (
                  'TASK'      -- 任务权限
              ) not null default 'API' comment '权限类型',
     resource varchar(200) not null default '' comment '权限对应资源',
-    method varchar(15) not null default '' comment '权限对应方法类型',
+    method varchar(100) not null default '' comment '权限对应方法类型',
     status tinyint(1) not null default 0 comment '权限是否启用:0不启用 1启用',
     need_policy boolean default false comment '是否需要策略校验,默认不需要',
 
