@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/123508/xservergo/pkg/util/_rds"
-	serializer2 "github.com/123508/xservergo/pkg/util/component/serializer"
-	"github.com/123508/xservergo/pkg/util/id"
-	"github.com/123508/xservergo/pkg/util/qr"
 	"math/rand"
 	"net/http"
 	"time"
+
+	serializer2 "github.com/123508/xservergo/pkg/util/component/serializer"
+	"github.com/123508/xservergo/pkg/util/id"
+	"github.com/123508/xservergo/pkg/util/qr"
+	"github.com/123508/xservergo/pkg/util/urds"
 
 	"github.com/123508/xservergo/apps/user/repo"
 	"github.com/123508/xservergo/kitex_gen/auth"
@@ -18,7 +19,6 @@ import (
 	"github.com/123508/xservergo/pkg/cli"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -72,14 +72,14 @@ type UserService interface {
 type ServiceImpl struct {
 	userRepo repo.UserRepository
 	Rds      *redis.Client
-	keys     *_rds.UserKeys
+	keys     *urds.UserKeys
 }
 
 func NewService(database *gorm.DB, rds *redis.Client) UserService {
 	return &ServiceImpl{
 		userRepo: repo.NewUserRepository(database),
 		Rds:      rds,
-		keys:     _rds.NewUserKeys(_rds.DevEnv),
+		keys:     urds.NewUserKeys(urds.DevEnv),
 	}
 }
 
@@ -181,7 +181,7 @@ func (s *ServiceImpl) SmsSendCode(ctx context.Context, phone string) (string, er
 func (s *ServiceImpl) SmsLogin(ctx context.Context, phone, code, requestId string) (*models.User, *models.Token, error) {
 
 	//校验requestId
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return nil, nil, err
 	}
 
@@ -248,7 +248,7 @@ func (s *ServiceImpl) QrCodePreLoginStatus(
 ) (bool, id.UUID, error) {
 
 	//校验链路是否合法
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return false, id.NewUUID(), err
 	}
 
@@ -298,7 +298,7 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 ) (uint64, *models.User, *models.Token, error) {
 
 	//校验链路是否合法
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return 6, nil, nil, err
 	}
 	//校验ticket
@@ -355,7 +355,7 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (bool, error) {
 
 	//校验链路是否合法
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return false, err
 	}
 
@@ -438,7 +438,7 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 
 	wrapper := serializer2.NewSerializerWrapper(serializer2.JSON)
 
-	simple := _rds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoKey(targetUserId),
@@ -500,7 +500,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 
 	wrapper := serializer2.NewSerializerWrapper(serialType)
 
-	simple := _rds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoSignKey(suffix, sign),
@@ -600,7 +600,7 @@ func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType
 
 func (s *ServiceImpl) ResetPassword(ctx context.Context, targetUserId, requestUserId id.UUID, newPwd, requestId, VerifyCode string) error {
 
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return err
 	}
 
@@ -794,7 +794,7 @@ func (s *ServiceImpl) StartDeactivateUser(ctx context.Context, targetUserId, req
 
 func (s *ServiceImpl) DeactivateUser(ctx context.Context, targetUserId, requestUserId id.UUID, verifyCode, requestId string, version int) (v int, err error) {
 
-	if err = s.VerityRequestID(ctx, requestId); err != nil {
+	if err = s.VerifyRequestID(ctx, requestId); err != nil {
 		return version, err
 	}
 
@@ -851,7 +851,7 @@ func (s *ServiceImpl) StartReactiveUser(ctx context.Context, requestUserId id.UU
 
 func (s *ServiceImpl) ReactiveUser(ctx context.Context, targetUserId, requestUserId id.UUID, version int, requestId string) (v int, err error) {
 
-	if err = s.VerityRequestID(ctx, requestId); err != nil {
+	if err = s.VerifyRequestID(ctx, requestId); err != nil {
 		return version, err
 	}
 
@@ -899,7 +899,7 @@ func (s *ServiceImpl) StartDeleteUser(ctx context.Context, targetUserId, request
 }
 
 func (s *ServiceImpl) DeleteUser(ctx context.Context, targetUserId, requestUserId id.UUID, verifyCode, requestId string) (err error, RequestId string) {
-	if err = s.VerityRequestID(ctx, requestId); err != nil {
+	if err = s.VerifyRequestID(ctx, requestId); err != nil {
 		return err, requestId
 	}
 
@@ -928,7 +928,7 @@ func (s *ServiceImpl) ConfirmOrCancelQrLogin(
 	status int,
 ) error {
 	//校验链路是否合法
-	if err := s.VerityRequestID(ctx, requestId); err != nil {
+	if err := s.VerifyRequestID(ctx, requestId); err != nil {
 		return err
 	}
 
@@ -1080,7 +1080,7 @@ func (s *ServiceImpl) StartChangePhoneOrEmail(ctx context.Context, targetUserId,
 
 func (s *ServiceImpl) VerifyNewPhoneOrEmail(ctx context.Context, targetUserId, requestUserId id.UUID, verifyCode, sign, RequestId string, form QueryType) (requestId string, err error) {
 	//校验requestId
-	if err = s.VerityRequestID(ctx, RequestId); err != nil {
+	if err = s.VerifyRequestID(ctx, RequestId); err != nil {
 		return "", err
 	}
 
@@ -1160,7 +1160,7 @@ func (s *ServiceImpl) CompleteChangePhoneOrEmail(ctx context.Context, targetUser
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
-	if err = s.VerityRequestID(ctx, requestId); err != nil {
+	if err = s.VerifyRequestID(ctx, requestId); err != nil {
 		return version, err
 	}
 
@@ -1306,27 +1306,11 @@ func (s *ServiceImpl) RequestToken(ctx context.Context, userId id.UUID, version 
 }
 
 func (s *ServiceImpl) GenerateRequestId(ctx context.Context, expire time.Duration) (string, error) {
-	requestId := uuid.New().String()
-	if err := s.Rds.Set(ctx, s.keys.RequestIdKey(requestId), "ok", expire).Err(); err != nil {
-		return "", cerrors.NewCommonError(http.StatusInternalServerError, "生产requestId失败", "", err)
-	}
-	return requestId, nil
+	return urds.GenerateRequestId(s.Rds, s.keys, ctx, expire)
 }
 
-func (s *ServiceImpl) VerityRequestID(ctx context.Context, requestId string) error {
-
-	token := s.keys.RequestIdKey(requestId)
-	//校验requestId
-	result, err := s.Rds.Get(ctx, token).Result()
-
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusInternalServerError, "redis查询requestId错误", requestId, nil)
-	} else if result != "ok" || errors.Is(err, redis.Nil) {
-		return cerrors.NewCommonError(http.StatusBadRequest, "requestId过期", requestId, nil)
-	}
-	//刷新过期时间
-	s.Rds.Expire(ctx, token, 10*time.Minute)
-	return nil
+func (s *ServiceImpl) VerifyRequestID(ctx context.Context, requestId string) error {
+	return urds.VerityRequestID(s.Rds, s.keys, ctx, requestId)
 }
 
 func (s *ServiceImpl) CleanCache(ctx context.Context, usr *models.User) {

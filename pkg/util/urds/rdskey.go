@@ -1,4 +1,4 @@
-package _rds
+package urds
 
 import (
 	"context"

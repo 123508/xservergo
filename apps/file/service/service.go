@@ -2,12 +2,14 @@ package service
 
 import (
 	"github.com/123508/xservergo/apps/file/repo"
+	"github.com/123508/xservergo/pkg/util/id"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type FileService interface {
 	GetRedis() *redis.Client
+	InitFileUpload(fileName, parentId string, fileSize uint64, fileMd5 string, targetUserId, requestUserId id.UUID) (chunkSize uint64, existingChunks []uint64, requestId string, err error)
 }
 
 type ServiceImpl struct {
@@ -26,4 +28,9 @@ func NewService(database *gorm.DB, rds *redis.Client) FileService {
 
 func (s *ServiceImpl) GetRedis() *redis.Client {
 	return s.Rds
+}
+
+func (s *ServiceImpl) InitFileUpload(fileName, parentId string, fileSize uint64, fileMd5 string, targetUserId, requestUserId id.UUID) (chunkSize uint64, existingChunks []uint64, requestId string, err error) {
+	//TODO implement me
+	panic("implement me")
 }

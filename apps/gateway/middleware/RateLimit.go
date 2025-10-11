@@ -8,7 +8,7 @@ import (
 
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/logs"
-	"github.com/123508/xservergo/pkg/util/_rds"
+	"github.com/123508/xservergo/pkg/util/urds"
 	"github.com/cloudwego/hertz/pkg/app"
 	"go.uber.org/zap"
 )
@@ -64,8 +64,8 @@ func (r *RateLimitCtrl) CanAccessAndRateLimit() bool {
 		rateLimitNumber.count = 200
 	}
 
-	key := _rds.TakeKey("gateway", "rate-limit", r.userId, r.api)
-	timeKey := _rds.TakeKey("gateway", "rate-limit-time", r.userId, r.api)
+	key := urds.TakeKey("gateway", "rate-limit", r.userId, r.api)
+	timeKey := urds.TakeKey("gateway", "rate-limit-time", r.userId, r.api)
 
 	i, _ := db.Rds.Get(r.ctx, key).Int()
 

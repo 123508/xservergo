@@ -147,23 +147,22 @@ func (x TranscodeStatusResp_Status) String() string {
 
 // ---------- 通用结构 ---------- //
 type FileMeta struct {
-	FileId       string                `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`       // 文件ID (UUID格式)
-	UserId       string                `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`       // 用户ID
-	FileMd5      string                `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"`     // 文件MD5
-	ParentId     string                `protobuf:"bytes,4,opt,name=parent_id" json:"parent_id,omitempty"`   // 父目录ID
-	FileSize     uint64                `protobuf:"varint,5,opt,name=file_size" json:"file_size,omitempty"`  // 文件大小
-	FileName     string                `protobuf:"bytes,6,opt,name=file_name" json:"file_name,omitempty"`   // 文件名
-	FileCover    string                `protobuf:"bytes,7,opt,name=file_cover" json:"file_cover,omitempty"` // 封面URL
-	FilePath     string                `protobuf:"bytes,8,opt,name=file_path" json:"file_path,omitempty"`   // 存储路径
-	CreatedAt    string                `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
-	UpdatedAt    string                `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
-	DeletedAt    string                `protobuf:"bytes,11,opt,name=deleted_at" json:"deleted_at,omitempty"`
-	IsDirectory  bool                  `protobuf:"varint,12,opt,name=is_directory" json:"is_directory,omitempty"`   // 是否目录
-	IsPublic     bool                  `protobuf:"varint,13,opt,name=is_public" json:"is_public,omitempty"`         // 是否公开
-	FileCategory FileCategory          `protobuf:"varint,14,opt,name=file_category" json:"file_category,omitempty"` // 文件大类
-	FileType     string                `protobuf:"bytes,15,opt,name=file_type" json:"file_type,omitempty"`          // 文件扩展名
-	Status       FileMeta_FileStatus   `protobuf:"varint,16,opt,name=status" json:"status,omitempty"`
-	Preview      *FileMeta_PreviewInfo `protobuf:"bytes,17,opt,name=preview" json:"preview,omitempty"`
+	FileId       string              `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`       // 文件ID (UUID格式)
+	UserId       string              `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`       // 用户ID
+	FileMd5      string              `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"`     // 文件MD5
+	ParentId     string              `protobuf:"bytes,4,opt,name=parent_id" json:"parent_id,omitempty"`   // 父目录ID
+	FileSize     uint64              `protobuf:"varint,5,opt,name=file_size" json:"file_size,omitempty"`  // 文件大小
+	FileName     string              `protobuf:"bytes,6,opt,name=file_name" json:"file_name,omitempty"`   // 文件名
+	FileCover    string              `protobuf:"bytes,7,opt,name=file_cover" json:"file_cover,omitempty"` // 封面URL
+	FilePath     string              `protobuf:"bytes,8,opt,name=file_path" json:"file_path,omitempty"`   // 存储路径
+	CreatedAt    string              `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
+	UpdatedAt    string              `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
+	DeletedAt    string              `protobuf:"bytes,11,opt,name=deleted_at" json:"deleted_at,omitempty"`
+	IsDirectory  bool                `protobuf:"varint,12,opt,name=is_directory" json:"is_directory,omitempty"`   // 是否目录
+	IsPublic     bool                `protobuf:"varint,13,opt,name=is_public" json:"is_public,omitempty"`         // 是否公开
+	FileCategory FileCategory        `protobuf:"varint,14,opt,name=file_category" json:"file_category,omitempty"` // 文件大类
+	FileType     string              `protobuf:"bytes,15,opt,name=file_type" json:"file_type,omitempty"`          // 文件扩展名
+	Status       FileMeta_FileStatus `protobuf:"varint,16,opt,name=status" json:"status,omitempty"`
 }
 
 func (x *FileMeta) Reset() { *x = FileMeta{} }
@@ -284,47 +283,6 @@ func (x *FileMeta) GetStatus() FileMeta_FileStatus {
 	return FileMeta_DELETED
 }
 
-func (x *FileMeta) GetPreview() *FileMeta_PreviewInfo {
-	if x != nil {
-		return x.Preview
-	}
-	return nil
-}
-
-// 预览相关信息
-type FileMeta_PreviewInfo struct {
-	PreviewUrl        string `protobuf:"bytes,1,opt,name=preview_url" json:"preview_url,omitempty"`                // 预览URL
-	PreviewPageCount  uint64 `protobuf:"varint,2,opt,name=preview_page_count" json:"preview_page_count,omitempty"` // 文档页数
-	RequiresTranscode bool   `protobuf:"varint,3,opt,name=requires_transcode" json:"requires_transcode,omitempty"` // 是否需要转码
-}
-
-func (x *FileMeta_PreviewInfo) Reset() { *x = FileMeta_PreviewInfo{} }
-
-func (x *FileMeta_PreviewInfo) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *FileMeta_PreviewInfo) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *FileMeta_PreviewInfo) GetPreviewUrl() string {
-	if x != nil {
-		return x.PreviewUrl
-	}
-	return ""
-}
-
-func (x *FileMeta_PreviewInfo) GetPreviewPageCount() uint64 {
-	if x != nil {
-		return x.PreviewPageCount
-	}
-	return 0
-}
-
-func (x *FileMeta_PreviewInfo) GetRequiresTranscode() bool {
-	if x != nil {
-		return x.RequiresTranscode
-	}
-	return false
-}
-
 type Empty struct {
 }
 
@@ -336,12 +294,12 @@ func (x *Empty) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
 // ---------- 上传相关 ---------- //
 type InitUploadReq struct {
-	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	FileName      string `protobuf:"bytes,2,opt,name=file_name" json:"file_name,omitempty"`
-	ParentId      string `protobuf:"bytes,3,opt,name=parent_id" json:"parent_id,omitempty"`
-	FileSize      uint64 `protobuf:"varint,4,opt,name=file_size" json:"file_size,omitempty"`
-	FileMd5       string `protobuf:"bytes,5,opt,name=file_md5" json:"file_md5,omitempty"`
-	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	FileName      string `protobuf:"bytes,1,opt,name=file_name" json:"file_name,omitempty"`             // 文件名称
+	ParentId      string `protobuf:"bytes,2,opt,name=parent_id" json:"parent_id,omitempty"`             // 文件父id
+	FileSize      uint64 `protobuf:"varint,3,opt,name=file_size" json:"file_size,omitempty"`            // 文件大小
+	FileMd5       string `protobuf:"bytes,4,opt,name=file_md5" json:"file_md5,omitempty"`               // 文件md5校验
+	TargetUserId  string `protobuf:"bytes,5,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户id
+	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 请求用户id
 }
 
 func (x *InitUploadReq) Reset() { *x = InitUploadReq{} }
@@ -349,13 +307,6 @@ func (x *InitUploadReq) Reset() { *x = InitUploadReq{} }
 func (x *InitUploadReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *InitUploadReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *InitUploadReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
-	}
-	return ""
-}
 
 func (x *InitUploadReq) GetFileName() string {
 	if x != nil {
@@ -385,6 +336,13 @@ func (x *InitUploadReq) GetFileMd5() string {
 	return ""
 }
 
+func (x *InitUploadReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
 func (x *InitUploadReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
@@ -393,10 +351,9 @@ func (x *InitUploadReq) GetRequestUserId() string {
 }
 
 type InitUploadResp struct {
-	UploadId       string   `protobuf:"bytes,1,opt,name=upload_id" json:"upload_id,omitempty"`                     // 上传会话ID
-	ChunkSize      uint64   `protobuf:"varint,2,opt,name=chunk_size" json:"chunk_size,omitempty"`                  // 建议的分片大小
-	ExistingChunks []uint64 `protobuf:"varint,3,rep,packed,name=existing_chunks" json:"existing_chunks,omitempty"` // 已存在的分片索引
-	RequestUserId  string   `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	ChunkSize      uint64   `protobuf:"varint,1,opt,name=chunk_size" json:"chunk_size,omitempty"`                  // 建议的分片大小
+	ExistingChunks []uint64 `protobuf:"varint,2,rep,packed,name=existing_chunks" json:"existing_chunks,omitempty"` // 已存在的分片索引
+	RequestId      string   `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`                   // 请求id链路
 }
 
 func (x *InitUploadResp) Reset() { *x = InitUploadResp{} }
@@ -404,13 +361,6 @@ func (x *InitUploadResp) Reset() { *x = InitUploadResp{} }
 func (x *InitUploadResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *InitUploadResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *InitUploadResp) GetUploadId() string {
-	if x != nil {
-		return x.UploadId
-	}
-	return ""
-}
 
 func (x *InitUploadResp) GetChunkSize() uint64 {
 	if x != nil {
@@ -426,9 +376,9 @@ func (x *InitUploadResp) GetExistingChunks() []uint64 {
 	return nil
 }
 
-func (x *InitUploadResp) GetRequestUserId() string {
+func (x *InitUploadResp) GetRequestId() string {
 	if x != nil {
-		return x.RequestUserId
+		return x.RequestId
 	}
 	return ""
 }
@@ -439,6 +389,7 @@ type UploadChunkReq struct {
 	Content       []byte `protobuf:"bytes,3,opt,name=content" json:"content,omitempty"`     // 分片内容
 	ChunkMd5      string `protobuf:"bytes,4,opt,name=chunk_md5" json:"chunk_md5,omitempty"` // 分片MD5校验
 	RequestUserId string `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RequestId     string `protobuf:"bytes,6,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *UploadChunkReq) Reset() { *x = UploadChunkReq{} }
@@ -482,10 +433,17 @@ func (x *UploadChunkReq) GetRequestUserId() string {
 	return ""
 }
 
+func (x *UploadChunkReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 type UploadChunkResp struct {
-	ChunkIndex    uint64 `protobuf:"varint,1,opt,name=chunk_index" json:"chunk_index,omitempty"`
-	Verified      bool   `protobuf:"varint,2,opt,name=verified" json:"verified,omitempty"` // 分片校验结果
-	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	ChunkIndex uint64 `protobuf:"varint,1,opt,name=chunk_index" json:"chunk_index,omitempty"`
+	Verified   bool   `protobuf:"varint,2,opt,name=verified" json:"verified,omitempty"` // 分片校验结果
+	RequestId  string `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *UploadChunkResp) Reset() { *x = UploadChunkResp{} }
@@ -508,9 +466,9 @@ func (x *UploadChunkResp) GetVerified() bool {
 	return false
 }
 
-func (x *UploadChunkResp) GetRequestUserId() string {
+func (x *UploadChunkResp) GetRequestId() string {
 	if x != nil {
-		return x.RequestUserId
+		return x.RequestId
 	}
 	return ""
 }
@@ -519,6 +477,7 @@ type CompleteUploadReq struct {
 	UploadId      string `protobuf:"bytes,1,opt,name=upload_id" json:"upload_id,omitempty"`
 	FileMd5       string `protobuf:"bytes,2,opt,name=file_md5" json:"file_md5,omitempty"` // 完整文件MD5
 	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RequestId     string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *CompleteUploadReq) Reset() { *x = CompleteUploadReq{} }
@@ -548,11 +507,18 @@ func (x *CompleteUploadReq) GetRequestUserId() string {
 	return ""
 }
 
+func (x *CompleteUploadReq) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 type FastUploadReq struct {
-	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	ParentId      string `protobuf:"bytes,2,opt,name=parent_id" json:"parent_id,omitempty"`
-	FileMd5       string `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"` // 已知文件的MD5
-	FileName      string `protobuf:"bytes,4,opt,name=file_name" json:"file_name,omitempty"`
+	ParentId      string `protobuf:"bytes,1,opt,name=parent_id" json:"parent_id,omitempty"`
+	FileMd5       string `protobuf:"bytes,2,opt,name=file_md5" json:"file_md5,omitempty"` // 已知文件的MD5
+	FileName      string `protobuf:"bytes,3,opt,name=file_name" json:"file_name,omitempty"`
+	TargetUserId  string `protobuf:"bytes,4,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId string `protobuf:"bytes,5,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
@@ -561,13 +527,6 @@ func (x *FastUploadReq) Reset() { *x = FastUploadReq{} }
 func (x *FastUploadReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *FastUploadReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *FastUploadReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
-	}
-	return ""
-}
 
 func (x *FastUploadReq) GetParentId() string {
 	if x != nil {
@@ -590,6 +549,13 @@ func (x *FastUploadReq) GetFileName() string {
 	return ""
 }
 
+func (x *FastUploadReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
 func (x *FastUploadReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
@@ -599,11 +565,11 @@ func (x *FastUploadReq) GetRequestUserId() string {
 
 // 外部存储上传相关
 type UploadUrlReq struct {
-	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	FileName      string `protobuf:"bytes,2,opt,name=file_name" json:"file_name,omitempty"`
-	ParentId      string `protobuf:"bytes,3,opt,name=parent_id" json:"parent_id,omitempty"`
-	FileSize      uint64 `protobuf:"varint,4,opt,name=file_size" json:"file_size,omitempty"`
-	FileMd5       string `protobuf:"bytes,5,opt,name=file_md5" json:"file_md5,omitempty"`
+	FileName      string `protobuf:"bytes,1,opt,name=file_name" json:"file_name,omitempty"`
+	ParentId      string `protobuf:"bytes,2,opt,name=parent_id" json:"parent_id,omitempty"`
+	FileSize      uint64 `protobuf:"varint,3,opt,name=file_size" json:"file_size,omitempty"`
+	FileMd5       string `protobuf:"bytes,4,opt,name=file_md5" json:"file_md5,omitempty"`
+	TargetUserId  string `protobuf:"bytes,5,opt,name=target_user_id" json:"target_user_id,omitempty"`
 	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"`
 }
 
@@ -612,13 +578,6 @@ func (x *UploadUrlReq) Reset() { *x = UploadUrlReq{} }
 func (x *UploadUrlReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *UploadUrlReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UploadUrlReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
-	}
-	return ""
-}
 
 func (x *UploadUrlReq) GetFileName() string {
 	if x != nil {
@@ -644,6 +603,13 @@ func (x *UploadUrlReq) GetFileSize() uint64 {
 func (x *UploadUrlReq) GetFileMd5() string {
 	if x != nil {
 		return x.FileMd5
+	}
+	return ""
+}
+
+func (x *UploadUrlReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
 	}
 	return ""
 }
@@ -1137,10 +1103,10 @@ func (x *UserReq) GetRequestUserId() string {
 
 // ---------- 文件预览 ---------- //
 type PreviewResp struct {
-	PreviewUrl    string                `protobuf:"bytes,1,opt,name=preview_url" json:"preview_url,omitempty"`        // 预览URL (带签名)
-	ExpireSeconds uint64                `protobuf:"varint,2,opt,name=expire_seconds" json:"expire_seconds,omitempty"` // URL有效期(秒)
-	PreviewInfo   *FileMeta_PreviewInfo `protobuf:"bytes,3,opt,name=preview_info" json:"preview_info,omitempty"`
-	RequestUserId string                `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	PreviewUrl    string `protobuf:"bytes,1,opt,name=preview_url" json:"preview_url,omitempty"`        // 预览URL (带签名)
+	ExpireSeconds uint64 `protobuf:"varint,2,opt,name=expire_seconds" json:"expire_seconds,omitempty"` // URL有效期(秒)
+	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RequestId     string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *PreviewResp) Reset() { *x = PreviewResp{} }
@@ -1163,18 +1129,51 @@ func (x *PreviewResp) GetExpireSeconds() uint64 {
 	return 0
 }
 
-func (x *PreviewResp) GetPreviewInfo() *FileMeta_PreviewInfo {
-	if x != nil {
-		return x.PreviewInfo
-	}
-	return nil
-}
-
 func (x *PreviewResp) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
 	}
 	return ""
+}
+
+func (x *PreviewResp) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type PreviewDocumentResp struct {
+	Page              uint64 `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`                             //当前页数
+	PageCount         uint64 `protobuf:"varint,2,opt,name=page_count" json:"page_count,omitempty"`                 // 文档页数
+	RequiresTranscode bool   `protobuf:"varint,3,opt,name=requires_transcode" json:"requires_transcode,omitempty"` // 是否需要转码
+}
+
+func (x *PreviewDocumentResp) Reset() { *x = PreviewDocumentResp{} }
+
+func (x *PreviewDocumentResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *PreviewDocumentResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *PreviewDocumentResp) GetPage() uint64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *PreviewDocumentResp) GetPageCount() uint64 {
+	if x != nil {
+		return x.PageCount
+	}
+	return 0
+}
+
+func (x *PreviewDocumentResp) GetRequiresTranscode() bool {
+	if x != nil {
+		return x.RequiresTranscode
+	}
+	return false
 }
 
 type TranscodeStatusResp struct {

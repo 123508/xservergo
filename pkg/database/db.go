@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+
 	"github.com/123508/xservergo/pkg/config"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
@@ -34,6 +35,8 @@ func InitMySQLDB() (*gorm.DB, error) {
 
 	return DB, nil
 }
+
+var MySqlDB, _ = InitMySQLDB()
 
 func InitRedisDB() (*redis.Client, error) {
 	RDB := redis.NewClient(&redis.Options{

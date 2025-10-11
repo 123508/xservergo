@@ -1,4 +1,4 @@
-package _rds
+package urds
 
 import (
 	"github.com/123508/xservergo/pkg/util/id"
@@ -20,6 +20,7 @@ const (
 type Keys interface {
 	SetEnvPrefix(env string)
 	GetEnvPrefix() string
+	RequestIdKey(requestId string) string
 }
 
 type CommonKeys struct {
@@ -50,6 +51,10 @@ func (u CommonKeys) BlackAccessTokenKey(accessToken string) string {
 	return TakeKey(u.GetEnvPrefix(), "access_token", accessToken)
 }
 
+func (u CommonKeys) RequestIdKey(requestId string) string {
+	return TakeKey(u.GetEnvPrefix(), "request_id", requestId)
+}
+
 // 用户服务缓存
 type UserKeys struct {
 	*CommonKeys
@@ -59,10 +64,6 @@ func NewUserKeys(env string) *UserKeys {
 	return &UserKeys{
 		NewCommonKeys(env, UserService),
 	}
-}
-
-func (u UserKeys) RequestIdKey(requestId string) string {
-	return TakeKey(u.GetEnvPrefix(), "request_id", requestId)
 }
 
 func (u UserKeys) SmsLoginKey(phone string) string {
