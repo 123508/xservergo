@@ -49,3 +49,5 @@ func InitRedisDB() (*redis.Client, error) {
 	}
 	return RDB, nil
 }
+
+var Rds, _ = InitRedisDB()

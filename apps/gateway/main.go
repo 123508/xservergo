@@ -64,6 +64,8 @@ func main() {
 		userGroup.Use(middleware.ParseToken())
 		//刷新token
 		userGroup.Use(middleware.RefreshToken())
+		//限速
+		userGroup.Use(middleware.RateLimit())
 		//扫码登录移动端部分
 		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
 		userGroup.POST("/qr_mobile_confirm_login", user.ConfirmQrLogin)
