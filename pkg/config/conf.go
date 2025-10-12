@@ -17,6 +17,7 @@ type AppConfig struct {
 	*HertzConfig   `mapstructure:"hertz"`
 	*UserConfig    `mapstructure:"user"`
 	*AuthConfig    `mapstructure:"auth"`
+	*FileConfig    `mapstructure:"file"`
 	*LoggerConfig  `mapstructure:"logger"`
 	*AESConfig     `mapstructure:"aes"`
 }
@@ -79,6 +80,12 @@ type UserConfig struct {
 }
 
 type AuthConfig struct {
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	ServiceName string `mapstructure:"service_name"`
+}
+
+type FileConfig struct {
 	Host        string `mapstructure:"host"`
 	Port        int    `mapstructure:"port"`
 	ServiceName string `mapstructure:"service_name"`

@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	user "github.com/123508/xservergo/kitex_gen/user/userservice"
+	file "github.com/123508/xservergo/kitex_gen/file/fileservice"
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/kitex/middleware"
@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+
 	mysqlDB, err := db.InitMySQLDB()
 
 	if err != nil {
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	//p := provider.NewOpenTelemetryProvider(
-	//	provider.WithServiceName(config.Conf.UserConfig.ServiceName), // 服务名
+	//	provider.WithServiceName(config.Conf.FileConfig.ServiceName), // 服务名
 	//	provider.WithExportEndpoint("localhost:4317"),                // OTLP上报地址（若使用Jaeger，可改为"localhost:14250"）
 	//	provider.WithInsecure(),                                      // 是否使用不安全连接（默认true）
 	//)
@@ -46,8 +47,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.UserConfig.Host, config.Conf.UserConfig.Port))
-	svr := user.NewServer(NewUserServiceImpl(mysqlDB, redisDB),
+	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.FileConfig.Host, config.Conf.FileConfig.Port))
+	svr := file.NewServer(NewFileService(mysqlDB, redisDB),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
@@ -68,4 +69,5 @@ func main() {
 	if err != nil {
 		log.Println(err.Error())
 	}
+
 }

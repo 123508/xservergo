@@ -25,6 +25,7 @@ fi
 cd "$PROJECT_ROOT"
 kitex -module "$PROJECT_PKG" -I="$IDL_PATH" user/user_v1.0.proto
 kitex -module "$PROJECT_PKG" -I="$IDL_PATH" auth/auth_v1.0.proto
+kitex -module "$PROJECT_PKG" -I="$IDL_PATH" file/file_v1.0.proto
 
 # 生成服务代码
 
@@ -37,3 +38,10 @@ mkdir "$APPS_PATH/auth" -p
 cd "$APPS_PATH/auth"
 kitex -module "$PROJECT_PKG" -service xservergo.auth -use "$KITEX_GEN" -I "$IDL_PATH" auth/auth_v1.0.proto
 echo "[OK] Kitex auth 服务初始化完成。"
+
+mkdir "$APPS_PATH/file" -p
+cd "$APPS_PATH/file"
+Kitex -module "$PROJECT_PKG" -service xservergo.file -use "$KITEX_GEN" -I "$IDL_PATH" file/file_v1.0.proto
+echo  "[OK] Kitex file 服务初始化完成。"
+
+

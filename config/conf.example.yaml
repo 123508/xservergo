@@ -60,6 +60,11 @@ auth:
   port: 8901
   service_name: "auth_service"
 
+file:
+  host: 127.0.0.1
+  port: 8902
+  service_name: "xservergo.file"
+
 logger:
   stdout:
     allowed: true    # 控制台输出

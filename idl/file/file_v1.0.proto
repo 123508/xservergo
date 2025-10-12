@@ -30,7 +30,7 @@ service FileService {
   rpc GetTrashedFiles(UserReq) returns (ListDirectoryResp);         // 获取回收站文件
 
   // ---------- 文件查询模块 ---------- //
-  rpc GetFileMeta(FileReq) returns (FileMeta);                          // 获取文件元数据
+  rpc GetFileMeta(FileReq) returns (FileMeta);                      // 获取文件元数据
   rpc ListDirectory(ListDirectoryReq) returns (ListDirectoryResp);  // 列出目录内容
   rpc SearchFiles(SearchFilesReq) returns (SearchFilesResp);        // 搜索文件
 
@@ -61,9 +61,9 @@ message FileMeta {
   string updated_at = 10;
   string deleted_at = 11;
   bool is_directory = 12;         // 是否目录
-  bool is_public = 17;            // 是否公开
-  FileCategory file_category = 13; // 文件大类
-  string file_type = 14;          // 文件扩展名
+  bool is_public = 13;            // 是否公开
+  FileCategory file_category = 14; // 文件大类
+  string file_type = 15;          // 文件扩展名
 
   enum FileStatus {
     DELETED = 0;      // 已删除
@@ -72,15 +72,7 @@ message FileMeta {
     TRANSCODING = 3;  // 转码中
     TRANSCODE_FAILED = 4; // 转码失败
   }
-  FileStatus status = 15;
-
-  // 预览相关信息
-  message PreviewInfo {
-    string preview_url = 1;          // 预览URL
-    uint64 preview_page_count = 2;   // 文档页数
-    bool requires_transcode = 3;     // 是否需要转码
-  }
-  PreviewInfo preview = 16;
+  FileStatus status = 16;
 }
 
 // 文件大类枚举
@@ -98,19 +90,18 @@ message Empty{}
 
 // ---------- 上传相关 ---------- //
 message InitUploadReq {
-  string target_user_id=1;
-  string file_name = 2;
-  string parent_id = 3;
-  uint64 file_size = 4;
-  string file_md5 = 5;
-  string request_user_id=6;
+  string file_name = 1;   // 文件名称
+  string parent_id = 2;   // 文件父id
+  uint64 file_size = 3;   // 文件大小
+  string file_md5 = 4;    // 文件md5校验
+  string target_user_id=5;// 目标用户id
+  string request_user_id=6;// 请求用户id
 }
 
 message InitUploadResp {
-  string upload_id = 1;      // 上传会话ID
-  uint64 chunk_size = 2;     // 建议的分片大小
-  repeated uint64 existing_chunks = 3; // 已存在的分片索引
-  string request_user_id=4;
+  uint64 chunk_size = 1;     // 建议的分片大小
+  repeated uint64 existing_chunks = 2; // 已存在的分片索引
+  string request_id=3;       // 请求id链路
 }
 
 message UploadChunkReq {
@@ -119,36 +110,38 @@ message UploadChunkReq {
   bytes content = 3;         // 分片内容
   string chunk_md5 = 4;      // 分片MD5校验
   string request_user_id=5;
+  string request_id=6;
 }
 
 message UploadChunkResp {
   uint64 chunk_index = 1;
   bool verified = 2;         // 分片校验结果
-  string request_user_id=3;
+  string request_id=3;
 }
 
 message CompleteUploadReq {
   string upload_id = 1;
   string file_md5 = 2;       // 完整文件MD5
   string request_user_id=3;
+  string request_id=4;
 }
 
 message FastUploadReq {
-  string target_user_id = 1;
-  string parent_id = 2;
-  string file_md5 = 3;       // 已知文件的MD5
-  string file_name = 4;
-  string request_user_id=5;
+  string parent_id = 1;
+  string file_md5 = 2;       // 已知文件的MD5
+  string file_name = 3;
+  string target_user_id = 4;
+  string request_user_id = 5;
 }
 
 // 外部存储上传相关
 message UploadUrlReq {
-  string target_user_id = 1;
-  string file_name = 2;
-  string parent_id = 3;
-  uint64 file_size = 4;
-  string file_md5 = 5;
-  string request_user_id=6;
+  string file_name = 1;
+  string parent_id = 2;
+  uint64 file_size = 3;
+  string file_md5 = 4;
+  string target_user_id = 5;
+  string request_user_id= 6;
 }
 
 message UploadUrlResp {
@@ -251,8 +244,14 @@ message UserReq {
 message PreviewResp {
   string preview_url = 1;     // 预览URL (带签名)
   uint64 expire_seconds = 2;   // URL有效期(秒)
-  FileMeta.PreviewInfo preview_info = 3;
-  string request_user_id=4;
+  string request_user_id=3;
+  string request_id = 4;
+}
+
+message PreviewDocumentResp{
+  uint64 page = 1;      //当前页数
+  uint64 page_count = 2;    // 文档页数
+  bool requires_transcode = 3;     // 是否需要转码
 }
 
 message TranscodeStatusResp {
