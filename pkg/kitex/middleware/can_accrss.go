@@ -195,7 +195,7 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 
 		// ABAC
 		if canAccessResp.NeedPolicy {
-			pass := true
+			pass := false
 			for _, policy := range canAccessResp.PolicyRules {
 				pass = true
 				// 遍历策略中的规则, 只要有一条规则不通过, 就不允许访问
