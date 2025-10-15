@@ -10,6 +10,7 @@ import (
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/kitex/middleware"
+	"github.com/123508/xservergo/pkg/util/urds"
 	"github.com/cloudwego/kitex/pkg/limiter"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -17,22 +18,6 @@ import (
 )
 
 func main() {
-
-	mysqlDB, err := db.InitMySQLDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	redisDB, err := db.InitRedisDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	if mysqlDB != nil && redisDB != nil {
-		fmt.Println("数据库初始化成功")
-	}
 
 	//p := provider.NewOpenTelemetryProvider(
 	//	provider.WithServiceName(config.Conf.FileConfig.ServiceName), // 服务名
@@ -48,7 +33,7 @@ func main() {
 	}
 
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.FileConfig.Host, config.Conf.FileConfig.Port))
-	svr := file.NewServer(NewFileService(mysqlDB, redisDB),
+	svr := file.NewServer(NewFileService(db.MySqlDB, db.Rds, urds.DevEnv),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(

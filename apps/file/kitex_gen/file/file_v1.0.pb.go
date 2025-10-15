@@ -59,6 +59,9 @@ const (
 	FileMeta_NORMAL           FileMeta_FileStatus = 2 // 正常
 	FileMeta_TRANSCODING      FileMeta_FileStatus = 3 // 转码中
 	FileMeta_TRANSCODE_FAILED FileMeta_FileStatus = 4 // 转码失败
+	FileMeta_UPLOADING        FileMeta_FileStatus = 5 // 文件上传中
+	FileMeta_UPLOAD_FAILED    FileMeta_FileStatus = 6 //文件上传失败
+	FileMeta_MERGING          FileMeta_FileStatus = 7 // 合并中
 )
 
 // Enum value maps for FileMeta_FileStatus.
@@ -68,6 +71,9 @@ var FileMeta_FileStatus_name = map[int32]string{
 	2: "NORMAL",
 	3: "TRANSCODING",
 	4: "TRANSCODE_FAILED",
+	5: "UPLOADING",
+	6: "UPLOAD_FAILED",
+	7: "MERGING",
 }
 
 var FileMeta_FileStatus_value = map[string]int32{
@@ -76,6 +82,9 @@ var FileMeta_FileStatus_value = map[string]int32{
 	"NORMAL":           2,
 	"TRANSCODING":      3,
 	"TRANSCODE_FAILED": 4,
+	"UPLOADING":        5,
+	"UPLOAD_FAILED":    6,
+	"MERGING":          7,
 }
 
 func (x FileMeta_FileStatus) String() string {
@@ -294,12 +303,11 @@ func (x *Empty) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
 // ---------- 上传相关 ---------- //
 type InitUploadReq struct {
-	FileName      string `protobuf:"bytes,1,opt,name=file_name" json:"file_name,omitempty"`             // 文件名称
-	ParentId      string `protobuf:"bytes,2,opt,name=parent_id" json:"parent_id,omitempty"`             // 文件父id
-	FileSize      uint64 `protobuf:"varint,3,opt,name=file_size" json:"file_size,omitempty"`            // 文件大小
-	FileMd5       string `protobuf:"bytes,4,opt,name=file_md5" json:"file_md5,omitempty"`               // 文件md5校验
-	TargetUserId  string `protobuf:"bytes,5,opt,name=target_user_id" json:"target_user_id,omitempty"`   // 目标用户id
-	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 请求用户id
+	FolderName    string      `protobuf:"bytes,1,opt,name=folder_name" json:"folder_name,omitempty"` // 可选：文件夹名
+	ParentId      string      `protobuf:"bytes,2,opt,name=parent_id" json:"parent_id,omitempty"`     // 该文件夹在服务端的父目录ID
+	FileList      []*FileItem `protobuf:"bytes,3,rep,name=file_list" json:"file_list,omitempty"`     // 核心：要上传的文件列表
+	RequestUserId string      `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	TargetUserId  string      `protobuf:"bytes,5,opt,name=target_user_id" json:"target_user_id,omitempty"`
 }
 
 func (x *InitUploadReq) Reset() { *x = InitUploadReq{} }
@@ -308,9 +316,9 @@ func (x *InitUploadReq) Marshal(in []byte) ([]byte, error) { return prutal.Marsh
 
 func (x *InitUploadReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *InitUploadReq) GetFileName() string {
+func (x *InitUploadReq) GetFolderName() string {
 	if x != nil {
-		return x.FileName
+		return x.FolderName
 	}
 	return ""
 }
@@ -322,16 +330,16 @@ func (x *InitUploadReq) GetParentId() string {
 	return ""
 }
 
-func (x *InitUploadReq) GetFileSize() uint64 {
+func (x *InitUploadReq) GetFileList() []*FileItem {
 	if x != nil {
-		return x.FileSize
+		return x.FileList
 	}
-	return 0
+	return nil
 }
 
-func (x *InitUploadReq) GetFileMd5() string {
+func (x *InitUploadReq) GetRequestUserId() string {
 	if x != nil {
-		return x.FileMd5
+		return x.RequestUserId
 	}
 	return ""
 }
@@ -343,17 +351,42 @@ func (x *InitUploadReq) GetTargetUserId() string {
 	return ""
 }
 
-func (x *InitUploadReq) GetRequestUserId() string {
+type FileItem struct {
+	RelativePath string `protobuf:"bytes,1,opt,name=relative_path" json:"relative_path,omitempty"` // 文件在文件夹内的相对路径（如 "docs/note.txt"），这是保持目录结构的关键
+	FileSize     uint64 `protobuf:"varint,2,opt,name=file_size" json:"file_size,omitempty"`
+	FileMd5      string `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"`
+}
+
+func (x *FileItem) Reset() { *x = FileItem{} }
+
+func (x *FileItem) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *FileItem) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FileItem) GetRelativePath() string {
 	if x != nil {
-		return x.RequestUserId
+		return x.RelativePath
+	}
+	return ""
+}
+
+func (x *FileItem) GetFileSize() uint64 {
+	if x != nil {
+		return x.FileSize
+	}
+	return 0
+}
+
+func (x *FileItem) GetFileMd5() string {
+	if x != nil {
+		return x.FileMd5
 	}
 	return ""
 }
 
 type InitUploadResp struct {
-	ChunkSize      uint64   `protobuf:"varint,1,opt,name=chunk_size" json:"chunk_size,omitempty"`                  // 建议的分片大小
-	ExistingChunks []uint64 `protobuf:"varint,2,rep,packed,name=existing_chunks" json:"existing_chunks,omitempty"` // 已存在的分片索引
-	RequestId      string   `protobuf:"bytes,3,opt,name=request_id" json:"request_id,omitempty"`                   // 请求id链路
+	Items     []*InitUploadResp_RespItem `protobuf:"bytes,1,rep,name=items" json:"items,omitempty"`           // 已存在的分片索引
+	RequestId string                     `protobuf:"bytes,2,opt,name=request_id" json:"request_id,omitempty"` // 请求id链路
 }
 
 func (x *InitUploadResp) Reset() { *x = InitUploadResp{} }
@@ -362,16 +395,9 @@ func (x *InitUploadResp) Marshal(in []byte) ([]byte, error) { return prutal.Mars
 
 func (x *InitUploadResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *InitUploadResp) GetChunkSize() uint64 {
+func (x *InitUploadResp) GetItems() []*InitUploadResp_RespItem {
 	if x != nil {
-		return x.ChunkSize
-	}
-	return 0
-}
-
-func (x *InitUploadResp) GetExistingChunks() []uint64 {
-	if x != nil {
-		return x.ExistingChunks
+		return x.Items
 	}
 	return nil
 }
@@ -381,6 +407,33 @@ func (x *InitUploadResp) GetRequestId() string {
 		return x.RequestId
 	}
 	return ""
+}
+
+type InitUploadResp_RespItem struct {
+	FileMd5    string `protobuf:"bytes,1,opt,name=file_md5" json:"file_md5,omitempty"`        // 文件md5
+	FileStatus uint64 `protobuf:"varint,2,opt,name=file_status" json:"file_status,omitempty"` // 文件状态
+}
+
+func (x *InitUploadResp_RespItem) Reset() { *x = InitUploadResp_RespItem{} }
+
+func (x *InitUploadResp_RespItem) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *InitUploadResp_RespItem) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *InitUploadResp_RespItem) GetFileMd5() string {
+	if x != nil {
+		return x.FileMd5
+	}
+	return ""
+}
+
+func (x *InitUploadResp_RespItem) GetFileStatus() uint64 {
+	if x != nil {
+		return x.FileStatus
+	}
+	return 0
 }
 
 type UploadChunkReq struct {

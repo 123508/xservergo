@@ -8,13 +8,13 @@ import (
 
 type File struct {
 	ID          id.UUID    `gorm:"column:id;comment '文件ID'"`
-	UserId      id.UUID    `gorm:"column:user_id;comment '用户ID'"`
 	FileMd5     string     `gorm:"column:file_md5;comment '文件md5值'"`
 	ParentID    id.UUID    `gorm:"column:parent_id;comment '父节点ID'"`
 	FileSize    uint64     `gorm:"column:file_size;comment '文件大小'"`
 	FileName    string     `gorm:"column:file_name;comment '文件名称'"`
 	FileCover   string     `gorm:"column:file_cover;comment '封面'"`
 	FilePath    string     `gorm:"column:file_path;comment '文件路径'"`
+	Count       uint64     `gorm:"colum:count;comment '引用计数'"`
 	CreatedAt   *time.Time `gorm:"column:created_at;comment '创建时间'"`
 	UpdatedAt   *time.Time `gorm:"column:updated_at;comment '更新时间'"`
 	DeletedAt   *time.Time `gorm:"column:deleted_at;comment '进入回收站时间'"`
@@ -27,4 +27,12 @@ type File struct {
 
 func (File) TableName() string {
 	return "file"
+}
+
+func (f File) GetID() id.UUID {
+	return f.ID
+}
+
+func (f File) GetCreatedTime() time.Time {
+	return *f.CreatedAt
 }
