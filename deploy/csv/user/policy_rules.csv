@@ -1,0 +1,3 @@
+policy_code,attribute_type,attribute_key,attribute_value,operator,status,version
+user:self,String,{{ Req.RequestUserId }},{{ Req.TargetUserId }},=,1,1
+admin,List,{{ Roles }},admin,Contains,1,1
