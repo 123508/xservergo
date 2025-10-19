@@ -60,6 +60,7 @@ func main() {
 		server.WithConnectionLimiter(limiter.NewConnectionLimiter(1000)), // 提高并发处理数
 		server.WithErrorHandler(middleware.ErrorLogHandler),
 		server.WithMiddleware(middleware.AccessLogHandler),
+		server.WithMiddleware(middleware.CanAccessMW),
 		//server.WithSuite(tracing.NewServerSuite()),
 	)
 
