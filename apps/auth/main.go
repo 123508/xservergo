@@ -38,12 +38,18 @@ func main() {
 		if code == "" {
 			// 插入用户权限数据
 			fmt.Println("正在初始化用户权限数据...")
-			initdb.InsertUserPerm()
-			initdb.InitUserRolePerm()
-			initdb.InitPolicy()
-			initdb.InitPolicyRules()
-			initdb.InitPermissionPolicyRelation()
+			initdb.InitUserDb()
 			fmt.Println("用户权限数据初始化完成。")
+		}
+
+		// 判断是否存在auth权限
+		code = ""
+		mysqlDB.Raw("select code from permission where code like 'auth_%' limit 1;").Scan(&code)
+		if code == "" {
+			// 插入权限数据
+			fmt.Println("正在初始化认证权限数据...")
+			initdb.InitAuthDb()
+			fmt.Println("认证权限数据初始化完成。")
 		}
 
 	}
