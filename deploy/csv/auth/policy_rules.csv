@@ -1,0 +1,2 @@
+policy_code,attribute_type,attribute_key,attribute_value,operator,status,version
+admin,List,{{ Roles }},admin,Contains,1,1

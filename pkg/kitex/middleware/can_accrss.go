@@ -49,10 +49,59 @@ func replaceTemplateString(s string, request interface{}) (string, error) {
 }
 
 // 验证规则是否满足
-func checkRule(rule *auth.PolicyRule, request interface{}) bool {
-	if rule.AttributeType == "String" {
+func checkRule(ctx context.Context, requestUserId string, rule *auth.PolicyRule, request interface{}, roles []string) bool {
+	if strings.Trim(rule.AttributeKey, " ") == "{{ Roles }}" && rule.AttributeType == "List" {
+		return checkRuleRole(ctx, requestUserId, rule, request, roles)
+	} else if strings.Trim(rule.AttributeKey, " ") == "{{ Groups }}" && rule.AttributeType == "List" {
+		return checkRuleGroup(ctx, requestUserId, rule, request)
+	} else if rule.AttributeType == "String" {
 		return checkRuleString(rule, request)
 	}
+	return false
+}
+
+func checkRuleRole(ctx context.Context, requestUserId string, rule *auth.PolicyRule, request interface{}, roles []string) bool {
+
+	targetRole, err := replaceTemplateString(rule.AttributeValue, request)
+	if err != nil {
+		return false
+	}
+
+	if rule.Operator == "Contains" {
+		for _, role := range roles {
+			if role == targetRole {
+				return true
+			}
+		}
+		return false
+	}
+
+	return false
+}
+
+func checkRuleGroup(ctx context.Context, requestUserId string, rule *auth.PolicyRule, request interface{}) bool {
+	groups, err := authClient.GetUserGroups(ctx, &auth.GetUserGroupsReq{
+		TargetUserId:  requestUserId,
+		RequestUserId: id.SystemUUID.MarshalBase64(),
+	})
+	if err != nil {
+		return false
+	}
+
+	targetGroup, err := replaceTemplateString(rule.AttributeKey, request)
+	if err != nil {
+		return false
+	}
+
+	if rule.Operator == "Contains" {
+		for _, group := range groups.UserGroups {
+			if group.Code == targetGroup {
+				return true
+			}
+		}
+		return false
+	}
+
 	return false
 }
 
@@ -109,6 +158,23 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 			return next(ctx, request, response)
 		}
 
+		// 获取用户角色
+		getUserRoleResp, err := authClient.GetUserRoles(ctx, &auth.GetUserRolesReq{
+			TargetUserId:  requestUserId,
+			RequestUserId: id.SystemUUID.MarshalBase64(),
+		})
+		roles := make([]string, len(getUserRoleResp.Roles))
+		if err != nil {
+			return err
+		}
+		for _, role := range getUserRoleResp.Roles {
+			roles = append(roles, role.Code)
+			if role.Code == "super_admin" {
+				// 如果是超级管理员角色, 则直接放行
+				return next(ctx, request, response)
+			}
+		}
+
 		// 从context中获取RPC信息
 		methodName := ""
 		serviceName := ""
@@ -136,16 +202,15 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 		if !canAccessResp.Ok {
 			return fmt.Errorf("no permission to access %s %s", serviceName, methodName)
 		}
-		err = next(ctx, request, response)
 
 		// ABAC
 		if canAccessResp.NeedPolicy {
-			pass := true
+			pass := false
 			for _, policy := range canAccessResp.PolicyRules {
 				pass = true
 				// 遍历策略中的规则, 只要有一条规则不通过, 就不允许访问
 				for _, rule := range policy.Rules {
-					if !checkRule(rule, request) {
+					if !checkRule(ctx, requestUserId, rule, request, roles) {
 						pass = false
 						break
 					}
@@ -159,6 +224,7 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 			}
 		}
 
+		err = next(ctx, request, response)
 		return err
 	}
 }
