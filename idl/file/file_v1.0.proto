@@ -71,6 +71,9 @@ message FileMeta {
     NORMAL = 2;       // 正常
     TRANSCODING = 3;  // 转码中
     TRANSCODE_FAILED = 4; // 转码失败
+    UPLOADING = 5;  // 文件上传中
+    UPLOAD_FAILED = 6; //文件上传失败
+    MERGING = 7;    // 合并中
   }
   FileStatus status = 16;
 }
@@ -90,18 +93,28 @@ message Empty{}
 
 // ---------- 上传相关 ---------- //
 message InitUploadReq {
-  string file_name = 1;   // 文件名称
-  string parent_id = 2;   // 文件父id
-  uint64 file_size = 3;   // 文件大小
-  string file_md5 = 4;    // 文件md5校验
-  string target_user_id=5;// 目标用户id
-  string request_user_id=6;// 请求用户id
+  string folder_name = 1;        // 可选：文件夹名
+  string parent_id = 2;           // 该文件夹在服务端的父目录ID
+  repeated FileItem file_list = 3; // 核心：要上传的文件列表
+  string request_user_id = 4;
+  string target_user_id = 5;
+}
+
+message FileItem {
+  string relative_path = 1; // 文件在文件夹内的相对路径（如 "docs/note.txt"），这是保持目录结构的关键
+  uint64 file_size = 2;
+  string file_md5 = 3;
 }
 
 message InitUploadResp {
-  uint64 chunk_size = 1;     // 建议的分片大小
-  repeated uint64 existing_chunks = 2; // 已存在的分片索引
-  string request_id=3;       // 请求id链路
+
+  message RespItem{
+    string file_md5=1;        // 文件md5
+    uint64 file_status=2;     // 文件状态
+  }
+
+  repeated RespItem items = 1; // 已存在的分片索引
+  string request_id=2;       // 请求id链路
 }
 
 message UploadChunkReq {

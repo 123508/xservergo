@@ -75,11 +75,11 @@ type ServiceImpl struct {
 	keys     *urds.UserKeys
 }
 
-func NewService(database *gorm.DB, rds *redis.Client) UserService {
+func NewService(database *gorm.DB, rds *redis.Client, env string) UserService {
 	return &ServiceImpl{
 		userRepo: repo.NewUserRepository(database),
 		Rds:      rds,
-		keys:     urds.NewUserKeys(urds.DevEnv),
+		keys:     urds.NewUserKeys(env),
 	}
 }
 
