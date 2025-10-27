@@ -184,7 +184,7 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 			serviceName = ri.To().ServiceName() // 获取服务名
 		}
 
-		if methodName == "IssueToken" || methodName == "VerifyToken" || methodName == "refreshToken" || methodName == "GetVersion" {
+		if methodName == "CanAccess" || methodName == "IssueToken" || methodName == "VerifyToken" || methodName == "refreshToken" || methodName == "GetVersion" {
 			// 登录和刷新token不验证权限
 			return next(ctx, request, response)
 		}
