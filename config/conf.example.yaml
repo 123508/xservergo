@@ -53,12 +53,12 @@ hertz:
 user:
   host: 127.0.0.1
   port: 8900
-  service_name: "user_service"
+  service_name: "xservergo.user"
 
 auth:
   host: 127.0.0.1
   port: 8901
-  service_name: "auth_service"
+  service_name: "xservergo.auth"
 
 file:
   host: 127.0.0.1
