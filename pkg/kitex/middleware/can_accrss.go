@@ -159,19 +159,27 @@ func CanAccessMW(next endpoint.Endpoint) endpoint.Endpoint {
 		}
 
 		// 获取用户角色
-		getUserRoleResp, err := authClient.GetUserRoles(ctx, &auth.GetUserRolesReq{
-			TargetUserId:  requestUserId,
-			RequestUserId: id.SystemUUID.MarshalBase64(),
-		})
-		roles := make([]string, len(getUserRoleResp.Roles))
-		if err != nil {
-			return err
-		}
-		for _, role := range getUserRoleResp.Roles {
-			roles = append(roles, role.Code)
-			if role.Code == "super_admin" {
-				// 如果是超级管理员角色, 则直接放行
-				return next(ctx, request, response)
+		var roles []string
+		if requestUserId == id.VisitorUserUUID.MarshalBase64() {
+			// 若未登陆, 则赋予访客角色
+			roles = append(roles, "visitor")
+		} else {
+			// 已登录用户, 获取其角色
+			getUserRoleResp, err := authClient.GetUserRoles(ctx, &auth.GetUserRolesReq{
+				TargetUserId:  requestUserId,
+				RequestUserId: id.SystemUUID.MarshalBase64(),
+			})
+			roles = make([]string, len(getUserRoleResp.Roles))
+			if err != nil {
+				return err
+			}
+			for _, role := range getUserRoleResp.Roles {
+				roles = append(roles, role.Code)
+				// 若包含超级管理员角色, 则直接放行
+				if role.Code == "super_admin" {
+					// 如果是超级管理员角色, 则直接放行
+					return next(ctx, request, response)
+				}
 			}
 		}
 
