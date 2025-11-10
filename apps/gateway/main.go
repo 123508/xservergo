@@ -176,6 +176,7 @@ func main() {
 
 		// 上传文件部分
 		fileGroup.POST("/init_upload", file.InitUpload)
+		fileGroup.POST("/upload_chunk", file.UploadChunk)
 
 		if err := hz.Run(); err != nil {
 			panic(err)

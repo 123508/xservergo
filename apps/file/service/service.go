@@ -203,9 +203,11 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		return true, requestId, nil
 	}
 
-	path := filepath.Join("tmp_store", chunkHash)
+	dirPath := filepath.Join("temp_store")
+	path := filepath.Join(dirPath, chunkHash)
 
 	// 序列化写入文件
+	os.MkdirAll(dirPath, 0755)
 	file, err := os.Create(path)
 	if err != nil {
 		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
