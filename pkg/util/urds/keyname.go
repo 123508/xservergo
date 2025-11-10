@@ -159,3 +159,31 @@ func NewFileKeys(env string) *FileKeys {
 		CommonKeys: NewCommonKeys(env, FileService),
 	}
 }
+
+func (f FileKeys) FileIDKey(fileID id.UUID) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_id", fileID)
+}
+
+func (f FileKeys) FIleMd5AndNameAndSizeKey(fileMd5, fileName string, fileSize uint64) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_md5_name_size", fileMd5, fileName, fileSize)
+}
+
+func (f FileKeys) FileListKeyWithFunc(userId id.UUID, funcName string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_list", userId, funcName)
+}
+
+func (f FileKeys) DetailFileQueryKey() string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "detail_file_query")
+}
+
+func (f FileKeys) ChunkKey(path string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "chunk", path)
+}
+
+func (f FileKeys) UploadIdKey(uploadId string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "upload_id", uploadId)
+}
+
+func (f FileKeys) FileChunkTotalKey(fileId id.UUID) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_chunk_total", fileId)
+}

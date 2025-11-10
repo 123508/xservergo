@@ -273,7 +273,6 @@ func (s *UserServiceImpl) AccountLogin(ctx context.Context, req *user.AccountLog
 		}
 
 		return &user.LoginResp{}, err
-
 	}
 
 	return &user.LoginResp{
@@ -602,7 +601,9 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 	var uid id.UUID
 	var requestId string
 
-	if req.GetUsername() != "" {
+	execute := false
+
+	if !execute && req.GetUsername() != "" {
 		username := req.GetUsername()
 
 		if !validate.IsValidateUsername(username) {
@@ -615,47 +616,50 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 			}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名格式错误")
 		}
 		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, username, service.USERNAME, serializer.JSON, req.Type)
-	} else {
-		if req.GetEmail() != "" {
+		execute = true
+	}
 
-			email := req.GetEmail()
+	if !execute && req.GetEmail() != "" {
 
-			if !validate.IsValidateEmail(email) {
-				return &user.OperationResult{
-					Success:   false,
-					Code:      http.StatusBadRequest,
-					Message:   "邮箱格式错误",
-					Timestamp: time.Now().String(),
-					Version:   0,
-				}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
-			}
+		email := req.GetEmail()
 
-			ok, uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
-		} else {
-			if req.GetPhone() != "" {
-
-				phone := req.GetPhone()
-
-				if ok, _, _ := validate.IsValidateE164Phone(phone); !ok {
-					return &user.OperationResult{
-						Success:   false,
-						Code:      http.StatusBadRequest,
-						Message:   "手机号格式错误",
-						Timestamp: time.Now().String(),
-						Version:   0,
-					}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
-				}
-
-				ok, uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
-			} else {
-				return &user.OperationResult{
-					Success:   false,
-					Code:      http.StatusBadRequest,
-					Message:   "参数错误",
-					Timestamp: time.Now().String(),
-				}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
-			}
+		if !validate.IsValidateEmail(email) {
+			return &user.OperationResult{
+				Success:   false,
+				Code:      http.StatusBadRequest,
+				Message:   "邮箱格式错误",
+				Timestamp: time.Now().String(),
+				Version:   0,
+			}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
 		}
+		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
+		execute = true
+	}
+
+	if !execute && req.GetPhone() != "" {
+
+		phone := req.GetPhone()
+
+		if allow, _, _ := validate.IsValidateE164Phone(phone); !allow {
+			return &user.OperationResult{
+				Success:   false,
+				Code:      http.StatusBadRequest,
+				Message:   "手机号格式错误",
+				Timestamp: time.Now().String(),
+				Version:   0,
+			}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
+		}
+		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
+		execute = true
+	}
+
+	if !execute {
+		return &user.OperationResult{
+			Success:   false,
+			Code:      http.StatusBadRequest,
+			Message:   "参数错误",
+			Timestamp: time.Now().String(),
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
 	}
 
 	if err != nil {
@@ -727,6 +731,7 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 	}
 
 	requestId, err := s.userService.StartBindEmail(ctx, targetUid, requestUid, req.NewEmail)
+
 	if err != nil {
 		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}

@@ -36,13 +36,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"FastUpload": kitex.NewMethodInfo(
-		fastUploadHandler,
-		newFastUploadArgs,
-		newFastUploadResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"GetUploadUrl": kitex.NewMethodInfo(
 		getUploadUrlHandler,
 		newGetUploadUrlArgs,
@@ -579,117 +572,6 @@ func (p *CompleteUploadResult) IsSetSuccess() bool {
 }
 
 func (p *CompleteUploadResult) GetResult() interface{} {
-	return p.Success
-}
-
-func fastUploadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.FastUploadReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).FastUpload(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *FastUploadArgs:
-		success, err := handler.(file.FileService).FastUpload(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*FastUploadResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newFastUploadArgs() interface{} {
-	return &FastUploadArgs{}
-}
-
-func newFastUploadResult() interface{} {
-	return &FastUploadResult{}
-}
-
-type FastUploadArgs struct {
-	Req *file.FastUploadReq
-}
-
-func (p *FastUploadArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *FastUploadArgs) Unmarshal(in []byte) error {
-	msg := new(file.FastUploadReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var FastUploadArgs_Req_DEFAULT *file.FastUploadReq
-
-func (p *FastUploadArgs) GetReq() *file.FastUploadReq {
-	if !p.IsSetReq() {
-		return FastUploadArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *FastUploadArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *FastUploadArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type FastUploadResult struct {
-	Success *file.FileMeta
-}
-
-var FastUploadResult_Success_DEFAULT *file.FileMeta
-
-func (p *FastUploadResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *FastUploadResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *FastUploadResult) GetSuccess() *file.FileMeta {
-	if !p.IsSetSuccess() {
-		return FastUploadResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *FastUploadResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
-}
-
-func (p *FastUploadResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *FastUploadResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2948,16 +2830,6 @@ func (p *kClient) CompleteUpload(ctx context.Context, Req *file.CompleteUploadRe
 	_args.Req = Req
 	var _result CompleteUploadResult
 	if err = p.c.Call(ctx, "CompleteUpload", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) FastUpload(ctx context.Context, Req *file.FastUploadReq) (r *file.FileMeta, err error) {
-	var _args FastUploadArgs
-	_args.Req = Req
-	var _result FastUploadResult
-	if err = p.c.Call(ctx, "FastUpload", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

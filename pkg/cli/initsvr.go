@@ -1,13 +1,15 @@
 package cli
 
 import (
+	"time"
+
 	"github.com/123508/xservergo/kitex_gen/auth/authservice"
+	"github.com/123508/xservergo/kitex_gen/file/fileservice"
 	"github.com/123508/xservergo/kitex_gen/user/userservice"
 	"github.com/123508/xservergo/pkg/config"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/discovery"
 	etcd "github.com/kitex-contrib/registry-etcd"
-	"time"
 )
 
 // initEtcdRegistry 初始化etcd注册中心
@@ -48,6 +50,24 @@ func InitAuthService() authservice.Client {
 	c, err := authservice.NewClient(
 		config.Conf.AuthConfig.ServiceName,
 		client.WithRPCTimeout(3*time.Second),
+		client.WithResolver(r),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return c
+}
+
+func InitFileService() fileservice.Client {
+	r, err := initEtcdRegistry()
+	if err != nil {
+		panic(err)
+	}
+
+	c, err := fileservice.NewClient(
+		config.Conf.FileConfig.ServiceName,
+		client.WithRPCTimeout(30*time.Second),
 		client.WithResolver(r),
 	)
 	if err != nil {
