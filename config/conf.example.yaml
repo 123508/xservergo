@@ -64,6 +64,7 @@ file:
   host: 127.0.0.1
   port: 8902
   service_name: "xservergo.file"
+  file_store_position: "C:\\temp" #存储分片的绝对路径,必填
 
 logger:
   stdout:

@@ -1310,7 +1310,7 @@ func (s *ServiceImpl) GenerateRequestId(ctx context.Context, expire time.Duratio
 }
 
 func (s *ServiceImpl) VerifyRequestID(ctx context.Context, requestId string) error {
-	return urds.VerityRequestID(s.Rds, s.keys, ctx, requestId)
+	return urds.VerityRequestID(s.Rds, s.keys, ctx, requestId, 20*time.Minute)
 }
 
 func (s *ServiceImpl) CleanCache(ctx context.Context, usr *models.User) {

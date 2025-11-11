@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/123508/xservergo/pkg/cerrors"
+	"github.com/123508/xservergo/pkg/config"
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util/id"
@@ -23,6 +23,7 @@ type FileService interface {
 	GetRedis() *redis.Client
 	InitFileUpload(ctx context.Context, fileList []models.File, targetUserId, requestUserId id.UUID) (files []models.File, uploadId, requestId string, err error)
 	UploadChunk(ctx context.Context, fileId id.UUID, chunkIndex uint64, uploadId string, content []byte, chunkContentHash string, requestId string, targetUserId, requestUserId id.UUID) (bool, string, error)
+	UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error)
 }
 
 type ServiceImpl struct {
@@ -57,7 +58,13 @@ func (s *ServiceImpl) InitFileUpload(ctx context.Context, fileList []models.File
 	}
 
 	// 获取requestId
-	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 4*60*time.Minute)
+	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 24*60*time.Minute)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	// 获取uploadId
+	uploadId, err = urds.GenerateUploadId(s.Rds, s.Keys, ctx, 24*60*time.Minute)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -84,6 +91,7 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 	// 不存在就直接创建
 	if res.FileHash == "" || res.ID.IsZero() {
 		file.ID = id.NewUUID()
+		file.Status = 1
 		err := s.DB.Create(&file).Error
 		if err != nil {
 			logs.ErrorLogger.Error("创建文件错误", zap.Error(err))
@@ -92,9 +100,14 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 		res = file
 	}
 
-	tx := s.DB.WithContext(ctx)
+	// 校验文件是否被关联
+	var count int64 = 0
+	s.DB.Model(&models.FileUser{}).Where("file_id = ? and user_id = ?", res.ID, userId).Count(&count)
+	if count > 0 {
+		return res, nil
+	}
 
-	tx.Begin()
+	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
 	// 将文件的计数加一
@@ -119,18 +132,15 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 
 	tx.Commit()
 
-	marshal, err := json.Marshal(res)
-	if err == nil {
-		s.Rds.Set(ctx, s.Keys.FileChunkTotalKey(res.ID), marshal, 10*time.Minute)
-	}
+	s.Rds.Set(ctx, s.Keys.FileChunkTotalKey(res.ID), res.Total, 10*time.Minute)
 
 	return res, nil
 }
 
-func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkIndex uint64, uploadId string, content []byte, chunkHash string, requestId string, targetUserId, requestUserId id.UUID) (bool, string, error) {
+func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkIndex uint64, uploadId string, content []byte, chunkHash string, requestId string, targetUserId, requestUserId id.UUID) (verify bool, requestID string, err error) {
 
 	// 校验requestId
-	err := urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId)
+	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
 	if err != nil {
 		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
 		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
@@ -142,11 +152,18 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		logs.ErrorLogger.Error("uploadId过期", zap.String("uploadId", uploadId))
 		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "上传id过期", requestId, nil)
 	}
-	s.Rds.Expire(ctx, s.Keys.UploadIdKey(uploadId), 20*time.Minute)
+	s.Rds.Expire(ctx, s.Keys.UploadIdKey(uploadId), 24*60*time.Minute)
 
-	// 校验文件是否存在
+	// 文件内容hash校验
+	hashData := toMd5.ContentToMd5(content)
+	if chunkHash != hashData {
+		logs.ErrorLogger.Error("分片数据校验失败,请重新传输", zap.String("requestId", requestId), zap.Uint64("chunkIndex", chunkIndex))
+		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "分片数据错误", requestId, nil)
+	}
+
+	// 校验分片是否存在
 	totalCount, err := s.Rds.Get(ctx, s.Keys.FileChunkTotalKey(fileId)).Uint64()
-	if err != nil {
+	if totalCount <= 0 && err != nil {
 
 		fileExist := models.File{}
 		s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&fileExist)
@@ -164,13 +181,6 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	}
 
 	s.Rds.Expire(ctx, s.Keys.FileChunkTotalKey(fileId), 10*time.Minute)
-
-	// 文件内容hash校验
-	hashData := toMd5.ContentToMd5(content)
-	if chunkHash != hashData {
-		logs.ErrorLogger.Error("文件数据校验失败,请重新传输", zap.String("requestId", requestId), zap.Uint64("chunkIndex", chunkIndex))
-		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "文件数据校验失败", requestId, nil)
-	}
 
 	// 查询分片是否存在
 	fileChunk := models.FileChunk{}
@@ -203,8 +213,10 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		return true, requestId, nil
 	}
 
-	dirPath := filepath.Join("temp_store")
+	dirPath, _ := filepath.Abs(config.Conf.FileConfig.FileStorePosition)
+
 	path := filepath.Join(dirPath, chunkHash)
+	path = filepath.Clean(path)
 
 	// 序列化写入文件
 	os.MkdirAll(dirPath, 0755)
@@ -222,9 +234,7 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
 	}
 
-	tx := s.DB.WithContext(ctx)
-
-	tx.Begin()
+	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
 	now := time.Now()
@@ -258,4 +268,136 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	tx.Commit()
 
 	return true, requestId, nil
+}
+
+func (s *ServiceImpl) UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error) {
+
+	// 校验requestId
+	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
+	if err != nil {
+		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
+	}
+
+	// 校验uploadId
+	uploadRs := s.Rds.Get(ctx, s.Keys.UploadIdKey(uploadId)).String()
+	if uploadRs == "" {
+		logs.ErrorLogger.Error("uploadId过期", zap.String("uploadId", uploadId))
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "上传id过期", requestId, nil)
+	}
+	s.Rds.Expire(ctx, s.Keys.UploadIdKey(uploadId), 24*60*time.Minute)
+
+	// 验证文件并返回
+	files = make([]VerifyFile, len(fileIds))
+
+	for i, fileId := range fileIds {
+		f, err := s.VerifyFile(ctx, fileId)
+		if err != nil {
+			return nil, err
+		}
+		files[i] = f
+	}
+	return files, nil
+}
+
+func (s *ServiceImpl) VerifyFile(ctx context.Context, fileId id.UUID) (VerifyFile, error) {
+
+	// 校验文件是否存在
+	f := models.File{}
+	s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&f)
+	if f.ID.IsZero() || f.FileHash == "" {
+		logs.ErrorLogger.Error("文件不存在", zap.String("fileId", fileId.MarshalBase64()))
+		return VerifyFile{}, cerrors.NewSQLError(http.StatusBadRequest, "文件不存在", nil)
+	}
+
+	// 如果文件状态为正常存储就直接返回
+	if f.Status > 1 {
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
+	}
+
+	type ChunkIndex struct {
+		ChunkIndex uint64 `gorm:"column:chunk_index"`
+		ChunkName  string `gorm:"column:chunk_name"`
+	}
+
+	//查询分片
+	res := make([]ChunkIndex, 0)
+	sql := `select fci.chunk_index,fc.chunk_name 
+					from file_chunk as fc inner join file_chunk_index as fci 
+					on fc.id = fci.chunk_id and fci.file_id = ? 
+					order by fci.chunk_index`
+	err := s.DB.Raw(sql, fileId).Scan(&res).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败", zap.Error(err))
+		return VerifyFile{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+	}
+
+	// 分片数量不足,要求补全分片
+	if uint64(len(res)) != f.Total {
+
+		f.Status = 2
+		needChunk := make([]uint64, 0)
+		containChunk := make([]uint64, len(res))
+
+		for _, chunk := range res {
+			containChunk[chunk.ChunkIndex] = 1
+		}
+
+		for i, v := range containChunk {
+			if v == 1 {
+				continue
+			}
+			needChunk = append(needChunk, uint64(i))
+		}
+
+		return VerifyFile{File: f, NeedChunk: needChunk}, nil
+	}
+
+	path := make([]string, len(res))
+
+	for i, chunk := range res {
+		path[i] = chunk.ChunkName
+	}
+
+	hash, err := toMd5.ChunksToMd5(path)
+
+	if err != nil {
+		logs.ErrorLogger.Error("校验出错", zap.Error(err))
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "校验出错", err)
+	}
+
+	// 校验分片hash
+	if hash != f.FileHash {
+		s.cleanFailChunks(ctx, path, fileId)
+		logs.ErrorLogger.Error("分片传输出错", zap.String("hash", hash))
+		return VerifyFile{File: f}, cerrors.NewSQLError(http.StatusNoContent, "分片传输出错,请重试", nil)
+	}
+
+	if err = s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 3).Error; err != nil {
+		logs.ErrorLogger.Error("修改文件状态错误", zap.Error(err))
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "修改文件状态错误", err)
+	}
+
+	return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
+}
+
+func (s *ServiceImpl) cleanFailChunks(ctx context.Context, path []string, fileId id.UUID) {
+
+	// 1. 删除物理分片文件
+	for _, chunk := range path {
+		if err := os.Remove(chunk); err != nil && !os.IsNotExist(err) {
+			logs.ErrorLogger.Warn("删除分片文件失败", zap.String("path", chunk), zap.Error(err))
+			// 不立即返回错误，尝试继续清理其他分片
+		}
+	}
+
+	// 2. 删除数据库中的分片索引记录
+	s.DB.Where("file_id = ?", fileId).Delete(&models.FileChunkIndex{})
+
+	// 3. 重置文件状态，标记为需要重新上传
+	s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 1)
+
+	// 4. 清理Redis中的相关缓存
+	s.Rds.Del(ctx, s.Keys.FileChunkTotalKey(fileId))
+
 }

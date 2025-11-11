@@ -40,6 +40,10 @@ func parseServiceErrToHandlerError(ctx context.Context, err error) (e error) {
 		err = cerrors.NewGRPCError(com.Code, com.Message)
 		code = com.Code
 		message = com.Message
+	} else if sql, ok := err.(*cerrors.SQLError); ok {
+		err = cerrors.NewGRPCError(sql.Code, sql.Message)
+		code = sql.Code
+		message = sql.Message
 	} else {
 		code = http.StatusInternalServerError
 		message = "服务器异常,操作失败"
@@ -105,7 +109,7 @@ func (s *FileServiceImpl) InitUpload(ctx context.Context, req *file.InitUploadRe
 		fileStatus[i] = &file.FileItem{
 			FileName: item.FileName,
 			FileId:   item.ID.MarshalBase64(),
-			Status:   file.FileStatus(item.Status),
+			Status:   item.Status,
 		}
 	}
 
@@ -165,10 +169,56 @@ func (s *FileServiceImpl) UploadChunk(ctx context.Context, req *file.UploadChunk
 	}, err
 }
 
-// CompleteUpload implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CompleteUpload(ctx context.Context, req *file.CompleteUploadReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+// UploadVerify implements the FileServiceImpl interface.
+func (s *FileServiceImpl) UploadVerify(ctx context.Context, req *file.UploadVerifyReq) (resp *file.UploadVerifyResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
+
+	fileId := make([]id.UUID, 0)
+	failFileId := make([]string, 0)
+
+	for _, item := range req.FileId {
+		fileUid, err := unmarshalUUID(ctx, item)
+		if err != nil {
+			failFileId = append(failFileId, item)
+			continue
+		}
+		fileId = append(fileId, fileUid)
+	}
+
+	files, err := s.fileService.UploadVerify(ctx, fileId, req.RequestId, req.UploadId, targetUid, requestUid)
+
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
+
+	result := make([]*file.UploadVerifyFile, len(files))
+
+	for i, item := range files {
+		result[i] = &file.UploadVerifyFile{
+			File: &file.FileItem{
+				FileContentHash: item.File.FileHash,
+				FileSize:        item.File.FileSize,
+				FileName:        item.File.FileName,
+				FileId:          item.File.ID.MarshalBase64(),
+				Status:          item.File.Status,
+			},
+			NeedIndex: item.NeedChunk,
+		}
+	}
+
+	return &file.UploadVerifyResp{
+		Files:      result,
+		FailFileId: failFileId,
+	}, nil
 }
 
 // GetUploadUrl implements the FileServiceImpl interface.

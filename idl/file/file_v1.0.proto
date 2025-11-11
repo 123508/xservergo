@@ -9,7 +9,7 @@ service FileService {
   // ---------- 文件上传模块 ---------- //
   rpc InitUpload(InitUploadReq) returns (InitUploadResp);           // 初始化上传
   rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);        // 上传分片
-  rpc CompleteUpload(CompleteUploadReq) returns (FileMeta);         // 完成上传
+  rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);         // 完成上传
 
   //外部存储上传
   rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);           // 获取预签名上传URL
@@ -48,7 +48,7 @@ service FileService {
 
 // ---------- 通用结构 ---------- //
 message FileMeta {
-  string file_id = 1;        // 文件ID (UUID格式)
+  string file_id = 1;        // 文件ID
   string user_id = 2;        // 用户ID
   string file_md5 = 3;      // 文件MD5
   string parent_id = 4;      // 父目录ID
@@ -62,19 +62,7 @@ message FileMeta {
   bool is_public = 13;            // 是否公开
   FileCategory file_category = 14; // 文件大类
   string file_type = 15;          // 文件扩展名
-  FileStatus status = 16;
-}
-
-enum FileStatus {
-  DELETED = 0;      // 已删除
-  TRASHED = 1;      // 回收站
-  NORMAL = 2;       // 正常
-  TRANSCODING = 3;  // 转码中
-  TRANSCODE_FAILED = 4; // 转码失败
-  UPLOADING = 5;     // 文件上传中
-  UPLOAD_FAILED = 6; //文件上传失败
-  MERGE = 7;        // 合并存储
-  DISTRIBUTE = 8;    // 分片存储
+  uint64 status = 16;
 }
 
 // 文件大类枚举
@@ -102,7 +90,7 @@ message FileItem {
   uint64 file_size = 2;
   string file_name = 3;
   string file_id = 4;
-  FileStatus   status = 5;
+  uint64 status = 5;
   uint64 total=6;
 }
 
@@ -129,11 +117,22 @@ message UploadChunkResp {
   string request_id=3;
 }
 
-message CompleteUploadReq {
-  string file_id = 1;                 // 文件id,文件唯一标识
-  string file_content_hash = 2;       // 完整文件hash,用于做校验
+message UploadVerifyReq {
+  repeated string fileId=1;
+  string target_user_id=2;
   string request_user_id=3;
   string request_id=4;
+  string upload_id=5;
+}
+
+message UploadVerifyFile{
+  FileItem file= 1;
+  repeated uint64 need_index=2;
+}
+
+message UploadVerifyResp{
+  repeated UploadVerifyFile files=1;
+  repeated string fail_file_id=2;
 }
 
 // 外部存储上传相关

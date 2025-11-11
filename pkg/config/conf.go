@@ -86,9 +86,10 @@ type AuthConfig struct {
 }
 
 type FileConfig struct {
-	Host        string `mapstructure:"host"`
-	Port        int    `mapstructure:"port"`
-	ServiceName string `mapstructure:"service_name"`
+	Host              string `mapstructure:"host"`
+	Port              int    `mapstructure:"port"`
+	ServiceName       string `mapstructure:"service_name"`
+	FileStorePosition string `mapstructure:"file_store_position"`
 }
 
 type LoggerConfig struct {
@@ -176,6 +177,11 @@ func setDefaultValues(v *viper.Viper) {
 	v.SetDefault("auth.port", 8901)
 	v.SetDefault("auth.service_name", "auth_service")
 
+	// File 服务默认配置
+	v.SetDefault("file.host", "127.0.0.1")
+	v.SetDefault("file.port", 8904)
+	v.SetDefault("file.service_name", "file_service")
+
 	// JWT 默认配置
 	v.SetDefault("jwt.admin_secret_key", "default_admin_secret_key_change_in_production")
 	v.SetDefault("jwt.access_token_ttl", 3600)
@@ -221,7 +227,6 @@ func init() {
 	if err := v.Unmarshal(&Conf); err != nil {
 		fmt.Printf("viper Unmarshal failed, err:%v\n", err)
 	}
-
 	v.WatchConfig() // 对配置文件进行监视，若有改变就重新反序列到Conf中
 	v.OnConfigChange(func(in fsnotify.Event) {
 		fmt.Println("配置文件修改了...")

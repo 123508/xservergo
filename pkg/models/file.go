@@ -17,10 +17,10 @@ type File struct {
 	Total     uint64     `gorm:"column:total;comment '总分片'"`
 	CreatedAt *time.Time `gorm:"column:created_at;comment '创建时间'"`
 	UpdatedAt *time.Time `gorm:"column:updated_at;comment '更新时间'"`
-	DeletedAt *time.Time `gorm:"column:deleted_at;comment '进入回收站时间'"`
+	DeletedAt *time.Time `gorm:"column:deleted_at;comment '删除时间'"`
 	FileType  uint64     `gorm:"column:file_type;comment '文件分类:1视频 2音频 3图片 4pdf 5doc 6excel 7txt 8code 9zip 10其他'"`
 	IsPublic  bool       `gorm:"column:is_public;comment '0不公开 1公开'"`
-	Status    uint64     `gorm:"column:status;comment '标记删除: 0删除 1回收站 2正常 3转码中 4转码失败 5上传中 6上传失败 7合并存储 8分片存储'"`
+	Status    uint64     `gorm:"column:status;comment '标记删除: 1上传中 2合并存储 3分片存储'"`
 	StoreType uint64     `gorm:"column:store_type;comment '1本地 2阿里云存储'"`
 }
 

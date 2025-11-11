@@ -9,53 +9,6 @@ import (
 	"github.com/cloudwego/prutal"
 )
 
-type FileStatus int32
-
-const (
-	FileStatus_DELETED          FileStatus = 0 // 已删除
-	FileStatus_TRASHED          FileStatus = 1 // 回收站
-	FileStatus_NORMAL           FileStatus = 2 // 正常
-	FileStatus_TRANSCODING      FileStatus = 3 // 转码中
-	FileStatus_TRANSCODE_FAILED FileStatus = 4 // 转码失败
-	FileStatus_UPLOADING        FileStatus = 5 // 文件上传中
-	FileStatus_UPLOAD_FAILED    FileStatus = 6 //文件上传失败
-	FileStatus_MERGE            FileStatus = 7 // 合并存储
-	FileStatus_DISTRIBUTE       FileStatus = 8 // 分片存储
-)
-
-// Enum value maps for FileStatus.
-var FileStatus_name = map[int32]string{
-	0: "DELETED",
-	1: "TRASHED",
-	2: "NORMAL",
-	3: "TRANSCODING",
-	4: "TRANSCODE_FAILED",
-	5: "UPLOADING",
-	6: "UPLOAD_FAILED",
-	7: "MERGE",
-	8: "DISTRIBUTE",
-}
-
-var FileStatus_value = map[string]int32{
-	"DELETED":          0,
-	"TRASHED":          1,
-	"NORMAL":           2,
-	"TRANSCODING":      3,
-	"TRANSCODE_FAILED": 4,
-	"UPLOADING":        5,
-	"UPLOAD_FAILED":    6,
-	"MERGE":            7,
-	"DISTRIBUTE":       8,
-}
-
-func (x FileStatus) String() string {
-	s, ok := FileStatus_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-
 // 文件大类枚举
 type FileCategory int32
 
@@ -159,7 +112,7 @@ func (x TranscodeStatusResp_Status) String() string {
 
 // ---------- 通用结构 ---------- //
 type FileMeta struct {
-	FileId       string       `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`       // 文件ID (UUID格式)
+	FileId       string       `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`       // 文件ID
 	UserId       string       `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`       // 用户ID
 	FileMd5      string       `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"`     // 文件MD5
 	ParentId     string       `protobuf:"bytes,4,opt,name=parent_id" json:"parent_id,omitempty"`   // 父目录ID
@@ -173,7 +126,7 @@ type FileMeta struct {
 	IsPublic     bool         `protobuf:"varint,13,opt,name=is_public" json:"is_public,omitempty"`         // 是否公开
 	FileCategory FileCategory `protobuf:"varint,14,opt,name=file_category" json:"file_category,omitempty"` // 文件大类
 	FileType     string       `protobuf:"bytes,15,opt,name=file_type" json:"file_type,omitempty"`          // 文件扩展名
-	Status       FileStatus   `protobuf:"varint,16,opt,name=status" json:"status,omitempty"`
+	Status       uint64       `protobuf:"varint,16,opt,name=status" json:"status,omitempty"`
 }
 
 func (x *FileMeta) Reset() { *x = FileMeta{} }
@@ -280,11 +233,11 @@ func (x *FileMeta) GetFileType() string {
 	return ""
 }
 
-func (x *FileMeta) GetStatus() FileStatus {
+func (x *FileMeta) GetStatus() uint64 {
 	if x != nil {
 		return x.Status
 	}
-	return FileStatus_DELETED
+	return 0
 }
 
 type Empty struct {
@@ -331,12 +284,12 @@ func (x *InitUploadReq) GetTargetUserId() string {
 }
 
 type FileItem struct {
-	FileContentHash string     `protobuf:"bytes,1,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 文件内容哈希值
-	FileSize        uint64     `protobuf:"varint,2,opt,name=file_size" json:"file_size,omitempty"`
-	FileName        string     `protobuf:"bytes,3,opt,name=file_name" json:"file_name,omitempty"`
-	FileId          string     `protobuf:"bytes,4,opt,name=file_id" json:"file_id,omitempty"`
-	Status          FileStatus `protobuf:"varint,5,opt,name=status" json:"status,omitempty"`
-	Total           uint64     `protobuf:"varint,6,opt,name=total" json:"total,omitempty"`
+	FileContentHash string `protobuf:"bytes,1,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 文件内容哈希值
+	FileSize        uint64 `protobuf:"varint,2,opt,name=file_size" json:"file_size,omitempty"`
+	FileName        string `protobuf:"bytes,3,opt,name=file_name" json:"file_name,omitempty"`
+	FileId          string `protobuf:"bytes,4,opt,name=file_id" json:"file_id,omitempty"`
+	Status          uint64 `protobuf:"varint,5,opt,name=status" json:"status,omitempty"`
+	Total           uint64 `protobuf:"varint,6,opt,name=total" json:"total,omitempty"`
 }
 
 func (x *FileItem) Reset() { *x = FileItem{} }
@@ -373,11 +326,11 @@ func (x *FileItem) GetFileId() string {
 	return ""
 }
 
-func (x *FileItem) GetStatus() FileStatus {
+func (x *FileItem) GetStatus() uint64 {
 	if x != nil {
 		return x.Status
 	}
-	return FileStatus_DELETED
+	return 0
 }
 
 func (x *FileItem) GetTotal() uint64 {
@@ -526,45 +479,103 @@ func (x *UploadChunkResp) GetRequestId() string {
 	return ""
 }
 
-type CompleteUploadReq struct {
-	FileId          string `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`                     // 文件id,文件唯一标识
-	FileContentHash string `protobuf:"bytes,2,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 完整文件hash,用于做校验
-	RequestUserId   string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	RequestId       string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
+type UploadVerifyReq struct {
+	FileId        []string `protobuf:"bytes,1,rep,name=fileId" json:"fileId,omitempty"`
+	TargetUserId  string   `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	RequestUserId string   `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	RequestId     string   `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`
+	UploadId      string   `protobuf:"bytes,5,opt,name=upload_id" json:"upload_id,omitempty"`
 }
 
-func (x *CompleteUploadReq) Reset() { *x = CompleteUploadReq{} }
+func (x *UploadVerifyReq) Reset() { *x = UploadVerifyReq{} }
 
-func (x *CompleteUploadReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *UploadVerifyReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *CompleteUploadReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *UploadVerifyReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *CompleteUploadReq) GetFileId() string {
+func (x *UploadVerifyReq) GetFileId() []string {
 	if x != nil {
 		return x.FileId
 	}
-	return ""
+	return nil
 }
 
-func (x *CompleteUploadReq) GetFileContentHash() string {
+func (x *UploadVerifyReq) GetTargetUserId() string {
 	if x != nil {
-		return x.FileContentHash
+		return x.TargetUserId
 	}
 	return ""
 }
 
-func (x *CompleteUploadReq) GetRequestUserId() string {
+func (x *UploadVerifyReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
 	}
 	return ""
 }
 
-func (x *CompleteUploadReq) GetRequestId() string {
+func (x *UploadVerifyReq) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
 	}
 	return ""
+}
+
+func (x *UploadVerifyReq) GetUploadId() string {
+	if x != nil {
+		return x.UploadId
+	}
+	return ""
+}
+
+type UploadVerifyFile struct {
+	File      *FileItem `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+	NeedIndex []uint64  `protobuf:"varint,2,rep,packed,name=need_index" json:"need_index,omitempty"`
+}
+
+func (x *UploadVerifyFile) Reset() { *x = UploadVerifyFile{} }
+
+func (x *UploadVerifyFile) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UploadVerifyFile) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UploadVerifyFile) GetFile() *FileItem {
+	if x != nil {
+		return x.File
+	}
+	return nil
+}
+
+func (x *UploadVerifyFile) GetNeedIndex() []uint64 {
+	if x != nil {
+		return x.NeedIndex
+	}
+	return nil
+}
+
+type UploadVerifyResp struct {
+	Files      []*UploadVerifyFile `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
+	FailFileId []string            `protobuf:"bytes,2,rep,name=fail_file_id" json:"fail_file_id,omitempty"`
+}
+
+func (x *UploadVerifyResp) Reset() { *x = UploadVerifyResp{} }
+
+func (x *UploadVerifyResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *UploadVerifyResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *UploadVerifyResp) GetFiles() []*UploadVerifyFile {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *UploadVerifyResp) GetFailFileId() []string {
+	if x != nil {
+		return x.FailFileId
+	}
+	return nil
 }
 
 // 外部存储上传相关
@@ -1333,7 +1344,7 @@ func (x *DeduplicationResp) GetSavedSpace() uint64 {
 type FileService interface {
 	InitUpload(ctx context.Context, req *InitUploadReq) (res *InitUploadResp, err error)
 	UploadChunk(ctx context.Context, req *UploadChunkReq) (res *UploadChunkResp, err error)
-	CompleteUpload(ctx context.Context, req *CompleteUploadReq) (res *FileMeta, err error)
+	UploadVerify(ctx context.Context, req *UploadVerifyReq) (res *UploadVerifyResp, err error)
 	GetUploadUrl(ctx context.Context, req *UploadUrlReq) (res *UploadUrlResp, err error)
 	RegisterUploadedFile(ctx context.Context, req *RegisterUploadReq) (res *FileMeta, err error)
 	CreateFolder(ctx context.Context, req *CreateFolderReq) (res *FileMeta, err error)
