@@ -307,7 +307,7 @@ func (x *FileItem) GetFileContentHash() string {
 
 func (x *FileItem) GetFileSize() uint64 {
 	if x != nil {
-		return x.TargetUserId
+		return x.FileId
 	}
 	return ""
 }
@@ -325,7 +325,14 @@ func (x *FileItem) GetFileName() string {
 	if x != nil {
 		return x.FileName
 	}
-	return ""
+	return 0
+}
+
+func (x *FileItem) GetTotal() uint64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 func (x *FileItem) GetFileId() string {
@@ -360,7 +367,7 @@ func (x *FileItem) GetTotal() uint64 {
 	if x != nil {
 		return x.Total
 	}
-	return 0
+	return nil
 }
 
 type InitUploadResp struct {
@@ -379,12 +386,12 @@ func (x *InitUploadResp) GetFileStatus() []*FileItem {
 	if x != nil {
 		return x.FileStatus
 	}
-	return nil
+	return ""
 }
 
-func (x *InitUploadResp) GetRequestId() string {
+func (x *InitUploadResp) GetUploadId() string {
 	if x != nil {
-		return x.RequestId
+		return x.UploadId
 	}
 	return ""
 }
