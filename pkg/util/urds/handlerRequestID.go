@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func VerityRequestID(rds *redis.Client, keys Keys, ctx context.Context, requestId string) error {
+func VerityRequestID(rds *redis.Client, keys Keys, ctx context.Context, requestId string, duration time.Duration) error {
 
 	token := keys.RequestIdKey(requestId)
 
@@ -28,7 +28,7 @@ func VerityRequestID(rds *redis.Client, keys Keys, ctx context.Context, requestI
 		return cerrors.NewCommonError(http.StatusBadRequest, "requestId过期", requestId, nil)
 	}
 	//刷新过期时间
-	rds.Expire(ctx, token, 20*time.Minute)
+	rds.Expire(ctx, token, duration)
 	return nil
 }
 
@@ -39,4 +39,12 @@ func GenerateRequestId(rds *redis.Client, keys Keys, ctx context.Context, expire
 		return "", cerrors.NewCommonError(http.StatusInternalServerError, "生产requestId失败", "", err)
 	}
 	return requestId, nil
+}
+
+func GenerateUploadId(rds *redis.Client, keys *FileKeys, ctx context.Context, expire time.Duration) (string, error) {
+	uploadId := uuid.New().String()
+	if err := rds.Set(ctx, keys.UploadIdKey(uploadId), "ok", expire).Err(); err != nil {
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "生产requestId失败", "", err)
+	}
+	return uploadId, nil
 }

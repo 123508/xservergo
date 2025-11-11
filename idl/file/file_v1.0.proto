@@ -9,8 +9,7 @@ service FileService {
   // ---------- 文件上传模块 ---------- //
   rpc InitUpload(InitUploadReq) returns (InitUploadResp);           // 初始化上传
   rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);        // 上传分片
-  rpc CompleteUpload(CompleteUploadReq) returns (FileMeta);             // 完成上传
-  rpc FastUpload(FastUploadReq) returns (FileMeta);                     // 秒传
+  rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);         // 完成上传
 
   //外部存储上传
   rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);           // 获取预签名上传URL
@@ -49,7 +48,7 @@ service FileService {
 
 // ---------- 通用结构 ---------- //
 message FileMeta {
-  string file_id = 1;        // 文件ID (UUID格式)
+  string file_id = 1;        // 文件ID
   string user_id = 2;        // 用户ID
   string file_md5 = 3;      // 文件MD5
   string parent_id = 4;      // 父目录ID
@@ -60,22 +59,10 @@ message FileMeta {
   string created_at = 9;
   string updated_at = 10;
   string deleted_at = 11;
-  bool is_directory = 12;         // 是否目录
   bool is_public = 13;            // 是否公开
   FileCategory file_category = 14; // 文件大类
   string file_type = 15;          // 文件扩展名
-
-  enum FileStatus {
-    DELETED = 0;      // 已删除
-    TRASHED = 1;      // 回收站
-    NORMAL = 2;       // 正常
-    TRANSCODING = 3;  // 转码中
-    TRANSCODE_FAILED = 4; // 转码失败
-    UPLOADING = 5;  // 文件上传中
-    UPLOAD_FAILED = 6; //文件上传失败
-    MERGING = 7;    // 合并中
-  }
-  FileStatus status = 16;
+  uint64 status = 16;
 }
 
 // 文件大类枚举
@@ -93,58 +80,59 @@ message Empty{}
 
 // ---------- 上传相关 ---------- //
 message InitUploadReq {
-  string folder_name = 1;        // 可选：文件夹名
-  string parent_id = 2;           // 该文件夹在服务端的父目录ID
-  repeated FileItem file_list = 3; // 核心：要上传的文件列表
-  string request_user_id = 4;
-  string target_user_id = 5;
+  repeated FileItem file_list = 1; // 核心：要上传的文件列表
+  string request_user_id = 2;
+  string target_user_id = 3;
 }
 
 message FileItem {
-  string relative_path = 1; // 文件在文件夹内的相对路径（如 "docs/note.txt"），这是保持目录结构的关键
+  string file_content_hash = 1; // 文件内容哈希值
   uint64 file_size = 2;
-  string file_md5 = 3;
+  string file_name = 3;
+  string file_id = 4;
+  uint64 status = 5;
+  uint64 total=6;
 }
 
 message InitUploadResp {
-
-  message RespItem{
-    string file_md5=1;        // 文件md5
-    uint64 file_status=2;     // 文件状态
-  }
-
-  repeated RespItem items = 1; // 已存在的分片索引
-  string request_id=2;       // 请求id链路
+  repeated FileItem file_status = 1; //文件是否已经存在
+  string request_id=3;       // 请求id链路
+  string upload_id =4;      // 上传id
 }
 
 message UploadChunkReq {
-  string upload_id = 1;
-  uint64 chunk_index = 2;
-  bytes content = 3;         // 分片内容
-  string chunk_md5 = 4;      // 分片MD5校验
+  uint64 chunk_index = 1;
+  bytes  chunk_content = 2;         // 分片内容
+  string chunk_content_hash = 3;            // 分片哈希校验
+  string file_id = 4;
   string request_user_id=5;
-  string request_id=6;
+  string target_user_id=6;
+  string request_id=7;
+  string upload_id=8;
 }
 
 message UploadChunkResp {
   uint64 chunk_index = 1;
-  bool verified = 2;         // 分片校验结果
+  bool   verified = 2;         // 分片校验结果
   string request_id=3;
 }
 
-message CompleteUploadReq {
-  string upload_id = 1;
-  string file_md5 = 2;       // 完整文件MD5
+message UploadVerifyReq {
+  repeated string fileId=1;
+  string target_user_id=2;
   string request_user_id=3;
   string request_id=4;
+  string upload_id=5;
 }
 
-message FastUploadReq {
-  string parent_id = 1;
-  string file_md5 = 2;       // 已知文件的MD5
-  string file_name = 3;
-  string target_user_id = 4;
-  string request_user_id = 5;
+message UploadVerifyFile{
+  FileItem file= 1;
+  repeated uint64 need_index=2;
+}
+
+message UploadVerifyResp{
+  repeated UploadVerifyFile files=1;
+  repeated string fail_file_id=2;
 }
 
 // 外部存储上传相关

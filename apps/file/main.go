@@ -33,12 +33,12 @@ func main() {
 	}
 
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.FileConfig.Host, config.Conf.FileConfig.Port))
-	svr := file.NewServer(NewFileService(db.MySqlDB, db.Rds, urds.DevEnv),
+	svr := file.NewServer(NewFileService(mysqlDB, redisDB, "dev"),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
 			&rpcinfo.EndpointBasicInfo{
-				ServiceName: config.Conf.UserConfig.ServiceName,
+				ServiceName: config.Conf.FileConfig.ServiceName,
 			},
 		),
 		server.WithReadWriteTimeout(30*time.Second),                      // 增加读写超时时间

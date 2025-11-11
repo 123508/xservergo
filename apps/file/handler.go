@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"net/http"
-	"path/filepath"
 
 	"github.com/123508/xservergo/apps/file/service"
 	"github.com/123508/xservergo/kitex_gen/file"
@@ -19,22 +18,38 @@ type FileServiceImpl struct {
 	fileService service.FileService
 }
 
-func unmarshalUID(ctx context.Context, uid string) (id.UUID, error) {
+func unmarshalUUID(ctx context.Context, uid string) (id.UUID, error) {
 
 	if uid == "" || len(uid) == 0 {
 		return id.SystemUUID, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数为空")
 	}
 
-	Uid := id.NewUUID()
-	if err := Uid.UnmarshalBase64(uid); err != nil {
+	uuid := id.NewUUID()
+	if err := uuid.UnmarshalBase64(uid); err != nil {
 		return id.SystemUUID, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误"+err.Error())
 	}
 
-	return Uid, nil
+	return uuid, nil
 }
 
-func marshalUID(ctx context.Context, uid id.UUID) string {
-	return uid.MarshalBase64()
+func parseServiceErrToHandlerError(ctx context.Context, err error) (e error) {
+
+	var code uint64
+	var message string
+	if com, ok := err.(*cerrors.CommonError); ok {
+		err = cerrors.NewGRPCError(com.Code, com.Message)
+		code = com.Code
+		message = com.Message
+	} else if sql, ok := err.(*cerrors.SQLError); ok {
+		err = cerrors.NewGRPCError(sql.Code, sql.Message)
+		code = sql.Code
+		message = sql.Message
+	} else {
+		code = http.StatusInternalServerError
+		message = "服务器异常,操作失败"
+	}
+
+	return cerrors.NewGRPCError(code, message)
 }
 
 func NewFileService(database *gorm.DB, rds *redis.Client, env string) *FileServiceImpl {
@@ -47,83 +62,163 @@ func NewFileService(database *gorm.DB, rds *redis.Client, env string) *FileServi
 func (s *FileServiceImpl) InitUpload(ctx context.Context, req *file.InitUploadReq) (resp *file.InitUploadResp, err error) {
 	if req.FileList == nil {
 		return &file.InitUploadResp{
-			Items:     nil,
-			RequestId: "",
+			FileStatus: make([]*file.FileItem, 0),
+			RequestId:  "",
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求文件列表为空")
 	}
 
-	targetUid, err := unmarshalUID(ctx, req.TargetUserId)
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
 	if err != nil {
 		return &file.InitUploadResp{
-			Items:     nil,
-			RequestId: "",
+			FileStatus: make([]*file.FileItem, 0),
+			RequestId:  "",
 		}, err
 	}
 
-	requestUid, err := unmarshalUID(ctx, req.RequestUserId)
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
 
 	if err != nil {
 		return &file.InitUploadResp{
-			Items:     nil,
-			RequestId: "",
+			FileStatus: make([]*file.FileItem, 0),
+			RequestId:  "",
 		}, err
 	}
 
 	fileList := make([]models.File, 0)
 	for _, item := range req.FileList {
-
-		name := filepath.Base(item.RelativePath)
-		path := filepath.Dir(item.RelativePath)
-
 		fileList = append(fileList, models.File{
-			FileName: name,
+			FileName: item.FileName,
 			FileSize: item.FileSize,
-			FilePath: path,
-			FileMd5:  item.FileMd5,
+			FileHash: item.FileContentHash,
+			Total:    item.Total,
 		})
 	}
 
-	md5s, requestId, err := s.fileService.InitFileUpload(ctx, fileList, targetUid, requestUid)
+	files, uploadId, requestId, err := s.fileService.InitFileUpload(ctx, fileList, targetUid, requestUid)
 
 	if err != nil {
 		return &file.InitUploadResp{
-			Items:     nil,
-			RequestId: "",
-		}, err
+			FileStatus: make([]*file.FileItem, 0),
+			RequestId:  "",
+		}, parseServiceErrToHandlerError(ctx, err)
 	}
 
-	result := make([]*file.InitUploadResp_RespItem, 0)
+	fileStatus := make([]*file.FileItem, len(files))
 
-	for _, item := range md5s {
-		result = append(result, &file.InitUploadResp_RespItem{
-			FileMd5:    item.FileMd5,
-			FileStatus: item.Status,
-		})
+	for i, item := range files {
+		fileStatus[i] = &file.FileItem{
+			FileName: item.FileName,
+			FileId:   item.ID.MarshalBase64(),
+			Status:   item.Status,
+		}
 	}
 
 	return &file.InitUploadResp{
-		Items:     result,
-		RequestId: requestId,
+		FileStatus: fileStatus,
+		UploadId:   uploadId,
+		RequestId:  requestId,
 	}, nil
 
 }
 
 // UploadChunk implements the FileServiceImpl interface.
 func (s *FileServiceImpl) UploadChunk(ctx context.Context, req *file.UploadChunkReq) (resp *file.UploadChunkResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.UploadChunkResp{
+			ChunkIndex: 0,
+			Verified:   false,
+			RequestId:  "",
+		}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &file.UploadChunkResp{
+			ChunkIndex: 0,
+			Verified:   false,
+			RequestId:  "",
+		}, err
+	}
+
+	fileUid, err := unmarshalUUID(ctx, req.FileId)
+
+	if err != nil {
+		return &file.UploadChunkResp{
+			ChunkIndex: 0,
+			Verified:   false,
+			RequestId:  "",
+		}, err
+	}
+
+	ok, requestId, err := s.fileService.UploadChunk(ctx, fileUid, req.ChunkIndex, req.UploadId, req.ChunkContent, req.ChunkContentHash, req.RequestId, targetUid, requestUid)
+
+	if err != nil {
+		return &file.UploadChunkResp{
+			ChunkIndex: 0,
+			Verified:   false,
+			RequestId:  "",
+		}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.UploadChunkResp{
+		ChunkIndex: req.ChunkIndex,
+		Verified:   ok,
+		RequestId:  requestId,
+	}, err
 }
 
-// CompleteUpload implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CompleteUpload(ctx context.Context, req *file.CompleteUploadReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
-}
+// UploadVerify implements the FileServiceImpl interface.
+func (s *FileServiceImpl) UploadVerify(ctx context.Context, req *file.UploadVerifyReq) (resp *file.UploadVerifyResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
 
-// FastUpload implements the FileServiceImpl interface.
-func (s *FileServiceImpl) FastUpload(ctx context.Context, req *file.FastUploadReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
+
+	fileId := make([]id.UUID, 0)
+	failFileId := make([]string, 0)
+
+	for _, item := range req.FileId {
+		fileUid, err := unmarshalUUID(ctx, item)
+		if err != nil {
+			failFileId = append(failFileId, item)
+			continue
+		}
+		fileId = append(fileId, fileUid)
+	}
+
+	files, err := s.fileService.UploadVerify(ctx, fileId, req.RequestId, req.UploadId, targetUid, requestUid)
+
+	if err != nil {
+		return &file.UploadVerifyResp{}, err
+	}
+
+	result := make([]*file.UploadVerifyFile, len(files))
+
+	for i, item := range files {
+		result[i] = &file.UploadVerifyFile{
+			File: &file.FileItem{
+				FileContentHash: item.File.FileHash,
+				FileSize:        item.File.FileSize,
+				FileName:        item.File.FileName,
+				FileId:          item.File.ID.MarshalBase64(),
+				Status:          item.File.Status,
+			},
+			NeedIndex: item.NeedChunk,
+		}
+	}
+
+	return &file.UploadVerifyResp{
+		Files:      result,
+		FailFileId: failFileId,
+	}, nil
 }
 
 // GetUploadUrl implements the FileServiceImpl interface.

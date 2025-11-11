@@ -7,3 +7,5 @@ import (
 var UserClient = cli.InitUserService()
 
 var AuthClient = cli.InitAuthService()
+
+var FileClient = cli.InitFileService()

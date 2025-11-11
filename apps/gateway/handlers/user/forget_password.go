@@ -24,19 +24,24 @@ func ForgetPassword(ctx context.Context, c *app.RequestContext) {
 		Type: fog.Type,
 	}
 
+	ok := false //用于监听优先级
+
 	if fog.Phone != "" {
 		ForgetReq.Identify = &user.ForgotPasswordReq_Phone{Phone: fog.Phone}
-	} else {
-		if fog.Email != "" {
-			ForgetReq.Identify = &user.ForgotPasswordReq_Email{Email: fog.Email}
-		} else {
-			if fog.Username != "" {
-				ForgetReq.Identify = &user.ForgotPasswordReq_Username{Username: fog.Username}
-			}
-		}
+		ok = true
 	}
 
-	if ForgetReq.Identify == nil {
+	if !ok && fog.Username != "" {
+		ForgetReq.Identify = &user.ForgotPasswordReq_Username{Username: fog.Username}
+		ok = true
+	}
+
+	if !ok && fog.Email != "" {
+		ForgetReq.Identify = &user.ForgotPasswordReq_Email{Email: fog.Email}
+		ok = true
+	}
+
+	if !ok || ForgetReq.Identify == nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",

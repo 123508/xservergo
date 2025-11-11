@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/123508/xservergo/apps/gateway/handlers/auth"
+	"github.com/123508/xservergo/apps/gateway/handlers/file"
 	"github.com/123508/xservergo/apps/gateway/handlers/user"
 	"github.com/123508/xservergo/apps/gateway/middleware"
 	"github.com/123508/xservergo/pkg/config"
@@ -165,10 +166,22 @@ func main() {
 		authGroup.POST("/permission/policy", auth.AttachPermissionToPolicy)
 		authGroup.DELETE("/permission/policy", auth.DetachPermissionFromPolicy)
 
+		// 文件服务
+		fileGroup := hz.Group("/file")
+
+		// 解析token
+		fileGroup.Use(middleware.ParseToken())
+		// 刷新token
+		fileGroup.Use(middleware.RefreshToken())
+
+		// 上传文件部分
+		fileGroup.POST("/init_upload", file.InitUpload)
+		fileGroup.POST("/upload_chunk", file.UploadChunk)
+		fileGroup.POST("upload_verify", file.UploadVerify)
+
 		if err := hz.Run(); err != nil {
 			panic(err)
 		}
-
 		fmt.Printf("网关服务启动成功")
 	}()
 

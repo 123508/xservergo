@@ -29,17 +29,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"CompleteUpload": kitex.NewMethodInfo(
-		completeUploadHandler,
-		newCompleteUploadArgs,
-		newCompleteUploadResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"FastUpload": kitex.NewMethodInfo(
-		fastUploadHandler,
-		newFastUploadArgs,
-		newFastUploadResult,
+	"UploadVerify": kitex.NewMethodInfo(
+		uploadVerifyHandler,
+		newUploadVerifyArgs,
+		newUploadVerifyResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -471,52 +464,52 @@ func (p *UploadChunkResult) GetResult() interface{} {
 	return p.Success
 }
 
-func completeUploadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func uploadVerifyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.CompleteUploadReq)
+		req := new(file.UploadVerifyReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).CompleteUpload(ctx, req)
+		resp, err := handler.(file.FileService).UploadVerify(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *CompleteUploadArgs:
-		success, err := handler.(file.FileService).CompleteUpload(ctx, s.Req)
+	case *UploadVerifyArgs:
+		success, err := handler.(file.FileService).UploadVerify(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*CompleteUploadResult)
+		realResult := result.(*UploadVerifyResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newCompleteUploadArgs() interface{} {
-	return &CompleteUploadArgs{}
+func newUploadVerifyArgs() interface{} {
+	return &UploadVerifyArgs{}
 }
 
-func newCompleteUploadResult() interface{} {
-	return &CompleteUploadResult{}
+func newUploadVerifyResult() interface{} {
+	return &UploadVerifyResult{}
 }
 
-type CompleteUploadArgs struct {
-	Req *file.CompleteUploadReq
+type UploadVerifyArgs struct {
+	Req *file.UploadVerifyReq
 }
 
-func (p *CompleteUploadArgs) Marshal(out []byte) ([]byte, error) {
+func (p *UploadVerifyArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *CompleteUploadArgs) Unmarshal(in []byte) error {
-	msg := new(file.CompleteUploadReq)
+func (p *UploadVerifyArgs) Unmarshal(in []byte) error {
+	msg := new(file.UploadVerifyReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -524,38 +517,38 @@ func (p *CompleteUploadArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var CompleteUploadArgs_Req_DEFAULT *file.CompleteUploadReq
+var UploadVerifyArgs_Req_DEFAULT *file.UploadVerifyReq
 
-func (p *CompleteUploadArgs) GetReq() *file.CompleteUploadReq {
+func (p *UploadVerifyArgs) GetReq() *file.UploadVerifyReq {
 	if !p.IsSetReq() {
-		return CompleteUploadArgs_Req_DEFAULT
+		return UploadVerifyArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *CompleteUploadArgs) IsSetReq() bool {
+func (p *UploadVerifyArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *CompleteUploadArgs) GetFirstArgument() interface{} {
+func (p *UploadVerifyArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type CompleteUploadResult struct {
-	Success *file.FileMeta
+type UploadVerifyResult struct {
+	Success *file.UploadVerifyResp
 }
 
-var CompleteUploadResult_Success_DEFAULT *file.FileMeta
+var UploadVerifyResult_Success_DEFAULT *file.UploadVerifyResp
 
-func (p *CompleteUploadResult) Marshal(out []byte) ([]byte, error) {
+func (p *UploadVerifyResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *CompleteUploadResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+func (p *UploadVerifyResult) Unmarshal(in []byte) error {
+	msg := new(file.UploadVerifyResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -563,133 +556,22 @@ func (p *CompleteUploadResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CompleteUploadResult) GetSuccess() *file.FileMeta {
+func (p *UploadVerifyResult) GetSuccess() *file.UploadVerifyResp {
 	if !p.IsSetSuccess() {
-		return CompleteUploadResult_Success_DEFAULT
+		return UploadVerifyResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *CompleteUploadResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+func (p *UploadVerifyResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.UploadVerifyResp)
 }
 
-func (p *CompleteUploadResult) IsSetSuccess() bool {
+func (p *UploadVerifyResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *CompleteUploadResult) GetResult() interface{} {
-	return p.Success
-}
-
-func fastUploadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.FastUploadReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).FastUpload(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *FastUploadArgs:
-		success, err := handler.(file.FileService).FastUpload(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*FastUploadResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newFastUploadArgs() interface{} {
-	return &FastUploadArgs{}
-}
-
-func newFastUploadResult() interface{} {
-	return &FastUploadResult{}
-}
-
-type FastUploadArgs struct {
-	Req *file.FastUploadReq
-}
-
-func (p *FastUploadArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *FastUploadArgs) Unmarshal(in []byte) error {
-	msg := new(file.FastUploadReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var FastUploadArgs_Req_DEFAULT *file.FastUploadReq
-
-func (p *FastUploadArgs) GetReq() *file.FastUploadReq {
-	if !p.IsSetReq() {
-		return FastUploadArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *FastUploadArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *FastUploadArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type FastUploadResult struct {
-	Success *file.FileMeta
-}
-
-var FastUploadResult_Success_DEFAULT *file.FileMeta
-
-func (p *FastUploadResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *FastUploadResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *FastUploadResult) GetSuccess() *file.FileMeta {
-	if !p.IsSetSuccess() {
-		return FastUploadResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *FastUploadResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
-}
-
-func (p *FastUploadResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *FastUploadResult) GetResult() interface{} {
+func (p *UploadVerifyResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2943,21 +2825,11 @@ func (p *kClient) UploadChunk(ctx context.Context, Req *file.UploadChunkReq) (r 
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CompleteUpload(ctx context.Context, Req *file.CompleteUploadReq) (r *file.FileMeta, err error) {
-	var _args CompleteUploadArgs
+func (p *kClient) UploadVerify(ctx context.Context, Req *file.UploadVerifyReq) (r *file.UploadVerifyResp, err error) {
+	var _args UploadVerifyArgs
 	_args.Req = Req
-	var _result CompleteUploadResult
-	if err = p.c.Call(ctx, "CompleteUpload", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) FastUpload(ctx context.Context, Req *file.FastUploadReq) (r *file.FileMeta, err error) {
-	var _args FastUploadArgs
-	_args.Req = Req
-	var _result FastUploadResult
-	if err = p.c.Call(ctx, "FastUpload", &_args, &_result); err != nil {
+	var _result UploadVerifyResult
+	if err = p.c.Call(ctx, "UploadVerify", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

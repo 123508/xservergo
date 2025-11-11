@@ -175,3 +175,15 @@ func (f FileKeys) FileListKeyWithFunc(userId id.UUID, funcName string) string {
 func (f FileKeys) DetailFileQueryKey() string {
 	return TakeKey(f.GetEnvPrefix(), f.GetService(), "detail_file_query")
 }
+
+func (f FileKeys) ChunkKey(path string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "chunk", path)
+}
+
+func (f FileKeys) UploadIdKey(uploadId string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "upload_id", uploadId)
+}
+
+func (f FileKeys) FileChunkTotalKey(fileId id.UUID) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_chunk_total", fileId)
+}

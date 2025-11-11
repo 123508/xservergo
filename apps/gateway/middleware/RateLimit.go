@@ -130,4 +130,5 @@ var apiRateLimitMap = map[string]RateLimitNumber{
 	"type:put uri:/auth/policy_rule":              {second: 5, count: 200},
 	"type:post uri:/auth/permission/policy":       {second: 5, count: 200},
 	"type:delete uri:/auth/permission/policy":     {second: 5, count: 200},
+	"type:post uri:/file/init_upload":             {second: 5, count: 200},
 }
