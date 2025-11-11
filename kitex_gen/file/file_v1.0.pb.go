@@ -273,7 +273,7 @@ func (x *InitUploadReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
 	}
-	return ""
+	return nil
 }
 
 func (x *InitUploadReq) GetTargetUserId() string {
@@ -307,9 +307,18 @@ func (x *FileItem) GetFileContentHash() string {
 
 func (x *FileItem) GetFileSize() uint64 {
 	if x != nil {
-		return x.FileSize
+		return x.TargetUserId
 	}
-	return 0
+	return ""
+}
+
+type FileItem struct {
+	FileContentHash string `protobuf:"bytes,1,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 文件内容哈希值
+	FileSize        uint64 `protobuf:"varint,2,opt,name=file_size" json:"file_size,omitempty"`
+	FileName        string `protobuf:"bytes,3,opt,name=file_name" json:"file_name,omitempty"`
+	FileId          string `protobuf:"bytes,4,opt,name=file_id" json:"file_id,omitempty"`
+	Status          uint64 `protobuf:"varint,5,opt,name=status" json:"status,omitempty"`
+	Total           uint64 `protobuf:"varint,6,opt,name=total" json:"total,omitempty"`
 }
 
 func (x *FileItem) GetFileName() string {
@@ -324,6 +333,20 @@ func (x *FileItem) GetFileId() string {
 		return x.FileId
 	}
 	return ""
+}
+
+func (x *FileItem) GetStatus() uint64 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *FileItem) GetTotal() uint64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
 }
 
 func (x *FileItem) GetStatus() uint64 {
@@ -371,6 +394,13 @@ func (x *InitUploadResp) GetUploadId() string {
 		return x.UploadId
 	}
 	return ""
+}
+
+func (x *InitUploadResp_RespItem) GetFileStatus() uint64 {
+	if x != nil {
+		return x.FileStatus
+	}
+	return 0
 }
 
 type UploadChunkReq struct {

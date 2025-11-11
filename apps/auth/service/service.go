@@ -709,34 +709,60 @@ func (s *ServiceImpl) CanAccess(ctx context.Context, userID id.UUID, resource st
 		return false, false, nil, cerrors.NewParamError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	perms, err := s.authRepo.GetUserPermissions(ctx, userID)
-	if err != nil {
-		logs.ErrorLogger.Error("获取用户权限错误:", zap.Error(err))
-		return false, false, nil, err
-	}
-
 	hasPerm := false
 	needPolicy := true
 	var polices []string
 
-	for _, perm := range perms {
-		permission := &models.Permission{Code: perm}
-		permission, err = s.authRepo.GetPermissionByCode(ctx, perm)
-		if permission == nil || err != nil || method != permission.Method || resource != permission.Resource {
-			continue
+	if userID.MarshalBase64() == id.VisitorUserUUID.MarshalBase64() {
+		perm, err := s.authRepo.GetRolePermission(ctx, "visitor")
+		if err != nil {
+			logs.ErrorLogger.Error("获取游客权限错误:", zap.Error(err))
+			return false, false, nil, err
 		}
-
-		hasPerm = true
-		if permission.NeedPolicy == false {
-			needPolicy = false
-		} else {
-			polices, err = s.GetPermissionPolicies(ctx, permission.Code, nil)
-			if err != nil {
-				logs.ErrorLogger.Error("获取权限策略错误:", zap.Error(err))
-				return false, false, nil, err
+		for _, p := range perm {
+			permission := &models.Permission{Code: p}
+			permission, err = s.authRepo.GetPermissionByCode(ctx, p)
+			if permission == nil || err != nil || method != permission.Method || resource != permission.Resource {
+				continue
 			}
+
+			hasPerm = true
+			if permission.NeedPolicy == false {
+				needPolicy = false
+			} else {
+				polices, err = s.GetPermissionPolicies(ctx, permission.Code, nil)
+				if err != nil {
+					logs.ErrorLogger.Error("获取权限策略错误:", zap.Error(err))
+					return false, false, nil, err
+				}
+			}
+			break
 		}
-		break
+	} else {
+		perms, err := s.authRepo.GetUserPermissions(ctx, userID)
+		if err != nil {
+			logs.ErrorLogger.Error("获取用户权限错误:", zap.Error(err))
+			return false, false, nil, err
+		}
+		for _, perm := range perms {
+			permission := &models.Permission{Code: perm}
+			permission, err = s.authRepo.GetPermissionByCode(ctx, perm)
+			if permission == nil || err != nil || method != permission.Method || resource != permission.Resource {
+				continue
+			}
+
+			hasPerm = true
+			if permission.NeedPolicy == false {
+				needPolicy = false
+			} else {
+				polices, err = s.GetPermissionPolicies(ctx, permission.Code, nil)
+				if err != nil {
+					logs.ErrorLogger.Error("获取权限策略错误:", zap.Error(err))
+					return false, false, nil, err
+				}
+			}
+			break
+		}
 	}
 
 	policyRules := make([]policyRule, len(polices))
