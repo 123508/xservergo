@@ -63,6 +63,7 @@ func main() {
 		server.WithErrorHandler(middleware.ErrorLogHandler),
 		server.WithMiddleware(middleware.AccessLogHandler),
 		//server.WithSuite(tracing.NewServerSuite()),
+		//
 	)
 
 	err = svr.Run()
