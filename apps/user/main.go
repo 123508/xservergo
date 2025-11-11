@@ -10,6 +10,7 @@ import (
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/kitex/middleware"
+	"github.com/123508/xservergo/pkg/util/urds"
 	"github.com/cloudwego/kitex/pkg/limiter"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -17,21 +18,6 @@ import (
 )
 
 func main() {
-	mysqlDB, err := db.InitMySQLDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	redisDB, err := db.InitRedisDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	if mysqlDB != nil && redisDB != nil {
-		fmt.Println("数据库初始化成功")
-	}
 
 	//p := provider.NewOpenTelemetryProvider(
 	//	provider.WithServiceName(config.Conf.UserConfig.ServiceName), // 服务名
@@ -47,7 +33,7 @@ func main() {
 	}
 
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.UserConfig.Host, config.Conf.UserConfig.Port))
-	svr := user.NewServer(NewUserServiceImpl(mysqlDB, redisDB),
+	svr := user.NewServer(NewUserServiceImpl(db.MySqlDB, db.Rds, urds.DevEnv),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
@@ -60,6 +46,7 @@ func main() {
 		server.WithConnectionLimiter(limiter.NewConnectionLimiter(1000)), // 提高并发处理数
 		server.WithErrorHandler(middleware.ErrorLogHandler),
 		server.WithMiddleware(middleware.AccessLogHandler),
+		server.WithMiddleware(middleware.CanAccessMW),
 		//server.WithSuite(tracing.NewServerSuite()),
 	)
 

@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/123508/xservergo/pkg/util/component/serializer"
 	"github.com/123508/xservergo/pkg/util/id"
 	"github.com/123508/xservergo/pkg/util/validate"
-	"net/http"
-	"time"
 
 	"github.com/123508/xservergo/apps/user/service"
 	"github.com/123508/xservergo/pkg/cerrors"
@@ -85,9 +86,9 @@ type UserServiceImpl struct {
 	userService service.UserService
 }
 
-func NewUserServiceImpl(database *gorm.DB, rds *redis.Client) *UserServiceImpl {
+func NewUserServiceImpl(database *gorm.DB, rds *redis.Client, env string) *UserServiceImpl {
 	return &UserServiceImpl{
-		userService: service.NewService(database, rds),
+		userService: service.NewService(database, rds, env),
 	}
 }
 

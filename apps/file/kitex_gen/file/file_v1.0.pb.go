@@ -307,9 +307,9 @@ func (x *FileItem) GetFileContentHash() string {
 
 func (x *FileItem) GetFileSize() uint64 {
 	if x != nil {
-		return x.FileSize
+		return x.FileList
 	}
-	return 0
+	return nil
 }
 
 func (x *FileItem) GetFileName() string {
@@ -371,6 +371,13 @@ func (x *InitUploadResp) GetUploadId() string {
 		return x.UploadId
 	}
 	return ""
+}
+
+func (x *InitUploadResp_RespItem) GetFileStatus() uint64 {
+	if x != nil {
+		return x.FileStatus
+	}
+	return 0
 }
 
 type UploadChunkReq struct {
