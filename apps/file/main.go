@@ -19,22 +19,6 @@ import (
 
 func main() {
 
-	mysqlDB, err := db.InitMySQLDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	redisDB, err := db.InitRedisDB()
-
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	if mysqlDB != nil && redisDB != nil {
-		fmt.Println("数据库初始化成功")
-	}
-
 	//p := provider.NewOpenTelemetryProvider(
 	//	provider.WithServiceName(config.Conf.FileConfig.ServiceName), // 服务名
 	//	provider.WithExportEndpoint("localhost:4317"),                // OTLP上报地址（若使用Jaeger，可改为"localhost:14250"）
@@ -63,6 +47,7 @@ func main() {
 		server.WithErrorHandler(middleware.ErrorLogHandler),
 		server.WithMiddleware(middleware.AccessLogHandler),
 		//server.WithSuite(tracing.NewServerSuite()),
+		//
 	)
 
 	err = svr.Run()

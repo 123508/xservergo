@@ -75,11 +75,11 @@ type ServiceImpl struct {
 	keys     *urds.UserKeys
 }
 
-func NewService(database *gorm.DB, rds *redis.Client) UserService {
+func NewService(database *gorm.DB, rds *redis.Client, env string) UserService {
 	return &ServiceImpl{
 		userRepo: repo.NewUserRepository(database),
 		Rds:      rds,
-		keys:     urds.NewUserKeys(urds.DevEnv),
+		keys:     urds.NewUserKeys(env),
 	}
 }
 
@@ -109,6 +109,16 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 
 	if err := s.userRepo.CreateUser(ctx, u, uLogin); err != nil {
 		return ParseRepoErrorToCommonError(err, "注册用户失败"), requestId
+	}
+
+	// 为新注册用户分配普通用户角色
+	_, err = authClient.AssignRoleToUser(ctx, &auth.AssignRoleToUserReq{
+		TargetUserId:  u.ID.MarshalBase64(),
+		RoleCode:      "user",
+		RequestUserId: id.SystemUUID.MarshalBase64(),
+	})
+	if err != nil {
+		logs.ErrorLogger.Error("为新注册用户分配默认角色失败:", zap.Error(err))
 	}
 
 	return nil, requestId
