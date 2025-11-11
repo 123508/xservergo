@@ -33,7 +33,7 @@ func main() {
 	}
 
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.FileConfig.Host, config.Conf.FileConfig.Port))
-	svr := file.NewServer(NewFileService(mysqlDB, redisDB, "dev"),
+	svr := file.NewServer(NewFileService(mysqlDB, redisDB, urds.DevEnv),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
