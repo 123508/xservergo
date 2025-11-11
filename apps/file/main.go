@@ -10,6 +10,7 @@ import (
 	"github.com/123508/xservergo/pkg/config"
 	db "github.com/123508/xservergo/pkg/database"
 	"github.com/123508/xservergo/pkg/kitex/middleware"
+	"github.com/123508/xservergo/pkg/util/urds"
 	"github.com/cloudwego/kitex/pkg/limiter"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
@@ -48,7 +49,7 @@ func main() {
 	}
 
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.Conf.FileConfig.Host, config.Conf.FileConfig.Port))
-	svr := file.NewServer(NewFileService(mysqlDB, redisDB, "dev"),
+	svr := file.NewServer(NewFileService(mysqlDB, redisDB, urds.DevEnv),
 		server.WithServiceAddr(addr),
 		server.WithRegistry(r),
 		server.WithServerBasicInfo(
