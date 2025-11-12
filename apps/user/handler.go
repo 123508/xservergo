@@ -32,9 +32,6 @@ func parseServiceErrToHandlerError(ctx context.Context, err error, requestId str
 	}
 
 	resp := &user.OperationResult{
-		Success:   false,
-		Code:      code,
-		Message:   message,
 		Timestamp: time.Now().String(),
 		Version:   0,
 	}
@@ -60,9 +57,6 @@ func unmarshalUID(ctx context.Context, uid string, version uint64) (*user.Operat
 	if err := Uid.UnmarshalBase64(uid); err != nil {
 
 		resp := &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "请求参数错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}
@@ -97,22 +91,16 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 
 	if !validate.IsValidateUsername(req.Username) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "username错误,只允许字母、数字和下划线",
 			Timestamp: time.Now().String(),
 			Version:   0,
-		}, nil
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "username错误,只允许字母、数字和下划线")
 	}
 
 	if !validate.IsValidateGender(req.Gender) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "性别错误,非法请求",
 			Timestamp: time.Now().String(),
 			Version:   0,
-		}, nil
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "性别错误,非法请求")
 	}
 
 	//校验手机号(手机号可以被跳过)
@@ -120,24 +108,18 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	if req.Phone != "" {
 		if ok, _, _ := validate.IsValidateE164Phone(req.Phone); !ok {
 			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "手机号错误,请重新输入",
 				Timestamp: time.Now().String(),
 				Version:   0,
-			}, nil
+			}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号错误,请重新输入")
 		}
 	}
 
 	//校验邮箱(邮箱可以被跳过)
 	if req.Email != "" && !validate.IsValidateEmail(req.Email) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "邮箱错误,请重新输入",
 			Timestamp: time.Now().String(),
 			Version:   0,
-		}, nil
+		}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱错误,请重新输入")
 	}
 
 	timeNow := time.Now()
@@ -169,9 +151,6 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "创建用户成功",
 		Timestamp: time.Now().String(),
 		RequestId: requestId,
 		Version:   0,
@@ -346,16 +325,19 @@ func (s *UserServiceImpl) GenerateQrCode(ctx context.Context, req *user.Generate
 
 		com, ok := err.(*cerrors.CommonError)
 
+		err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
+
 		if ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "用户登录失败")
 		}
-	} else {
-		resp.QrCodeUrl = qrCode
-		resp.ExpiresAt = expiresAt
-		resp.RequestId = requestId
+
+		return resp, err
 	}
+
+	resp.QrCodeUrl = qrCode
+	resp.ExpiresAt = expiresAt
+	resp.RequestId = requestId
+
 	return resp, err
 }
 
@@ -370,15 +352,13 @@ func (s *UserServiceImpl) QrCodePreLoginStatus(ctx context.Context, req *user.Qr
 			err = cerrors.NewGRPCError(com.Code, com.Message)
 		}
 		err = cerrors.NewGRPCError(http.StatusInternalServerError, "预登录失败")
-		resp.Ok = false
-	} else {
-		if status {
-			resp.Ok = status
-			resp.UserId = marshalUID(ctx, uid)
-		} else {
-			resp.Ok = false
-		}
+		return resp, err
 	}
+
+	if status {
+		resp.UserId = marshalUID(ctx, uid)
+	}
+
 	return resp, err
 }
 
@@ -410,46 +390,51 @@ func (s *UserServiceImpl) QrCodeLoginStatus(ctx context.Context, req *user.QrCod
 
 	if err != nil {
 
-		var code uint64
-		var message string
+		var code uint64 = http.StatusInternalServerError
+		message := "服务器出错"
+		err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
 
 		if com, ok := err.(*cerrors.CommonError); ok {
 			code = com.Code
 			message = com.Message
 			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			code = http.StatusInternalServerError
-			message = "服务器出错"
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "服务器出错")
+		}
+
+		failure := &user.LoginFailure{
+			Code:    code,
+			Message: message,
 		}
 
 		resp.LoginResp = &user.LoginResponse{
 			Result: &user.LoginResponse_Failure{
-				Failure: &user.LoginFailure{
-					Code:    code,
-					Message: message,
-				},
+				Failure: failure,
 			},
 		}
-	} else {
 
-		resp.NextPollIn = 0
+		return resp, err
+	}
 
-		if status == 3 {
-			resp.LoginResp = &user.LoginResponse{
-				Result: &user.LoginResponse_Success{
-					Success: &user.LoginResp{
-						AccessToken:  token.AccessToken,
-						RefreshToken: token.RefreshToken,
-						UserInfo: &user.UserInfo{
-							UserId:   req.UserId,
-							Username: usr.UserName,
-							Nickname: usr.NickName,
-							Avatar:   usr.Avatar,
-						},
-					},
-				},
-			}
+	resp.NextPollIn = 0
+
+	if status == 3 {
+
+		userInfo := &user.UserInfo{
+			UserId:   req.UserId,
+			Username: usr.UserName,
+			Nickname: usr.NickName,
+			Avatar:   usr.Avatar,
+		}
+
+		success := &user.LoginResp{
+			AccessToken:  token.AccessToken,
+			RefreshToken: token.RefreshToken,
+			UserInfo:     userInfo,
+		}
+
+		resp.LoginResp = &user.LoginResponse{
+			Result: &user.LoginResponse_Success{
+				Success: success,
+			},
 		}
 	}
 
@@ -463,22 +448,20 @@ func (s *UserServiceImpl) QrPreLogin(ctx context.Context, req *user.QrPreLoginRe
 
 	if err != nil {
 		return &user.QrPreLoginResp{
-			Ok:        false,
 			RequestId: req.RequestId,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	ok, err := s.userService.QrPreLogin(ctx, req.Ticket, uid, req.RequestId)
+	err = s.userService.QrPreLogin(ctx, req.Ticket, uid, req.RequestId)
+
 	resp = &user.QrPreLoginResp{
-		Ok:        ok,
 		RequestId: req.RequestId,
 	}
 	if err != nil {
+		err = cerrors.NewGRPCError(http.StatusBadRequest, "用户登录失败")
 
 		if com, ok := err.(*cerrors.CommonError); ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			err = cerrors.NewGRPCError(http.StatusBadRequest, "用户登录失败")
 		}
 	}
 
@@ -494,15 +477,15 @@ func (s *UserServiceImpl) ConfirmQrLogin(ctx context.Context, req *user.ConfirmQ
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	if err = s.userService.ConfirmQrLogin(ctx, req.Ticket, uid, req.RequestId); err != nil {
+	err = s.userService.ConfirmQrLogin(ctx, req.Ticket, uid, req.RequestId)
+
+	if err != nil {
+		err = cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败,请重试")
 		if com, ok := err.(*cerrors.CommonError); ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败,请重试")
 		}
-		return resp, err
 	}
-	return resp, nil
+	return resp, err
 }
 
 // CancelQrLogin implements the UserServiceImpl interface.
@@ -515,13 +498,16 @@ func (s *UserServiceImpl) CancelQrLogin(ctx context.Context, req *user.CancelQrL
 		return resp, cerrors.NewGRPCError(http.StatusBadRequest, "请求参数错误")
 	}
 
-	if err = s.userService.CancelQrLogin(ctx, req.Ticket, uid, req.RequestId); err != nil {
+	err = s.userService.CancelQrLogin(ctx, req.Ticket, uid, req.RequestId)
+
+	if err != nil {
+
+		err = cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败,请重试")
+
 		if com, ok := err.(*cerrors.CommonError); ok {
 			err = cerrors.NewGRPCError(com.Code, com.Message)
-		} else {
-			err = cerrors.NewGRPCError(http.StatusInternalServerError, "登录失败,请重试")
 		}
-		return resp, err
+
 	}
 	return resp, nil
 }
@@ -556,9 +542,6 @@ func (s *UserServiceImpl) Logout(ctx context.Context, req *user.LogoutReq) (resp
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "成功退出",
 		Timestamp: time.Now().String(),
 		RequestId: requestId,
 		Version:   0,
@@ -587,9 +570,6 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改密码成功",
 		Timestamp: time.Now().String(),
 		RequestId: requestId,
 		Version:   0,
@@ -598,25 +578,20 @@ func (s *UserServiceImpl) ChangePassword(ctx context.Context, req *user.ChangePa
 
 // ForgotPassword implements the UserServiceImpl interface.
 func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPasswordReq) (resp *user.OperationResult, err error) {
-	var ok bool
 	var uid id.UUID
 	var requestId string
-
 	execute := false
 
-	if !execute && req.GetUsername() != "" {
+	if req.GetUsername() != "" {
 		username := req.GetUsername()
 
 		if !validate.IsValidateUsername(username) {
 			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "用户名格式错误",
 				Timestamp: time.Now().String(),
 				Version:   0,
 			}, cerrors.NewGRPCError(http.StatusBadRequest, "用户名格式错误")
 		}
-		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, username, service.USERNAME, serializer.JSON, req.Type)
+		uid, requestId, err = s.userService.ForgetPassword(ctx, username, service.USERNAME, serializer.JSON, req.Type)
 		execute = true
 	}
 
@@ -626,14 +601,11 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 
 		if !validate.IsValidateEmail(email) {
 			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "邮箱格式错误",
 				Timestamp: time.Now().String(),
 				Version:   0,
 			}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
 		}
-		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
+		uid, requestId, err = s.userService.ForgetPassword(ctx, email, service.EMAIL, serializer.JSON, req.Type)
 		execute = true
 	}
 
@@ -643,22 +615,16 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 
 		if allow, _, _ := validate.IsValidateE164Phone(phone); !allow {
 			return &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "手机号格式错误",
 				Timestamp: time.Now().String(),
 				Version:   0,
 			}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
 		}
-		ok, uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
+		uid, requestId, err = s.userService.ForgetPassword(ctx, phone, service.PHONE, serializer.JSON, req.Type)
 		execute = true
 	}
 
 	if !execute {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "参数错误",
 			Timestamp: time.Now().String(),
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "参数错误")
 	}
@@ -668,9 +634,6 @@ func (s *UserServiceImpl) ForgotPassword(ctx context.Context, req *user.ForgotPa
 	}
 
 	return &user.OperationResult{
-		Success:       ok,
-		Code:          http.StatusOK,
-		Message:       "成功",
 		RequestId:     requestId,
 		Timestamp:     time.Now().String(),
 		RequestUserId: marshalUID(ctx, uid),
@@ -697,9 +660,6 @@ func (s *UserServiceImpl) ResetPassword(ctx context.Context, req *user.ResetPass
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "更新成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -711,9 +671,6 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 
 	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "邮箱格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
@@ -738,9 +695,6 @@ func (s *UserServiceImpl) StartBindEmail(ctx context.Context, req *user.StartBin
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "发送成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -752,9 +706,6 @@ func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.Compl
 
 	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "邮箱格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
@@ -778,9 +729,6 @@ func (s *UserServiceImpl) CompleteBindEmail(ctx context.Context, req *user.Compl
 		return res, err
 	}
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "绑定成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   uint64(v),
@@ -802,13 +750,12 @@ func (s *UserServiceImpl) StartChangeEmail(ctx context.Context, req *user.StartC
 	}
 
 	requestId, err := s.userService.StartChangeEmail(ctx, targetUid, requestUid)
+
 	if err != nil {
 		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
+
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "发送验证码成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -820,9 +767,6 @@ func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNe
 
 	if !validate.IsValidateEmail(req.NewEmail) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "邮箱格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "邮箱格式错误")
@@ -847,9 +791,6 @@ func (s *UserServiceImpl) VerifyNewEmail(ctx context.Context, req *user.VerifyNe
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "请求成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -878,9 +819,6 @@ func (s *UserServiceImpl) CompleteChangeEmail(ctx context.Context, req *user.Com
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   uint64(v),
@@ -892,9 +830,6 @@ func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBin
 
 	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "手机号格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
@@ -919,9 +854,6 @@ func (s *UserServiceImpl) StartBindPhone(ctx context.Context, req *user.StartBin
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "发送成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -933,9 +865,6 @@ func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.Compl
 
 	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "手机号格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
@@ -961,9 +890,6 @@ func (s *UserServiceImpl) CompleteBindPhone(ctx context.Context, req *user.Compl
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   uint64(v),
@@ -989,9 +915,6 @@ func (s *UserServiceImpl) StartChangePhone(ctx context.Context, req *user.StartC
 		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "发送验证码成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -1003,9 +926,6 @@ func (s *UserServiceImpl) VerifyNewPhone(ctx context.Context, req *user.VerifyNe
 
 	if ok, _, _ := validate.IsValidateE164Phone(req.NewPhone); !ok {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "手机号格式错误",
 			Timestamp: time.Now().String(),
 			Version:   0,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "手机号格式错误")
@@ -1030,9 +950,6 @@ func (s *UserServiceImpl) VerifyNewPhone(ctx context.Context, req *user.VerifyNe
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "请求成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 		Version:   0,
@@ -1061,9 +978,6 @@ func (s *UserServiceImpl) CompleteChangePhone(ctx context.Context, req *user.Com
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   uint64(v),
@@ -1100,9 +1014,6 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 	if userinfo == nil {
 		return &user.UserInfoResp{
 			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusForbidden,
-				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
 				RequestId: requestId,
 				Version:   0,
@@ -1112,9 +1023,6 @@ func (s *UserServiceImpl) GetUserInfoById(ctx context.Context, req *user.GetUser
 
 	return &user.UserInfoResp{
 		Result: &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "查询成功",
 			Timestamp: time.Now().String(),
 			RequestId: requestId,
 			Version:   0,
@@ -1146,6 +1054,8 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 	requestId := ""
 
+	execute := false
+
 	if req.GetUsername() != "" {
 
 		username := req.GetUsername()
@@ -1153,9 +1063,6 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		if !validate.IsValidateUsername(username) {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
-					Success:   false,
-					Code:      http.StatusBadRequest,
-					Message:   "用户名格式错误",
 					Timestamp: time.Now().String(),
 					Version:   0,
 				},
@@ -1163,16 +1070,17 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		}
 
 		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, username, requestUid, service.USERNAME, serializer.JSON)
-	} else if req.GetEmail() != "" {
+
+		execute = true
+	}
+
+	if !execute && req.GetEmail() != "" {
 
 		email := req.GetEmail()
 
 		if !validate.IsValidateEmail(email) {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
-					Success:   false,
-					Code:      http.StatusBadRequest,
-					Message:   "邮箱格式错误",
 					Timestamp: time.Now().String(),
 					Version:   0,
 				},
@@ -1180,16 +1088,17 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		}
 
 		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, req.GetEmail(), requestUid, service.EMAIL, serializer.JSON)
-	} else if req.GetPhone() != "" {
+
+		execute = true
+	}
+
+	if !execute && req.GetPhone() != "" {
 
 		phone := req.GetPhone()
 
 		if ok, _, _ := validate.IsValidateE164Phone(phone); !ok {
 			return &user.UserInfoResp{
 				Result: &user.OperationResult{
-					Success:   false,
-					Code:      http.StatusBadRequest,
-					Message:   "手机号格式错误",
 					Timestamp: time.Now().String(),
 					Version:   0,
 				},
@@ -1197,12 +1106,13 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 		}
 
 		userinfo, err, requestId = s.userService.GetUserInfoBySpecialSig(ctx, phone, requestUid, service.PHONE, serializer.JSON)
-	} else {
+
+		execute = true
+	}
+
+	if !execute {
 		return &user.UserInfoResp{
 			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusBadRequest,
-				Message:   "参数错误",
 				Timestamp: time.Now().String(),
 				RequestId: requestId,
 				Version:   0,
@@ -1220,9 +1130,6 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 	if userinfo == nil {
 		return &user.UserInfoResp{
 			Result: &user.OperationResult{
-				Success:   false,
-				Code:      http.StatusForbidden,
-				Message:   "用户不存在或已经删除",
 				Timestamp: time.Now().String(),
 				RequestId: requestId,
 				Version:   0,
@@ -1232,9 +1139,6 @@ func (s *UserServiceImpl) GetUserInfoByOthers(ctx context.Context, req *user.Get
 
 	return &user.UserInfoResp{
 		Result: &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "查询成功",
 			Timestamp: time.Now().String(),
 			RequestId: requestId,
 			Version:   0,
@@ -1254,9 +1158,6 @@ func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUs
 
 	if !validate.IsValidateGender(req.Gender) {
 		return &user.OperationResult{
-			Success:   false,
-			Code:      http.StatusBadRequest,
-			Message:   "非法请求,性别错误",
 			Timestamp: time.Now().String(),
 			Version:   req.Version,
 		}, cerrors.NewGRPCError(http.StatusBadRequest, "非法请求")
@@ -1281,9 +1182,6 @@ func (s *UserServiceImpl) UpdateUserInfo(ctx context.Context, req *user.UpdateUs
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改成功",
 		Timestamp: time.Now().String(),
 		RequestId: requestId,
 		Version:   uint64(v),
@@ -1323,9 +1221,6 @@ func (s *UserServiceImpl) StartDeactivateUser(ctx context.Context, req *user.Sta
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "请求成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 	}, nil
@@ -1352,9 +1247,6 @@ func (s *UserServiceImpl) DeactivateUser(ctx context.Context, req *user.Deactiva
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "请求成功",
 		Timestamp: time.Now().String(),
 		RequestId: req.RequestId,
 		Version:   uint64(v),
@@ -1385,9 +1277,6 @@ func (s *UserServiceImpl) StartReactiveUser(ctx context.Context, req *user.Start
 
 	return &user.StartReactivateUserResp{
 		Op: &user.OperationResult{
-			Success:   true,
-			Code:      http.StatusOK,
-			Message:   "请求成功",
 			RequestId: requestId,
 			Timestamp: time.Now().String(),
 			Version:   0,
@@ -1418,9 +1307,6 @@ func (s *UserServiceImpl) ReactivateUser(ctx context.Context, req *user.Reactiva
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "请求成功",
 		RequestId: req.RequestId,
 		Timestamp: time.Now().String(),
 		Version:   uint64(v),
@@ -1446,9 +1332,6 @@ func (s *UserServiceImpl) StartDeleteUser(ctx context.Context, req *user.StartDe
 		return parseServiceErrToHandlerError(ctx, err, requestId, 0)
 	}
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "发送成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 	}, nil
@@ -1474,9 +1357,6 @@ func (s *UserServiceImpl) DeleteUser(ctx context.Context, req *user.DeleteUserRe
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "注销成功",
 		RequestId: requestId,
 		Timestamp: time.Now().String(),
 	}, nil
@@ -1497,9 +1377,6 @@ func (s *UserServiceImpl) GetVersion(ctx context.Context, req *user.VersionReq) 
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "获取成功",
 		RequestId: "",
 		Timestamp: time.Now().String(),
 		Version:   uint64(version),
@@ -1519,9 +1396,6 @@ func (s *UserServiceImpl) AddVersion(ctx context.Context, req *user.VersionReq) 
 	}
 
 	return &user.OperationResult{
-		Success:   true,
-		Code:      http.StatusOK,
-		Message:   "修改成功",
 		RequestId: "",
 		Timestamp: time.Now().String(),
 	}, nil

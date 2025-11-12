@@ -125,13 +125,10 @@ func (x QrCodeLoginStatusResp_Status) String() string {
 
 // ---------- 通用结构 ---------- //
 type OperationResult struct {
-	Success       bool   `protobuf:"varint,1,opt,name=success" json:"success,omitempty"`
-	Code          uint64 `protobuf:"varint,2,opt,name=code" json:"code,omitempty"`                      // 业务状态码
-	Message       string `protobuf:"bytes,3,opt,name=message" json:"message,omitempty"`                 // 用户提示信息
-	RequestId     string `protobuf:"bytes,4,opt,name=request_id" json:"request_id,omitempty"`           // 请求追踪ID
-	Timestamp     string `protobuf:"bytes,5,opt,name=timestamp" json:"timestamp,omitempty"`             // 服务器时间戳(毫秒)
-	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"` // 请求用户id
-	Version       uint64 `protobuf:"varint,7,opt,name=version" json:"version,omitempty"`                // 响应的jwt版本
+	RequestId     string `protobuf:"bytes,1,opt,name=request_id" json:"request_id,omitempty"`           // 请求追踪ID
+	Timestamp     string `protobuf:"bytes,2,opt,name=timestamp" json:"timestamp,omitempty"`             // 服务器时间戳(毫秒)
+	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"` // 请求用户id
+	Version       uint64 `protobuf:"varint,4,opt,name=version" json:"version,omitempty"`                // 响应的jwt版本
 }
 
 func (x *OperationResult) Reset() { *x = OperationResult{} }
@@ -139,27 +136,6 @@ func (x *OperationResult) Reset() { *x = OperationResult{} }
 func (x *OperationResult) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *OperationResult) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *OperationResult) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *OperationResult) GetCode() uint64 {
-	if x != nil {
-		return x.Code
-	}
-	return 0
-}
-
-func (x *OperationResult) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
 
 func (x *OperationResult) GetRequestId() string {
 	if x != nil {
@@ -806,8 +782,7 @@ func (x *QrCodePreLoginStatusReq) GetRequestId() string {
 }
 
 type QrCodePreLoginStatusResp struct {
-	Ok     bool   `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
-	UserId string `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`
+	UserId string `protobuf:"bytes,1,opt,name=user_id" json:"user_id,omitempty"`
 }
 
 func (x *QrCodePreLoginStatusResp) Reset() { *x = QrCodePreLoginStatusResp{} }
@@ -817,13 +792,6 @@ func (x *QrCodePreLoginStatusResp) Marshal(in []byte) ([]byte, error) {
 }
 
 func (x *QrCodePreLoginStatusResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *QrCodePreLoginStatusResp) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
 
 func (x *QrCodePreLoginStatusResp) GetUserId() string {
 	if x != nil {
@@ -1028,8 +996,7 @@ func (x *QrPreLoginReq) GetRequestId() string {
 }
 
 type QrPreLoginResp struct {
-	Ok        bool   `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
-	RequestId string `protobuf:"bytes,2,opt,name=request_id" json:"request_id,omitempty"`
+	RequestId string `protobuf:"bytes,1,opt,name=request_id" json:"request_id,omitempty"`
 }
 
 func (x *QrPreLoginResp) Reset() { *x = QrPreLoginResp{} }
@@ -1037,13 +1004,6 @@ func (x *QrPreLoginResp) Reset() { *x = QrPreLoginResp{} }
 func (x *QrPreLoginResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *QrPreLoginResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *QrPreLoginResp) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
 
 func (x *QrPreLoginResp) GetRequestId() string {
 	if x != nil {

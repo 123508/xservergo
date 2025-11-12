@@ -62,7 +62,7 @@ func UploadVerify(ctx context.Context, c *app.RequestContext) {
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
-		"code": http.StatusOK,
+		"code": 0,
 		"msg":  "请求成功",
 		"data": resp,
 	})

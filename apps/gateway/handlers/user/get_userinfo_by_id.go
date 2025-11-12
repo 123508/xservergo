@@ -51,9 +51,11 @@ func GetUserInfoById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"code": 0,
-		"msg":  "查询成功",
-		"data": resp,
-	})
+		"msg":  "获取成功",
+		"data": common.ParseUserInfoToMap(resp.UserInfo, common.ParseOperationToMap(resp.Result)),
+	}
+
+	c.JSON(http.StatusOK, result)
 }
