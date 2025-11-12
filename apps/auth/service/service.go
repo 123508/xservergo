@@ -245,7 +245,7 @@ func (s *ServiceImpl) VerifyToken(ctx context.Context, accessToken string) (uid 
 	//向user服务请求用户版本
 	res, err := UserClient.GetVersion(ctx, &user.VersionReq{UserId: claims.UserId.MarshalBase64()})
 
-	if err != nil || !res.Success {
+	if err != nil {
 		return id.EmptyUUID, nil, 0, -1, cerrors.NewCommonError(http.StatusFailedDependency, "请求失败", "", err)
 	}
 

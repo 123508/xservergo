@@ -39,14 +39,14 @@ type UserService interface {
 	GenerateQrCode(ctx context.Context, ip, userAgent string) (qrCode string, requestId string, expire uint64, err error)
 	QrCodePreLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string) (ok bool, uid id.UUID, err error)
 	QrCodeLoginStatus(ctx context.Context, ticket string, timeout uint64, requestId string, uid id.UUID) (status uint64, userinfo *models.User, token *models.Token, err error)
-	QrPreLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (ok bool, err error)
+	QrPreLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (err error)
 	ConfirmQrLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (err error)
 	CancelQrLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (err error)
 	Logout(ctx context.Context, reqeustUid, targetUid id.UUID, token *models.Token) (err error, requestId string)
 	GetUserInfoById(ctx context.Context, targetUserId, requestUserId id.UUID) (userinfo *models.User, err error, requestId string)
 	GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId id.UUID, queryType QueryType, serialType serializer2.SerializerType) (userinfo *models.User, err error, requestId string)
 	ChangePassword(ctx context.Context, targetUserId, requestUserId id.UUID, oldPwd, newPwd string) (err error, requestId string)
-	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer2.SerializerType, msgType uint64) (ok bool, uid id.UUID, requestId string, err error)
+	ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer2.SerializerType, msgType uint64) (uid id.UUID, requestId string, err error)
 	ResetPassword(ctx context.Context, targetUserId, requestUserId id.UUID, newPwd, requestId, VerifyCode string) (err error)
 	StartBindEmail(ctx context.Context, targetUserId, requestUserId id.UUID, newEmail string) (requestId string, err error)
 	CompleteBindEmail(ctx context.Context, targetUserId, requestUserId id.UUID, newEmail, verifyCode, requestId string, version int) (v int, err error)
@@ -362,11 +362,11 @@ func (s *ServiceImpl) QrCodeLoginStatus(
 	return status, usr, token, nil
 }
 
-func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) (bool, error) {
+func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) error {
 
 	//校验链路是否合法
 	if err := s.VerifyRequestID(ctx, requestId); err != nil {
-		return false, err
+		return err
 	}
 
 	//校验二维码是否过期
@@ -375,9 +375,9 @@ func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid id.UUID
 	result, err := s.Rds.Get(ctx, ticketToken).Result()
 
 	if err != nil {
-		return false, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
+		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
 	} else if result != "1" || errors.Is(err, redis.Nil) {
-		return false, cerrors.NewCommonError(http.StatusBadRequest, "二维码过期", requestId, err)
+		return cerrors.NewCommonError(http.StatusBadRequest, "二维码过期", requestId, err)
 	}
 
 	//原子操作
@@ -392,10 +392,10 @@ func (s *ServiceImpl) QrPreLogin(ctx context.Context, ticket string, uid id.UUID
 	pipe.Set(ctx, takeUidToken, uid.String(), 5*time.Minute)
 
 	if _, err = pipe.Exec(ctx); err != nil {
-		return false, cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
+		return cerrors.NewCommonError(http.StatusInternalServerError, "Redis错误", requestId, err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (s *ServiceImpl) ConfirmQrLogin(ctx context.Context, ticket string, uid id.UUID, requestId string) error {
@@ -578,17 +578,17 @@ func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestU
 	return nil, requestId
 }
 
-func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer2.SerializerType, msgType uint64) (bool, id.UUID, string, error) {
+func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType QueryType, serialType serializer2.SerializerType, msgType uint64) (id.UUID, string, error) {
 
 	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
 
 	if err != nil {
-		return false, id.NewUUID(), "", err
+		return id.NewUUID(), "", err
 	}
 
 	usr, err, _ := s.GetUserInfoBySpecialSig(ctx, sign, id.SystemUUID, queryType, serialType)
 	if err != nil {
-		return false, id.NewUUID(), "", err
+		return id.NewUUID(), "", err
 	}
 
 	ForgetToken := s.keys.ForgetPwdKey(usr.ID)
@@ -602,10 +602,10 @@ func (s *ServiceImpl) ForgetPassword(ctx context.Context, sign string, queryType
 		Err = s.SendPhoneCode(ctx, ForgetToken, sign)
 	}
 	if Err != nil {
-		return false, id.NewUUID(), "", Err
+		return id.NewUUID(), "", Err
 	}
 
-	return true, usr.ID, requestId, nil
+	return usr.ID, requestId, nil
 }
 
 func (s *ServiceImpl) ResetPassword(ctx context.Context, targetUserId, requestUserId id.UUID, newPwd, requestId, VerifyCode string) error {

@@ -60,13 +60,10 @@ service UserService {
 
 // ---------- 通用结构 ---------- //
 message OperationResult {
-  bool success = 1;
-  uint64 code = 2;        // 业务状态码
-  string message = 3;     // 用户提示信息
-  string request_id = 4;  // 请求追踪ID
-  string timestamp = 5;   // 服务器时间戳(毫秒)
-  string request_user_id=6;// 请求用户id
-  uint64 version=7;       // 响应的jwt版本
+  string request_id = 1;  // 请求追踪ID
+  string timestamp = 2;   // 服务器时间戳(毫秒)
+  string request_user_id=3;// 请求用户id
+  uint64 version=4;       // 响应的jwt版本
 }
 
 message UserInfo {
@@ -183,8 +180,7 @@ message QrCodePreLoginStatusReq{
 }
 
 message QrCodePreLoginStatusResp{
-  bool ok = 1;
-  string user_id = 2;
+  string user_id = 1;
 }
 
 // 长轮询状态请求
@@ -232,8 +228,7 @@ message QrPreLoginReq{
 }
 
 message QrPreLoginResp{
-  bool ok=1;
-  string request_id = 2;
+  string request_id = 1;
 }
 
 message ConfirmQrLoginReq {

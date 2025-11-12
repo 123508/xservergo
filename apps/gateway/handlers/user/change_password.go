@@ -53,9 +53,11 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"code": 0,
 		"msg":  "成功修改",
-		"data": resp,
-	})
+		"data": common.ParseOperationToMap(resp),
+	}
+
+	c.JSON(http.StatusOK, result)
 }

@@ -53,6 +53,6 @@ func ConfirmQrLogin(ctx context.Context, c *app.RequestContext) {
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code": 0,
-		"msg":  "成功登录",
+		"msg":  "登录成功",
 	})
 }

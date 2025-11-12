@@ -45,19 +45,22 @@ func GetUserInfoByOthers(ctx context.Context, c *app.RequestContext) {
 		RequestUserId: requestUserId,
 	}
 
+	execute := false
+
 	if us.Phone != "" {
 		req.Identifier = &user.GetUserInfoByOthersReq_Phone{Phone: us.Phone}
-	} else {
-		if us.Email != "" {
-			req.Identifier = &user.GetUserInfoByOthersReq_Email{Email: us.Email}
-		} else {
-			if us.Username != "" {
-				req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: us.UserId}
-			}
-		}
+		execute = true
+	}
+	if !execute && us.Email != "" {
+		req.Identifier = &user.GetUserInfoByOthersReq_Email{Email: us.Email}
+		execute = true
+	}
+	if !execute && us.Username != "" {
+		req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: us.UserId}
+		execute = true
 	}
 
-	if req.Identifier == nil {
+	if !execute && req.Identifier == nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -72,9 +75,11 @@ func GetUserInfoByOthers(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"code": 0,
-		"msg":  "请求成功",
-		"data": resp,
-	})
+		"msg":  "获取成功",
+		"data": common.ParseUserInfoToMap(resp.UserInfo, common.ParseOperationToMap(resp.Result)),
+	}
+
+	c.JSON(http.StatusOK, result)
 }

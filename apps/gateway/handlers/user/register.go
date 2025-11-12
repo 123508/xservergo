@@ -35,13 +35,11 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 解析成功
-	code := resp.Code
-	if code == http.StatusOK {
-		code = 0
+	result := map[string]interface{}{
+		"code": 0,
+		"msg":  "登录成功",
+		"data": common.ParseOperationToMap(resp),
 	}
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"code": code,
-		"msg":  resp.Message,
-	})
+
+	c.JSON(http.StatusOK, result)
 }

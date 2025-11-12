@@ -31,10 +31,16 @@ func EmailLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	//解析成功
-	c.JSON(http.StatusOK, map[string]interface{}{
+	result := map[string]interface{}{
 		"code": 0,
 		"msg":  "登录成功",
-		"data": resp,
+	}
+
+	result["data"] = common.ParseUserInfoToMap(resp.UserInfo, map[string]interface{}{
+		"access_token":  resp.AccessToken,
+		"refresh_token": resp.RefreshToken,
 	})
+
+	//解析成功
+	c.JSON(http.StatusOK, result)
 }

@@ -68,6 +68,7 @@ func (s *FileServiceImpl) InitUpload(ctx context.Context, req *file.InitUploadRe
 	}
 
 	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+
 	if err != nil {
 		return &file.InitUploadResp{
 			FileStatus: make([]*file.FileItem, 0),
