@@ -36,6 +36,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"DirectUpload": kitex.NewMethodInfo(
+		directUploadHandler,
+		newDirectUploadArgs,
+		newDirectUploadResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 	"GetUploadUrl": kitex.NewMethodInfo(
 		getUploadUrlHandler,
 		newGetUploadUrlArgs,
@@ -572,6 +579,117 @@ func (p *UploadVerifyResult) IsSetSuccess() bool {
 }
 
 func (p *UploadVerifyResult) GetResult() interface{} {
+	return p.Success
+}
+
+func directUploadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(file.DirectUploadReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(file.FileService).DirectUpload(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *DirectUploadArgs:
+		success, err := handler.(file.FileService).DirectUpload(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*DirectUploadResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newDirectUploadArgs() interface{} {
+	return &DirectUploadArgs{}
+}
+
+func newDirectUploadResult() interface{} {
+	return &DirectUploadResult{}
+}
+
+type DirectUploadArgs struct {
+	Req *file.DirectUploadReq
+}
+
+func (p *DirectUploadArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *DirectUploadArgs) Unmarshal(in []byte) error {
+	msg := new(file.DirectUploadReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var DirectUploadArgs_Req_DEFAULT *file.DirectUploadReq
+
+func (p *DirectUploadArgs) GetReq() *file.DirectUploadReq {
+	if !p.IsSetReq() {
+		return DirectUploadArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *DirectUploadArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *DirectUploadArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type DirectUploadResult struct {
+	Success *file.DirectUploadResp
+}
+
+var DirectUploadResult_Success_DEFAULT *file.DirectUploadResp
+
+func (p *DirectUploadResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *DirectUploadResult) Unmarshal(in []byte) error {
+	msg := new(file.DirectUploadResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *DirectUploadResult) GetSuccess() *file.DirectUploadResp {
+	if !p.IsSetSuccess() {
+		return DirectUploadResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *DirectUploadResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.DirectUploadResp)
+}
+
+func (p *DirectUploadResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *DirectUploadResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2830,6 +2948,16 @@ func (p *kClient) UploadVerify(ctx context.Context, Req *file.UploadVerifyReq) (
 	_args.Req = Req
 	var _result UploadVerifyResult
 	if err = p.c.Call(ctx, "UploadVerify", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) DirectUpload(ctx context.Context, Req *file.DirectUploadReq) (r *file.DirectUploadResp, err error) {
+	var _args DirectUploadArgs
+	_args.Req = Req
+	var _result DirectUploadResult
+	if err = p.c.Call(ctx, "DirectUpload", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

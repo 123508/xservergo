@@ -187,3 +187,7 @@ func (f FileKeys) UploadIdKey(uploadId string) string {
 func (f FileKeys) FileChunkTotalKey(fileId id.UUID) string {
 	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_chunk_total", fileId)
 }
+
+func (f FileKeys) FileChunkStoreTypeKey(fileId id.UUID) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_chunk_type", fileId)
+}

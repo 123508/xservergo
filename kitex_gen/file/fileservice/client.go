@@ -14,6 +14,7 @@ type Client interface {
 	InitUpload(ctx context.Context, Req *file.InitUploadReq, callOptions ...callopt.Option) (r *file.InitUploadResp, err error)
 	UploadChunk(ctx context.Context, Req *file.UploadChunkReq, callOptions ...callopt.Option) (r *file.UploadChunkResp, err error)
 	UploadVerify(ctx context.Context, Req *file.UploadVerifyReq, callOptions ...callopt.Option) (r *file.UploadVerifyResp, err error)
+	DirectUpload(ctx context.Context, Req *file.DirectUploadReq, callOptions ...callopt.Option) (r *file.DirectUploadResp, err error)
 	GetUploadUrl(ctx context.Context, Req *file.UploadUrlReq, callOptions ...callopt.Option) (r *file.UploadUrlResp, err error)
 	RegisterUploadedFile(ctx context.Context, Req *file.RegisterUploadReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
 	CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
@@ -78,6 +79,11 @@ func (p *kFileServiceClient) UploadChunk(ctx context.Context, Req *file.UploadCh
 func (p *kFileServiceClient) UploadVerify(ctx context.Context, Req *file.UploadVerifyReq, callOptions ...callopt.Option) (r *file.UploadVerifyResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.UploadVerify(ctx, Req)
+}
+
+func (p *kFileServiceClient) DirectUpload(ctx context.Context, Req *file.DirectUploadReq, callOptions ...callopt.Option) (r *file.DirectUploadResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.DirectUpload(ctx, Req)
 }
 
 func (p *kFileServiceClient) GetUploadUrl(ctx context.Context, Req *file.UploadUrlReq, callOptions ...callopt.Option) (r *file.UploadUrlResp, err error) {

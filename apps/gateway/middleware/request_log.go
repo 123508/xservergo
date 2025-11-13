@@ -2,10 +2,11 @@ package middleware
 
 import (
 	"context"
+	"time"
+
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/cloudwego/hertz/pkg/app"
 	"go.uber.org/zap"
-	"time"
 )
 
 func RequestLogger() app.HandlerFunc {

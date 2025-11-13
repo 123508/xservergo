@@ -10,9 +10,10 @@ service FileService {
   rpc InitUpload(InitUploadReq) returns (InitUploadResp);           // 初始化上传
   rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);        // 上传分片
   rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);         // 完成上传
+  rpc DirectUpload(DirectUploadReq) returns (DirectUploadResp);       //简单直接上传
 
   //外部存储上传
-  rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);           // 获取预签名上传URL
+  rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);               // 获取预签名上传URL
   rpc RegisterUploadedFile(RegisterUploadReq) returns (FileMeta);       // 注册外部上传文件
 
   // ---------- 文件操作模块 ---------- //
@@ -92,6 +93,8 @@ message FileItem {
   string file_id = 4;
   uint64 status = 5;
   uint64 total=6;
+  uint64 file_type=7;
+  uint64 store_type=8;
 }
 
 message InitUploadResp {
@@ -133,6 +136,17 @@ message UploadVerifyFile{
 message UploadVerifyResp{
   repeated UploadVerifyFile files=1;
   repeated string fail_file_id=2;
+}
+
+message DirectUploadReq{
+  FileItem file=1;
+  bytes content=2;
+  string request_user_id = 3;
+  string target_user_id = 4;
+}
+
+message DirectUploadResp{
+  FileItem file=1;
 }
 
 // 外部存储上传相关

@@ -290,6 +290,8 @@ type FileItem struct {
 	FileId          string `protobuf:"bytes,4,opt,name=file_id" json:"file_id,omitempty"`
 	Status          uint64 `protobuf:"varint,5,opt,name=status" json:"status,omitempty"`
 	Total           uint64 `protobuf:"varint,6,opt,name=total" json:"total,omitempty"`
+	FileType        uint64 `protobuf:"varint,7,opt,name=file_type" json:"file_type,omitempty"`
+	StoreType       uint64 `protobuf:"varint,8,opt,name=store_type" json:"store_type,omitempty"`
 }
 
 func (x *FileItem) Reset() { *x = FileItem{} }
@@ -336,6 +338,20 @@ func (x *FileItem) GetStatus() uint64 {
 func (x *FileItem) GetTotal() uint64 {
 	if x != nil {
 		return x.Total
+	}
+	return 0
+}
+
+func (x *FileItem) GetFileType() uint64 {
+	if x != nil {
+		return x.FileType
+	}
+	return 0
+}
+
+func (x *FileItem) GetStoreType() uint64 {
+	if x != nil {
+		return x.StoreType
 	}
 	return 0
 }
@@ -574,6 +590,64 @@ func (x *UploadVerifyResp) GetFiles() []*UploadVerifyFile {
 func (x *UploadVerifyResp) GetFailFileId() []string {
 	if x != nil {
 		return x.FailFileId
+	}
+	return nil
+}
+
+type DirectUploadReq struct {
+	File          *FileItem `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+	Content       []byte    `protobuf:"bytes,2,opt,name=content" json:"content,omitempty"`
+	RequestUserId string    `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	TargetUserId  string    `protobuf:"bytes,4,opt,name=target_user_id" json:"target_user_id,omitempty"`
+}
+
+func (x *DirectUploadReq) Reset() { *x = DirectUploadReq{} }
+
+func (x *DirectUploadReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DirectUploadReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DirectUploadReq) GetFile() *FileItem {
+	if x != nil {
+		return x.File
+	}
+	return nil
+}
+
+func (x *DirectUploadReq) GetContent() []byte {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
+func (x *DirectUploadReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+func (x *DirectUploadReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+type DirectUploadResp struct {
+	File *FileItem `protobuf:"bytes,1,opt,name=file" json:"file,omitempty"`
+}
+
+func (x *DirectUploadResp) Reset() { *x = DirectUploadResp{} }
+
+func (x *DirectUploadResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *DirectUploadResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *DirectUploadResp) GetFile() *FileItem {
+	if x != nil {
+		return x.File
 	}
 	return nil
 }
@@ -1345,6 +1419,7 @@ type FileService interface {
 	InitUpload(ctx context.Context, req *InitUploadReq) (res *InitUploadResp, err error)
 	UploadChunk(ctx context.Context, req *UploadChunkReq) (res *UploadChunkResp, err error)
 	UploadVerify(ctx context.Context, req *UploadVerifyReq) (res *UploadVerifyResp, err error)
+	DirectUpload(ctx context.Context, req *DirectUploadReq) (res *DirectUploadResp, err error)
 	GetUploadUrl(ctx context.Context, req *UploadUrlReq) (res *UploadUrlResp, err error)
 	RegisterUploadedFile(ctx context.Context, req *RegisterUploadReq) (res *FileMeta, err error)
 	CreateFolder(ctx context.Context, req *CreateFolderReq) (res *FileMeta, err error)

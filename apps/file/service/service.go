@@ -24,6 +24,7 @@ type FileService interface {
 	InitFileUpload(ctx context.Context, fileList []models.File, targetUserId, requestUserId id.UUID) (files []models.File, uploadId, requestId string, err error)
 	UploadChunk(ctx context.Context, fileId id.UUID, chunkIndex uint64, uploadId string, content []byte, chunkContentHash string, requestId string, targetUserId, requestUserId id.UUID) (bool, string, error)
 	UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error)
+	DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error)
 }
 
 type ServiceImpl struct {
@@ -88,10 +89,13 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 
 	err := s.DB.WithContext(ctx).Model(&models.File{}).Where("file_hash = ?", file.FileHash).First(&res).Error //查询文件是否存在
 
+	alias := file.FileName
+
 	// 不存在就直接创建
 	if res.FileHash == "" || res.ID.IsZero() {
 		file.ID = id.NewUUID()
 		file.Status = 1
+		file.FileName = file.FileHash
 		err := s.DB.Create(&file).Error
 		if err != nil {
 			logs.ErrorLogger.Error("创建文件错误", zap.Error(err))
@@ -99,7 +103,6 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 		}
 		res = file
 	}
-
 	// 校验文件是否被关联
 	var count int64 = 0
 	s.DB.Model(&models.FileUser{}).Where("file_id = ? and user_id = ?", res.ID, userId).Count(&count)
@@ -107,8 +110,39 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 		return res, nil
 	}
 
+	now := time.Now()
+
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
+
+	// 创建文件路径与用户的关联
+	splitPaths := SplitPathToLevels(alias)
+	parentId := id.EmptyUUID
+	fileAlias := make([]*models.FileAlias, len(splitPaths))
+	for i, path := range splitPaths {
+		fa := &models.FileAlias{
+			ID:          id.NewUUID(),
+			UserID:      userId,
+			ParentID:    parentId,
+			FileName:    path,
+			CreatedAt:   &now,
+			IsDirectory: i < len(splitPaths)-1,
+			IsPublic:    false,
+		}
+
+		if i == len(splitPaths)-1 {
+			fa.FileID = res.ID
+		}
+
+		fileAlias[i] = fa
+		parentId = fa.ID
+	}
+
+	err = tx.Model(&models.FileAlias{}).Create(&fileAlias).Error
+	if err != nil {
+		logs.ErrorLogger.Error("更新错误", zap.Error(err))
+		return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新错误", err)
+	}
 
 	// 将文件的计数加一
 	fileSql := `update file set count = count + 1 where id = ?`
@@ -120,9 +154,10 @@ func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File,
 
 	//关联用户和文件
 	contract := models.FileUser{
-		ID:     id.NewUUID(),
-		FileId: res.ID,
-		UserId: userId,
+		ID:        id.NewUUID(),
+		FileId:    res.ID,
+		UserId:    userId,
+		FileAlias: alias,
 	}
 	err = tx.Create(&contract).Error
 	if err != nil {
@@ -163,7 +198,8 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 
 	// 校验分片是否存在
 	totalCount, err := s.Rds.Get(ctx, s.Keys.FileChunkTotalKey(fileId)).Uint64()
-	if totalCount <= 0 && err != nil {
+	storeType, err := s.Rds.Get(ctx, s.Keys.FileChunkTotalKey(fileId)).Uint64()
+	if (totalCount <= 0 || storeType <= 0) && err != nil {
 
 		fileExist := models.File{}
 		s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&fileExist)
@@ -173,6 +209,7 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		}
 
 		s.Rds.Set(ctx, s.Keys.FileChunkTotalKey(fileId), fileExist.Total, 10*time.Minute)
+		s.Rds.Set(ctx, s.Keys.FileChunkStoreTypeKey(fileId), fileExist.StoreType, 10*time.Minute)
 	}
 
 	if chunkIndex > totalCount || chunkIndex <= 0 {
@@ -181,6 +218,7 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	}
 
 	s.Rds.Expire(ctx, s.Keys.FileChunkTotalKey(fileId), 10*time.Minute)
+	s.Rds.Expire(ctx, s.Keys.FileChunkStoreTypeKey(fileId), 10*time.Minute)
 
 	// 查询分片是否存在
 	fileChunk := models.FileChunk{}
@@ -213,25 +251,20 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		return true, requestId, nil
 	}
 
-	dirPath, _ := filepath.Abs(config.Conf.FileConfig.FileStorePosition)
+	//阿里云存储
+	if storeType == 2 {
 
-	path := filepath.Join(dirPath, chunkHash)
-	path = filepath.Clean(path)
-
-	// 序列化写入文件
-	os.MkdirAll(dirPath, 0755)
-	file, err := os.Create(path)
-	if err != nil {
-		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
-		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "创建文件失败", requestId, err)
 	}
 
-	defer file.Close()
+	return s.UploadToLocal(ctx, fileId, chunkIndex, content, chunkHash, requestId)
+}
 
-	// 写入文件内容
-	if _, err = file.Write(content); err != nil {
-		logs.ErrorLogger.Error("写入分片内容失败", zap.Error(err))
-		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
+func (s *ServiceImpl) UploadToLocal(ctx context.Context, fileId id.UUID, chunkIndex uint64, content []byte, chunkHash string, requestId string) (verify bool, requestID string, err error) {
+
+	path, err := s.WriteContentToFile(content, chunkHash, requestId)
+
+	if err != nil {
+		return false, requestId, err
 	}
 
 	tx := s.DB.WithContext(ctx).Begin()
@@ -268,6 +301,31 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	tx.Commit()
 
 	return true, requestId, nil
+}
+
+func (s *ServiceImpl) WriteContentToFile(content []byte, hash string, requestId string) (string, error) {
+	dirPath, _ := filepath.Abs(config.Conf.FileConfig.FileStorePosition)
+
+	path := filepath.Join(dirPath, hash)
+	path = filepath.Clean(path)
+
+	// 序列化写入文件
+	os.MkdirAll(dirPath, 0755)
+	file, err := os.Create(path)
+	if err != nil {
+		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "创建文件失败", requestId, err)
+	}
+
+	defer file.Close()
+
+	// 写入文件内容
+	if _, err = file.Write(content); err != nil {
+		logs.ErrorLogger.Error("写入分片内容失败", zap.Error(err))
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
+	}
+
+	return path, nil
 }
 
 func (s *ServiceImpl) UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error) {
@@ -359,7 +417,15 @@ func (s *ServiceImpl) VerifyFile(ctx context.Context, fileId id.UUID) (VerifyFil
 		path[i] = chunk.ChunkName
 	}
 
-	hash, err := toMd5.ChunksToMd5(path)
+	var hash string
+
+	if f.StoreType == 1 {
+		//阿里云存储
+
+	} else {
+		//本地存储
+		hash, err = toMd5.ChunksToMd5(path)
+	}
 
 	if err != nil {
 		logs.ErrorLogger.Error("校验出错", zap.Error(err))
@@ -400,4 +466,35 @@ func (s *ServiceImpl) cleanFailChunks(ctx context.Context, path []string, fileId
 	// 4. 清理Redis中的相关缓存
 	s.Rds.Del(ctx, s.Keys.FileChunkTotalKey(fileId))
 
+}
+
+func (s *ServiceImpl) DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error) {
+
+	f.Status = 2
+
+	hash := toMd5.ContentToMd5(content)
+
+	if hash != f.FileHash {
+		return models.File{}, cerrors.NewCommonError(http.StatusBadRequest, "传输内容错误,请重传", "", nil)
+	}
+
+	if f.StoreType == 2 {
+		//阿里云存储
+
+	} else {
+		//本地存储
+		path, err := s.WriteContentToFile(content, hash, "")
+		if err != nil {
+			return models.File{}, err
+		}
+		f.DirectPath = path
+	}
+
+	relateFile, err := s.InsertAndRelateFile(ctx, f, targetUserId)
+
+	if err != nil {
+		return models.File{}, err
+	}
+
+	return relateFile, nil
 }

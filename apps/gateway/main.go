@@ -44,6 +44,8 @@ func main() {
 
 		// 用户服务
 		userGroup := hz.Group("/user")
+		//限速+白名单
+		userGroup.Use(middleware.RateLimit())
 		//注册用户
 		userGroup.POST("/register", user.Register)
 		//邮箱登录
@@ -65,8 +67,6 @@ func main() {
 		userGroup.Use(middleware.ParseToken())
 		//刷新token
 		userGroup.Use(middleware.RefreshToken())
-		//限速
-		userGroup.Use(middleware.RateLimit())
 		//扫码登录移动端部分
 		userGroup.POST("/qr_mobile_pre_login", user.QrMobilePreLogin)
 		userGroup.POST("/qr_mobile_confirm_login", user.ConfirmQrLogin)
@@ -168,7 +168,8 @@ func main() {
 
 		// 文件服务
 		fileGroup := hz.Group("/file")
-
+		//限速+白名单
+		fileGroup.Use(middleware.RateLimit())
 		// 解析token
 		fileGroup.Use(middleware.ParseToken())
 		// 刷新token
@@ -177,7 +178,8 @@ func main() {
 		// 上传文件部分
 		fileGroup.POST("/init_upload", file.InitUpload)
 		fileGroup.POST("/upload_chunk", file.UploadChunk)
-		fileGroup.POST("upload_verify", file.UploadVerify)
+		fileGroup.POST("/upload_verify", file.UploadVerify)
+		fileGroup.POST("/direct_upload", file.DirectUpload)
 
 		if err := hz.Run(); err != nil {
 			panic(err)
