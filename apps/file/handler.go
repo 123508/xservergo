@@ -88,10 +88,12 @@ func (s *FileServiceImpl) InitUpload(ctx context.Context, req *file.InitUploadRe
 	fileList := make([]models.File, 0)
 	for _, item := range req.FileList {
 		fileList = append(fileList, models.File{
-			FileName: item.FileName,
-			FileSize: item.FileSize,
-			FileHash: item.FileContentHash,
-			Total:    item.Total,
+			FileName:  item.FileName,
+			FileSize:  item.FileSize,
+			FileHash:  item.FileContentHash,
+			Total:     item.Total,
+			FileType:  item.FileType,
+			StoreType: item.StoreType,
 		})
 	}
 
@@ -219,6 +221,43 @@ func (s *FileServiceImpl) UploadVerify(ctx context.Context, req *file.UploadVeri
 	return &file.UploadVerifyResp{
 		Files:      result,
 		FailFileId: failFileId,
+	}, nil
+}
+
+// DirectUpload implements the FileServiceImpl interface.
+func (s *FileServiceImpl) DirectUpload(ctx context.Context, req *file.DirectUploadReq) (resp *file.DirectUploadResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.DirectUploadResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+
+	if err != nil {
+		return &file.DirectUploadResp{}, err
+	}
+
+	f := models.File{
+		FileHash:  req.File.FileContentHash,
+		FileSize:  req.File.FileSize,
+		FileName:  req.File.FileName,
+		Total:     1,
+		FileType:  req.File.FileType,
+		StoreType: req.File.StoreType,
+	}
+
+	result, err := s.fileService.DirectUpload(ctx, f, req.Content, targetUid, requestUid)
+
+	if err != nil {
+		return &file.DirectUploadResp{}, err
+	}
+
+	return &file.DirectUploadResp{
+		File: &file.FileItem{
+			FileName: result.FileName,
+			FileId:   result.ID.MarshalBase64(),
+			Status:   result.Status,
+		},
 	}, nil
 }
 

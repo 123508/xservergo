@@ -5,6 +5,8 @@ type FileItem struct {
 	FileSize        uint64 `json:"file_size"`
 	FileName        string `json:"file_name"`
 	FileId          string `json:"file_id"`
-	Status          int32  `json:"status"`
+	Status          uint64 `json:"status"`
 	Total           uint64 `json:"total"`
+	FileType        uint64 `json:"file_type"`
+	StoreType       uint64 `json:"store_type"`
 }

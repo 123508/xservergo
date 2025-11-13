@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"context"
+	"time"
+
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 // 定义 Prometheus 指标
