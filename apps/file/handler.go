@@ -261,14 +261,78 @@ func (s *FileServiceImpl) DirectUpload(ctx context.Context, req *file.DirectUplo
 	}, nil
 }
 
-// GetUploadUrl implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GetUploadUrl(ctx context.Context, req *file.UploadUrlReq) (resp *file.UploadUrlResp, err error) {
-	// TODO: Your code here...
-	return
+// TransferSave implements the FileServiceImpl interface.
+func (s *FileServiceImpl) TransferSave(ctx context.Context, req *file.TransferSaveReq) (resp *file.TransferSaveResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.TransferSaveResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.TransferSaveResp{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.TransferSaveResp{}, err
+	}
+
+	aliasSaveRootId, err := unmarshalUUID(ctx, req.AliasSaveRootId)
+	if err != nil {
+		return &file.TransferSaveResp{}, err
+	}
+
+	needSelect := false
+	if req.SelectedFileIds == nil {
+		needSelect = true
+	}
+	selectIds := make([]id.UUID, 0)
+	for _, v := range req.SelectedFileIds {
+		fid, err := unmarshalUUID(ctx, v)
+		if err != nil {
+			return &file.TransferSaveResp{}, err
+		}
+		selectIds = append(selectIds, fid)
+	}
+
+	reflectFiles, requestId, err := s.fileService.TransferSave(ctx, aliasId, aliasSaveRootId, needSelect, req.ResolutionStrategy, selectIds, req.RequestId, targetUid, requestUid)
+
+	if err != nil {
+		return &file.TransferSaveResp{}, err
+	}
+
+	// 无冲突,直接返回
+	if reflectFiles == nil {
+		return &file.TransferSaveResp{
+			ReflectExist: false,
+		}, nil
+	}
+
+	// 不需要自行判断,直接交给前端
+	if req.ResolutionStrategy != 6 {
+		return &file.TransferSaveResp{
+			ReflectExist: true,
+		}, nil
+	}
+
+	reflects := make([]*file.ReflectFile, len(reflectFiles))
+	for i, fid := range reflectFiles {
+		reflects[i] = &file.ReflectFile{
+			OldFileId: fid.OldFileId.MarshalBase64(),
+			NewFileId: fid.OldFileId.MarshalBase64(),
+			FileName:  fid.FileName,
+		}
+	}
+	return &file.TransferSaveResp{
+		Reflects:     reflects,
+		ReflectExist: true,
+		RequestId:    requestId,
+	}, nil
 }
 
-// RegisterUploadedFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) RegisterUploadedFile(ctx context.Context, req *file.RegisterUploadReq) (resp *file.FileMeta, err error) {
+// DownloadFile implements the FileServiceImpl interface.
+func (s *FileServiceImpl) DownloadFile(ctx context.Context, req *file.DownloadFileReq) (resp *file.DownloadFileResp, err error) {
 	// TODO: Your code here...
 	return
 }
@@ -335,8 +399,42 @@ func (s *FileServiceImpl) GetFileMeta(ctx context.Context, req *file.FileReq) (r
 
 // ListDirectory implements the FileServiceImpl interface.
 func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirectoryReq) (resp *file.ListDirectoryResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.ListDirectoryResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.ListDirectoryResp{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.ListDirectoryResp{}, err
+	}
+
+	items, total, err := s.fileService.ListDirectory(ctx, aliasId, req.IsRoot, req.Page, req.PageSize, requestUid, targetUid)
+	if err != nil {
+		return &file.ListDirectoryResp{}, err
+	}
+	fileRes := make([]*file.FileItem, len(items))
+	for i, item := range items {
+		fileRes[i] = &file.FileItem{
+			FileSize:  item.FileSize,
+			FileName:  item.FileName,
+			FileId:    item.FileID.MarshalBase64(),
+			FileType:  item.FileType,
+			FileCover: item.FileCover,
+			CreatedAt: item.CreatedAt,
+		}
+	}
+	return &file.ListDirectoryResp{
+		Files:      fileRes,
+		TotalCount: total,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+	}, nil
 }
 
 // SearchFiles implements the FileServiceImpl interface.

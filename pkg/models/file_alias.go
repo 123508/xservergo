@@ -6,6 +6,7 @@ import (
 	"github.com/123508/xservergo/pkg/util/id"
 )
 
+// FileAlias 传统树形存储
 type FileAlias struct {
 	ID          id.UUID    `gorm:"column:id;comment '标识id'"`
 	FileID      id.UUID    `gorm:"column:file_id;comment '文件id'"`
@@ -16,8 +17,17 @@ type FileAlias struct {
 	UpdatedAt   *time.Time `gorm:"column:updated_at;comment '更新时间'"`
 	IsDirectory bool       `gorm:"column:is_directory;comment '0:文件 1:目录'"`
 	IsPublic    bool       `gorm:"column:is_public;comment '0不公开 1公开'"`
+	Level       uint64     `gorm:"->;column:level"`
 }
 
-func (f *FileAlias) TableName() string {
+func (f FileAlias) TableName() string {
 	return "file_alias"
+}
+
+func (f FileAlias) GetID() id.UUID {
+	return f.ID
+}
+
+func (f FileAlias) GetCreatedTime() time.Time {
+	return *f.CreatedAt
 }

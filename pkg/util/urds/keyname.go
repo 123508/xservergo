@@ -160,8 +160,12 @@ func NewFileKeys(env string) *FileKeys {
 	}
 }
 
-func (f FileKeys) FileIDKey(fileID id.UUID) string {
-	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_id", fileID)
+func (f FileKeys) FileKey(fileID id.UUID) string {
+	return TakeKey(f.FileKeyPrefix(), fileID)
+}
+
+func (f FileKeys) FileKeyPrefix() string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file")
 }
 
 func (f FileKeys) FIleMd5AndNameAndSizeKey(fileMd5, fileName string, fileSize uint64) string {
@@ -190,4 +194,20 @@ func (f FileKeys) FileChunkTotalKey(fileId id.UUID) string {
 
 func (f FileKeys) FileChunkStoreTypeKey(fileId id.UUID) string {
 	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_chunk_type", fileId)
+}
+
+func (f FileKeys) FileAliasKey(aliasId id.UUID) string {
+	return TakeKey(f.FileAliasKeyPrefix(), aliasId)
+}
+
+func (f FileKeys) FileAliasKeyPrefix() string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias")
+}
+
+func (f FileKeys) FileAliasListKeyWithFunc(alisId id.UUID, funcName string) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias_list", alisId, funcName)
+}
+
+func (f FileKeys) FileAliasCountKey(aliasId id.UUID) string {
+	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias_count", aliasId)
 }

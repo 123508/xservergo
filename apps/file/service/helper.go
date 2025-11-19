@@ -5,11 +5,39 @@ import (
 	"strings"
 
 	"github.com/123508/xservergo/pkg/models"
+	"github.com/123508/xservergo/pkg/util/id"
 )
 
 type VerifyFile struct {
 	File      models.File
 	NeedChunk []uint64
+}
+
+type ReflectFile struct {
+	OldFileId id.UUID
+	NewFIleId id.UUID
+	FileName  string
+}
+
+type FileAliasNode struct {
+	Father    *FileAliasNode
+	FileAlias models.FileAlias
+	Children  []*FileAliasNode
+	IsFile    bool
+	NoRead    bool
+}
+
+type FileAliasItem struct {
+	FileContentHash string // 文件内容哈希值
+	FileSize        uint64
+	FileName        string
+	FileID          id.UUID
+	AliasID         id.UUID
+	Status          uint64
+	FileType        string
+	FileCover       string
+	CreatedAt       string
+	IsDirectory     bool
 }
 
 // SplitPathToLevels 将路径分割为层级数组

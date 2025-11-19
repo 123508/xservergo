@@ -3,11 +3,12 @@ package urds
 import (
 	"context"
 	"fmt"
-	"github.com/123508/xservergo/pkg/util/id"
-	"github.com/redis/go-redis/v9"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/123508/xservergo/pkg/util/id"
+	"github.com/redis/go-redis/v9"
 )
 
 // TakeKey 构建key函数,默认为data[0]:data[1]:....:data[n],注意如果有无法识别的类型会在原本的位置填入 ???
@@ -36,7 +37,7 @@ func TakeKey(data ...any) string {
 		case byte:
 			builder.WriteString(strconv.FormatInt(int64(v.(byte)), 10))
 		case id.UUID:
-			builder.WriteString(v.(id.UUID).String())
+			builder.WriteString(v.(id.UUID).MarshalBase64())
 		case interface{}:
 			builder.WriteString(fmt.Sprintf("%v", v))
 		}

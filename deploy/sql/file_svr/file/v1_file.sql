@@ -16,7 +16,7 @@ create table if not exists file(
     updated_at datetime(3) not null default current_timestamp(3) on update CURRENT_TIMESTAMP(3) comment '更新时间',
     deleted_at datetime default null comment '进入回收站时间',
 
-    file_type tinyint(5)  comment '1视频 2音频 3图片 4pdf 5doc 6excel 7txt 8code 9zip 10其他',
+    file_type varchar(20)  comment '视频-1:mp4 2:avi 3:mov 4:mkv 5:wmv 6:flv 7:f4v 8:webm 9:mts 10:m2ts 11:rmvb 12:3gp 13:rm 14:rmvb 图片-15:jpg 16:jpeg 17:png 18:gif 19:bmp 20:tif 21:tiff 22:psd 23:raw 24:svg 25:cdr 26:ai 27:eps 28:webp 29:heif 30:ico 31:apng 音频-32:mp3 33:wav 34:aiff 35:aif 36:ape 37:flac 38:m4a 39:acc 40:ogg 41:wma 42:opus 43:mid 44:mod 45:s3m 日常-46:pdf 47:doc 48:docx 49:excel 50:txt 51:pptx 代码-52:py 53:go 54:java 55:class 56:js 57:cpp 58:c 59:cc 60:cs 61:rs 62:swift 63:kt 64:js 65:ts 66:php 67:html 68:css 69:rb 70:m 71:lua 72:pl 73:pl 74:f 75:pas 76:asm 77:h 78:dart 79:erl 数据库-80:frm 81:ibd 82:myd 83:mdf 84:ndf 85:dbf 86:db 87:sqlite 88:sqlite3 89:mdb 90:accdb 压缩包-91:zip 92:rar 93:7z 94:tgz 95:tar.bz2 96:gz 97:bz2 98:z 99:jar 100:cab',
 
     status tinyint(1) default null comment '标记删除: 0删除 1回收站 2正常 3转码中 4转码失败 5上传中 6上传失败 7合并存储 8分片存储',
     store_type tinyint(1) comment '1本地 2云存储',

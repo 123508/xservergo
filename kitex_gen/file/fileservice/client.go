@@ -15,8 +15,8 @@ type Client interface {
 	UploadChunk(ctx context.Context, Req *file.UploadChunkReq, callOptions ...callopt.Option) (r *file.UploadChunkResp, err error)
 	UploadVerify(ctx context.Context, Req *file.UploadVerifyReq, callOptions ...callopt.Option) (r *file.UploadVerifyResp, err error)
 	DirectUpload(ctx context.Context, Req *file.DirectUploadReq, callOptions ...callopt.Option) (r *file.DirectUploadResp, err error)
-	GetUploadUrl(ctx context.Context, Req *file.UploadUrlReq, callOptions ...callopt.Option) (r *file.UploadUrlResp, err error)
-	RegisterUploadedFile(ctx context.Context, Req *file.RegisterUploadReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
+	TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error)
+	DownloadFile(ctx context.Context, Req *file.DownloadFileReq, callOptions ...callopt.Option) (r *file.DownloadFileResp, err error)
 	CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
 	RenameFile(ctx context.Context, Req *file.RenameFileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
 	MoveFile(ctx context.Context, Req *file.MoveFileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
@@ -86,14 +86,14 @@ func (p *kFileServiceClient) DirectUpload(ctx context.Context, Req *file.DirectU
 	return p.kClient.DirectUpload(ctx, Req)
 }
 
-func (p *kFileServiceClient) GetUploadUrl(ctx context.Context, Req *file.UploadUrlReq, callOptions ...callopt.Option) (r *file.UploadUrlResp, err error) {
+func (p *kFileServiceClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GetUploadUrl(ctx, Req)
+	return p.kClient.TransferSave(ctx, Req)
 }
 
-func (p *kFileServiceClient) RegisterUploadedFile(ctx context.Context, Req *file.RegisterUploadReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {
+func (p *kFileServiceClient) DownloadFile(ctx context.Context, Req *file.DownloadFileReq, callOptions ...callopt.Option) (r *file.DownloadFileResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.RegisterUploadedFile(ctx, Req)
+	return p.kClient.DownloadFile(ctx, Req)
 }
 
 func (p *kFileServiceClient) CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {

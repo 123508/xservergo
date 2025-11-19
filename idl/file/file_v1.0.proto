@@ -12,9 +12,9 @@ service FileService {
   rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);         // 完成上传
   rpc DirectUpload(DirectUploadReq) returns (DirectUploadResp);       //简单直接上传
 
-  //外部存储上传
-  rpc GetUploadUrl(UploadUrlReq) returns (UploadUrlResp);               // 获取预签名上传URL
-  rpc RegisterUploadedFile(RegisterUploadReq) returns (FileMeta);       // 注册外部上传文件
+  // ---------- 文件下载模块 ---------- //
+  rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);                 //文件转存
+  rpc DownloadFile(DownloadFileReq) returns (DownloadFileResp);      //文件下载
 
   // ---------- 文件操作模块 ---------- //
   rpc CreateFolder(CreateFolderReq) returns (FileMeta);                 // 创建目录
@@ -93,8 +93,10 @@ message FileItem {
   string file_id = 4;
   uint64 status = 5;
   uint64 total=6;
-  uint64 file_type=7;
+  string file_type=7;
   uint64 store_type=8;
+  string file_cover=9;
+  string created_at=10;
 }
 
 message InitUploadResp {
@@ -121,7 +123,7 @@ message UploadChunkResp {
 }
 
 message UploadVerifyReq {
-  repeated string fileId=1;
+  repeated string file_id=1;
   string target_user_id=2;
   string request_user_id=3;
   string request_id=4;
@@ -147,6 +149,39 @@ message DirectUploadReq{
 
 message DirectUploadResp{
   FileItem file=1;
+}
+
+message TransferSaveReq{
+  string alias_id=1;   // 转存的根目录
+  string alias_save_root_id=2; // 转存到指定的父目录下
+  string request_user_id=3;
+  string target_user_id=4;
+  uint64 resolution_strategy=5; //转存策略 1:默认状态,有问题失败  2:覆盖,有冲突就覆盖  3:跳过,有冲突就直接不管跳过 4:重命名,有问题就重命名为唯一文件 5:取消转存,直接返回,不做任何处理 6:自行选择保留哪一个文件
+  repeated string selected_file_ids=6;   // 当 resolution_strategy 为6时，此处填写用户选择要保留的文件ID列表
+  string request_id=7;
+}
+
+message ReflectFile{
+  string old_file_id=1;
+  string new_file_id=2;
+  string file_name=3;
+}
+
+message TransferSaveResp{
+  repeated ReflectFile reflects=1;
+  bool  reflect_exist=2;        //是否存在矛盾
+  string request_id=3;
+}
+
+message DownloadFileReq{
+  string alias_id=1;
+  string request_user_id=2;
+  string target_user_id=3;
+}
+
+message DownloadFileResp{
+  string request_id=1;
+  repeated string list_alias_name=2;
 }
 
 // 外部存储上传相关
@@ -202,17 +237,9 @@ message CopyFileReq {
 message UpdateFilePublicReq{
   string file_id=1;
   string target_user_id=2;
-
-  // 文件公开状态枚举
-  enum FilePublicStatus {
-    PRIVATE = 0;
-    PUBLIC = 1;
-  }
-
-  FilePublicStatus is_public=3;
+  uint64 is_public=3;
   string request_user_id=4;
 }
-
 
 
 // ---------- 回收站管理 ---------- //
@@ -224,15 +251,16 @@ message FileReq {
 // ---------- 文件查询 ---------- //
 message ListDirectoryReq {
   string target_user_id = 1;
-  string parent_id = 2;        // 为空时列出根目录
-  uint32 page = 3;            // 分页页码
-  uint32 page_size = 4;       // 每页数量
-  bool include_trashed = 5;   // 是否包含回收站文件
+  uint64 page = 3;            // 分页页码
+  uint64 page_size = 4;       // 每页数量
+//  bool include_trashed = 5;   // 是否包含回收站文件
   string request_user_id=6;
+  string alias_id=7;         //要查询文件的根目录
+  bool is_root=8;
 }
 
 message ListDirectoryResp {
-  repeated FileMeta files = 1;
+  repeated FileItem files = 1;
   uint64 total_count = 2;
   uint64 page = 3;
   uint64 page_size = 4;
