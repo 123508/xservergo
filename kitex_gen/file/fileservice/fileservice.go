@@ -43,17 +43,17 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"GetUploadUrl": kitex.NewMethodInfo(
-		getUploadUrlHandler,
-		newGetUploadUrlArgs,
-		newGetUploadUrlResult,
+	"TransferSave": kitex.NewMethodInfo(
+		transferSaveHandler,
+		newTransferSaveArgs,
+		newTransferSaveResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"RegisterUploadedFile": kitex.NewMethodInfo(
-		registerUploadedFileHandler,
-		newRegisterUploadedFileArgs,
-		newRegisterUploadedFileResult,
+	"DownloadFile": kitex.NewMethodInfo(
+		downloadFileHandler,
+		newDownloadFileArgs,
+		newDownloadFileResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -693,52 +693,52 @@ func (p *DirectUploadResult) GetResult() interface{} {
 	return p.Success
 }
 
-func getUploadUrlHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func transferSaveHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.UploadUrlReq)
+		req := new(file.TransferSaveReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).GetUploadUrl(ctx, req)
+		resp, err := handler.(file.FileService).TransferSave(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *GetUploadUrlArgs:
-		success, err := handler.(file.FileService).GetUploadUrl(ctx, s.Req)
+	case *TransferSaveArgs:
+		success, err := handler.(file.FileService).TransferSave(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*GetUploadUrlResult)
+		realResult := result.(*TransferSaveResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newGetUploadUrlArgs() interface{} {
-	return &GetUploadUrlArgs{}
+func newTransferSaveArgs() interface{} {
+	return &TransferSaveArgs{}
 }
 
-func newGetUploadUrlResult() interface{} {
-	return &GetUploadUrlResult{}
+func newTransferSaveResult() interface{} {
+	return &TransferSaveResult{}
 }
 
-type GetUploadUrlArgs struct {
-	Req *file.UploadUrlReq
+type TransferSaveArgs struct {
+	Req *file.TransferSaveReq
 }
 
-func (p *GetUploadUrlArgs) Marshal(out []byte) ([]byte, error) {
+func (p *TransferSaveArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *GetUploadUrlArgs) Unmarshal(in []byte) error {
-	msg := new(file.UploadUrlReq)
+func (p *TransferSaveArgs) Unmarshal(in []byte) error {
+	msg := new(file.TransferSaveReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -746,38 +746,38 @@ func (p *GetUploadUrlArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var GetUploadUrlArgs_Req_DEFAULT *file.UploadUrlReq
+var TransferSaveArgs_Req_DEFAULT *file.TransferSaveReq
 
-func (p *GetUploadUrlArgs) GetReq() *file.UploadUrlReq {
+func (p *TransferSaveArgs) GetReq() *file.TransferSaveReq {
 	if !p.IsSetReq() {
-		return GetUploadUrlArgs_Req_DEFAULT
+		return TransferSaveArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *GetUploadUrlArgs) IsSetReq() bool {
+func (p *TransferSaveArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *GetUploadUrlArgs) GetFirstArgument() interface{} {
+func (p *TransferSaveArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type GetUploadUrlResult struct {
-	Success *file.UploadUrlResp
+type TransferSaveResult struct {
+	Success *file.TransferSaveResp
 }
 
-var GetUploadUrlResult_Success_DEFAULT *file.UploadUrlResp
+var TransferSaveResult_Success_DEFAULT *file.TransferSaveResp
 
-func (p *GetUploadUrlResult) Marshal(out []byte) ([]byte, error) {
+func (p *TransferSaveResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *GetUploadUrlResult) Unmarshal(in []byte) error {
-	msg := new(file.UploadUrlResp)
+func (p *TransferSaveResult) Unmarshal(in []byte) error {
+	msg := new(file.TransferSaveResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -785,71 +785,71 @@ func (p *GetUploadUrlResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *GetUploadUrlResult) GetSuccess() *file.UploadUrlResp {
+func (p *TransferSaveResult) GetSuccess() *file.TransferSaveResp {
 	if !p.IsSetSuccess() {
-		return GetUploadUrlResult_Success_DEFAULT
+		return TransferSaveResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *GetUploadUrlResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.UploadUrlResp)
+func (p *TransferSaveResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.TransferSaveResp)
 }
 
-func (p *GetUploadUrlResult) IsSetSuccess() bool {
+func (p *TransferSaveResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *GetUploadUrlResult) GetResult() interface{} {
+func (p *TransferSaveResult) GetResult() interface{} {
 	return p.Success
 }
 
-func registerUploadedFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func downloadFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.RegisterUploadReq)
+		req := new(file.DownloadFileReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).RegisterUploadedFile(ctx, req)
+		resp, err := handler.(file.FileService).DownloadFile(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *RegisterUploadedFileArgs:
-		success, err := handler.(file.FileService).RegisterUploadedFile(ctx, s.Req)
+	case *DownloadFileArgs:
+		success, err := handler.(file.FileService).DownloadFile(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*RegisterUploadedFileResult)
+		realResult := result.(*DownloadFileResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newRegisterUploadedFileArgs() interface{} {
-	return &RegisterUploadedFileArgs{}
+func newDownloadFileArgs() interface{} {
+	return &DownloadFileArgs{}
 }
 
-func newRegisterUploadedFileResult() interface{} {
-	return &RegisterUploadedFileResult{}
+func newDownloadFileResult() interface{} {
+	return &DownloadFileResult{}
 }
 
-type RegisterUploadedFileArgs struct {
-	Req *file.RegisterUploadReq
+type DownloadFileArgs struct {
+	Req *file.DownloadFileReq
 }
 
-func (p *RegisterUploadedFileArgs) Marshal(out []byte) ([]byte, error) {
+func (p *DownloadFileArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *RegisterUploadedFileArgs) Unmarshal(in []byte) error {
-	msg := new(file.RegisterUploadReq)
+func (p *DownloadFileArgs) Unmarshal(in []byte) error {
+	msg := new(file.DownloadFileReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -857,38 +857,38 @@ func (p *RegisterUploadedFileArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var RegisterUploadedFileArgs_Req_DEFAULT *file.RegisterUploadReq
+var DownloadFileArgs_Req_DEFAULT *file.DownloadFileReq
 
-func (p *RegisterUploadedFileArgs) GetReq() *file.RegisterUploadReq {
+func (p *DownloadFileArgs) GetReq() *file.DownloadFileReq {
 	if !p.IsSetReq() {
-		return RegisterUploadedFileArgs_Req_DEFAULT
+		return DownloadFileArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *RegisterUploadedFileArgs) IsSetReq() bool {
+func (p *DownloadFileArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *RegisterUploadedFileArgs) GetFirstArgument() interface{} {
+func (p *DownloadFileArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type RegisterUploadedFileResult struct {
-	Success *file.FileMeta
+type DownloadFileResult struct {
+	Success *file.DownloadFileResp
 }
 
-var RegisterUploadedFileResult_Success_DEFAULT *file.FileMeta
+var DownloadFileResult_Success_DEFAULT *file.DownloadFileResp
 
-func (p *RegisterUploadedFileResult) Marshal(out []byte) ([]byte, error) {
+func (p *DownloadFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *RegisterUploadedFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+func (p *DownloadFileResult) Unmarshal(in []byte) error {
+	msg := new(file.DownloadFileResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -896,22 +896,22 @@ func (p *RegisterUploadedFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *RegisterUploadedFileResult) GetSuccess() *file.FileMeta {
+func (p *DownloadFileResult) GetSuccess() *file.DownloadFileResp {
 	if !p.IsSetSuccess() {
-		return RegisterUploadedFileResult_Success_DEFAULT
+		return DownloadFileResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *RegisterUploadedFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+func (p *DownloadFileResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.DownloadFileResp)
 }
 
-func (p *RegisterUploadedFileResult) IsSetSuccess() bool {
+func (p *DownloadFileResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *RegisterUploadedFileResult) GetResult() interface{} {
+func (p *DownloadFileResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2963,21 +2963,21 @@ func (p *kClient) DirectUpload(ctx context.Context, Req *file.DirectUploadReq) (
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) GetUploadUrl(ctx context.Context, Req *file.UploadUrlReq) (r *file.UploadUrlResp, err error) {
-	var _args GetUploadUrlArgs
+func (p *kClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq) (r *file.TransferSaveResp, err error) {
+	var _args TransferSaveArgs
 	_args.Req = Req
-	var _result GetUploadUrlResult
-	if err = p.c.Call(ctx, "GetUploadUrl", &_args, &_result); err != nil {
+	var _result TransferSaveResult
+	if err = p.c.Call(ctx, "TransferSave", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) RegisterUploadedFile(ctx context.Context, Req *file.RegisterUploadReq) (r *file.FileMeta, err error) {
-	var _args RegisterUploadedFileArgs
+func (p *kClient) DownloadFile(ctx context.Context, Req *file.DownloadFileReq) (r *file.DownloadFileResp, err error) {
+	var _args DownloadFileArgs
 	_args.Req = Req
-	var _result RegisterUploadedFileResult
-	if err = p.c.Call(ctx, "RegisterUploadedFile", &_args, &_result); err != nil {
+	var _result DownloadFileResult
+	if err = p.c.Call(ctx, "DownloadFile", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
