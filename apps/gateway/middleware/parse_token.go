@@ -13,6 +13,11 @@ import (
 // ParseToken 解析token
 func ParseToken() app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
+		// 跳过预检请求，不做 token 解析，直接放行
+		if string(c.Request.Method()) == http.MethodOptions {
+			c.Next(ctx)
+			return
+		}
 		Authorization := strings.Split(c.Request.Header.Get("Authorization"), " ")
 		accessToken := ""
 		if len(Authorization) > 1 {

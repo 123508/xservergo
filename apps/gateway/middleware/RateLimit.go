@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -15,6 +16,11 @@ import (
 
 func RateLimit() app.HandlerFunc {
 	return func(ctx context.Context, c *app.RequestContext) {
+		// 跳过预检请求，不做限速，直接放行
+		if string(c.Request.Method()) == http.MethodOptions {
+			c.Next(ctx)
+			return
+		}
 		api := strings.ToLower(fmt.Sprintf("type:%s uri:%s", c.Request.Method(), string(c.URI().Path())))
 		userId, ok := ctx.Value("userId").(string)
 		//没有userId是无效请求,直接丢弃

@@ -1,22 +1,20 @@
 package middleware
 
 import (
-	"context"
 	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/hertz-contrib/cors"
 )
 
+// CORSConfig 允许任何站点访问。
 func CORSConfig() app.HandlerFunc {
-	return func(c context.Context, ctx *app.RequestContext) {
-		cors.New(cors.Config{
-			AllowOrigins:     []string{"*"}, // 允许所有来源
-			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-			ExposeHeaders:    []string{"Content-Length"},
-			AllowCredentials: true,
-			MaxAge:           12 * time.Hour, // 预检请求缓存时间
-		})
-	}
+	return cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"},
+		AllowHeaders:     []string{"*"}, // 允许任意自定义请求头
+		ExposeHeaders:    []string{"Content-Length", "Content-Type", "Authorization"},
+		AllowCredentials: false,          // 允许任意来源访问时不能为 true
+		MaxAge:           24 * time.Hour, // 预检结果缓存时间
+	})
 }
