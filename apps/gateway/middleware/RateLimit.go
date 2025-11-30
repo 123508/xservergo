@@ -22,19 +22,15 @@ func RateLimit() app.HandlerFunc {
 			return
 		}
 		api := strings.ToLower(fmt.Sprintf("type:%s uri:%s", c.Request.Method(), string(c.URI().Path())))
-		userId, ok := ctx.Value("userId").(string)
-		//没有userId是无效请求,直接丢弃
-		if !ok {
-			logs.ErrorLogger.Error("请求无效,丢弃", zap.String("api", api))
-			c.Abort()
-			return
-		}
 
-		ctrl := NewRateLimitCtrl(userId, api)
+		ctrl := NewRateLimitCtrl(api)
 
 		if !ctrl.CanAccessAndRateLimit() {
-			logs.ErrorLogger.Error("请求被限速,丢弃", zap.String("api", api), zap.String("userId", userId))
-			fmt.Println("请求被限速,丢弃")
+			logs.ErrorLogger.Error("请求被限速,丢弃", zap.String("api", api))
+			c.JSON(http.StatusBadRequest, map[string]interface{}{
+				"code": 400,
+				"msg":  "请求被限速,丢弃",
+			})
 			c.Abort()
 			return
 		}
@@ -45,13 +41,12 @@ func RateLimit() app.HandlerFunc {
 }
 
 type RateLimitCtrl struct {
-	userId string
-	api    string
-	ctx    context.Context
+	api string
+	ctx context.Context
 }
 
-func NewRateLimitCtrl(userId string, api string) *RateLimitCtrl {
-	return &RateLimitCtrl{userId: userId, api: api, ctx: context.Background()}
+func NewRateLimitCtrl(api string) *RateLimitCtrl {
+	return &RateLimitCtrl{api: api, ctx: context.Background()}
 }
 
 func (r *RateLimitCtrl) CanAccessAndRateLimit() bool {
@@ -74,8 +69,8 @@ func (r *RateLimitCtrl) CanAccessAndRateLimit() bool {
 		rateLimitNumber.count = 200
 	}
 
-	key := urds.TakeKey("gateway", "rate-limit", r.userId, r.api)
-	timeKey := urds.TakeKey("gateway", "rate-limit-time", r.userId, r.api)
+	key := urds.TakeKey("gateway", "rate-limit", r.api)
+	timeKey := urds.TakeKey("gateway", "rate-limit-time", r.api)
 
 	i, _ := db.Rds.Get(r.ctx, key).Int()
 
