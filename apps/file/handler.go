@@ -331,10 +331,34 @@ func (s *FileServiceImpl) TransferSave(ctx context.Context, req *file.TransferSa
 	}, nil
 }
 
-// DownloadFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) DownloadFile(ctx context.Context, req *file.DownloadFileReq) (resp *file.DownloadFileResp, err error) {
-	// TODO: Your code here...
-	return
+// DirectDownload implements the FileServiceImpl interface.
+func (s *FileServiceImpl) DirectDownload(ctx context.Context, req *file.DirectDownloadFileReq) (resp *file.DirectDownloadFileResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.DirectDownloadFileResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.DirectDownloadFileResp{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.DirectDownloadFileResp{}, err
+	}
+
+	content, name, requestId, err := s.fileService.DirectDownload(ctx, aliasId, requestUid, targetUid)
+
+	if err != nil {
+		return &file.DirectDownloadFileResp{}, err
+	}
+
+	return &file.DirectDownloadFileResp{
+		RequestId: requestId,
+		AliasName: name,
+		Content:   content,
+	}, nil
 }
 
 // CreateFolder implements the FileServiceImpl interface.

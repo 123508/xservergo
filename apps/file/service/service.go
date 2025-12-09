@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,6 +31,7 @@ type FileService interface {
 	DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error)
 	TransferSave(ctx context.Context, aliasId id.UUID, aliasSaveRootId id.UUID, needSelect bool, resolutionStrategy uint64, selectedFileIds []id.UUID, requestId string, targetUserId, requestUserId id.UUID) ([]ReflectFile, string, error)
 	ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
+	DirectDownload(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (content []byte, aliasName string, requestId string, err error)
 }
 
 type ServiceImpl struct {
@@ -80,7 +82,7 @@ func (s *ServiceImpl) InitFileUpload(ctx context.Context, fileList []models.File
 	needs := make([]models.File, 0)
 
 	for _, f := range fileList {
-		file, err := s.InsertAndRelateFile(ctx, f, targetUserId)
+		file, err := s.insertAndRelateFile(ctx, f, targetUserId)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -88,86 +90,6 @@ func (s *ServiceImpl) InitFileUpload(ctx context.Context, fileList []models.File
 	}
 
 	return needs, uploadId, requestId, nil
-}
-
-func (s *ServiceImpl) InsertAndRelateFile(ctx context.Context, file models.File, userId id.UUID) (models.File, error) {
-
-	var res models.File
-
-	err := s.DB.WithContext(ctx).Model(&models.File{}).Where("file_hash = ?", file.FileHash).First(&res).Error //查询文件是否存在
-
-	alias := file.FileName
-
-	// 不存在就直接创建
-	if res.FileHash == "" || res.ID.IsZero() {
-		file.ID = id.NewUUID()
-		file.Status = 1
-		err := s.DB.Create(&file).Error
-		if err != nil {
-			logs.ErrorLogger.Error("创建文件错误", zap.Error(err))
-			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "创建文件错误", err)
-		}
-		res = file
-	}
-	// 校验文件是否被关联
-	var count int64 = 0
-	s.DB.Model(&models.FileAlias{}).Where("file_id = ? and user_id = ?", res.ID, userId).Count(&count)
-	if count > 0 {
-		return res, nil
-	}
-
-	now := time.Now()
-
-	tx := s.DB.WithContext(ctx).Begin()
-	defer tx.Rollback()
-
-	// 创建文件路径与用户的关联
-	splitPaths := SplitPathToLevels(alias)
-	parentId := id.EmptyUUID
-	needFind := true
-
-	for i, path := range splitPaths {
-
-		fa := models.FileAlias{}
-
-		if needFind {
-			tx.Model(&models.FileAlias{}).Where(" parent_id = ? and user_id = ? and file_name = ?", parentId, userId, path).First(&fa)
-		}
-
-		if !fa.ID.IsZero() {
-			parentId = fa.ID
-			needFind = false
-			continue
-		}
-
-		fa = models.FileAlias{
-			ID:          id.NewUUID(),
-			UserID:      userId,
-			ParentID:    parentId,
-			FileName:    path,
-			CreatedAt:   &now,
-			IsDirectory: i < len(splitPaths)-1,
-			IsPublic:    false,
-		}
-
-		if i == len(splitPaths)-1 {
-			fa.FileID = file.ID
-		}
-
-		err = tx.Model(&models.FileAlias{}).Create(&fa).Error
-		if err != nil {
-			logs.ErrorLogger.Error("更新错误", zap.Error(err))
-			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新错误", err)
-		}
-
-		parentId = fa.ID
-	}
-
-	tx.Commit()
-
-	s.Rds.Set(ctx, s.Keys.FileChunkTotalKey(res.ID), res.Total, 10*time.Minute)
-
-	return res, nil
 }
 
 func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkIndex uint64, uploadId string, content []byte, chunkHash string, requestId string, targetUserId, requestUserId id.UUID) (verify bool, requestID string, err error) {
@@ -254,76 +176,7 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 
 	}
 
-	return s.UploadToLocal(ctx, fileId, chunkIndex, content, chunkHash, requestId)
-}
-
-func (s *ServiceImpl) UploadToLocal(ctx context.Context, fileId id.UUID, chunkIndex uint64, content []byte, chunkHash string, requestId string) (verify bool, requestID string, err error) {
-
-	path, err := s.WriteContentToFile(content, chunkHash, requestId)
-
-	if err != nil {
-		return false, requestId, err
-	}
-
-	tx := s.DB.WithContext(ctx).Begin()
-	defer tx.Rollback()
-
-	now := time.Now()
-
-	// 记录分片元数据到数据库
-	chunk := models.FileChunk{
-		ID:        id.NewUUID(),
-		ChunkHash: chunkHash,
-		ChunkName: path,
-		CreatedAt: &now,
-	}
-	err = tx.Model(&models.FileChunk{}).Create(&chunk).Error
-	if err != nil {
-		logs.ErrorLogger.Error("数据库记录分片错误", zap.Error(err))
-		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
-	}
-
-	// 记录分片和文件的关系
-	fileChunkIndex := models.FileChunkIndex{
-		FileID:     fileId,
-		ChunkID:    chunk.ID,
-		ChunkIndex: chunkIndex,
-		CreatedAt:  &now,
-	}
-	err = tx.Model(&models.FileChunkIndex{}).Create(&fileChunkIndex).Error
-	if err != nil {
-		logs.ErrorLogger.Error("数据库记录分片序号错误", zap.Error(err))
-		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入记录失败", requestId, err)
-	}
-
-	tx.Commit()
-
-	return true, requestId, nil
-}
-
-func (s *ServiceImpl) WriteContentToFile(content []byte, hash string, requestId string) (string, error) {
-	dirPath, _ := filepath.Abs(config.Conf.FileConfig.FileStorePosition)
-
-	path := filepath.Join(dirPath, hash)
-	path = filepath.Clean(path)
-
-	// 序列化写入文件
-	os.MkdirAll(dirPath, 0755)
-	file, err := os.Create(path)
-	if err != nil {
-		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
-		return "", cerrors.NewCommonError(http.StatusInternalServerError, "创建文件失败", requestId, err)
-	}
-
-	defer file.Close()
-
-	// 写入文件内容
-	if _, err = file.Write(content); err != nil {
-		logs.ErrorLogger.Error("写入分片内容失败", zap.Error(err))
-		return "", cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
-	}
-
-	return path, nil
+	return s.uploadToLocal(ctx, fileId, chunkIndex, content, chunkHash, requestId)
 }
 
 func (s *ServiceImpl) UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error) {
@@ -347,123 +200,13 @@ func (s *ServiceImpl) UploadVerify(ctx context.Context, fileIds []id.UUID, reque
 	files = make([]VerifyFile, len(fileIds))
 
 	for i, fileId := range fileIds {
-		f, err := s.VerifyFile(ctx, fileId)
+		f, err := s.verifyFile(ctx, fileId)
 		if err != nil {
 			return nil, err
 		}
 		files[i] = f
 	}
 	return files, nil
-}
-
-func (s *ServiceImpl) VerifyFile(ctx context.Context, fileId id.UUID) (VerifyFile, error) {
-
-	// 校验文件是否存在
-	f := models.File{}
-	s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&f)
-	if f.ID.IsZero() || f.FileHash == "" {
-		logs.ErrorLogger.Error("文件不存在", zap.String("fileId", fileId.MarshalBase64()))
-		return VerifyFile{}, cerrors.NewSQLError(http.StatusBadRequest, "文件不存在", nil)
-	}
-
-	// 如果文件状态为正常存储就直接返回
-	if f.Status > 1 {
-		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
-	}
-
-	type ChunkIndex struct {
-		ChunkIndex uint64 `gorm:"column:chunk_index"`
-		ChunkName  string `gorm:"column:chunk_name"`
-	}
-
-	//查询分片
-	res := make([]ChunkIndex, 0)
-	sql := `select fci.chunk_index,fc.chunk_name 
-					from file_chunk as fc inner join file_chunk_index as fci 
-					on fc.id = fci.chunk_id and fci.file_id = ? 
-					order by fci.chunk_index`
-	err := s.DB.Raw(sql, fileId).Scan(&res).Error
-	if err != nil {
-		logs.ErrorLogger.Error("查询失败", zap.Error(err))
-		return VerifyFile{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
-	}
-
-	// 分片数量不足,要求补全分片
-	if uint64(len(res)) != f.Total {
-
-		f.Status = 2
-		needChunk := make([]uint64, 0)
-		containChunk := make([]uint64, len(res))
-
-		for _, chunk := range res {
-			containChunk[chunk.ChunkIndex] = 1
-		}
-
-		for i, v := range containChunk {
-			if v == 1 {
-				continue
-			}
-			needChunk = append(needChunk, uint64(i))
-		}
-
-		return VerifyFile{File: f, NeedChunk: needChunk}, nil
-	}
-
-	path := make([]string, len(res))
-
-	for i, chunk := range res {
-		path[i] = chunk.ChunkName
-	}
-
-	var hash string
-
-	if f.StoreType == 2 {
-		//阿里云存储
-
-	} else {
-		//本地存储
-		hash, err = toMd5.ChunksToMd5(path)
-	}
-
-	if err != nil {
-		logs.ErrorLogger.Error("校验出错", zap.Error(err))
-		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "校验出错", err)
-	}
-
-	// 校验分片hash
-	if hash != f.FileHash {
-		s.cleanFailChunks(ctx, path, fileId)
-		logs.ErrorLogger.Error("分片传输出错", zap.String("hash", hash))
-		return VerifyFile{File: f}, cerrors.NewSQLError(http.StatusNoContent, "分片传输出错,请重试", nil)
-	}
-
-	if err = s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 3).Error; err != nil {
-		logs.ErrorLogger.Error("修改文件状态错误", zap.Error(err))
-		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "修改文件状态错误", err)
-	}
-
-	return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
-}
-
-func (s *ServiceImpl) cleanFailChunks(ctx context.Context, path []string, fileId id.UUID) {
-
-	// 1. 删除物理分片文件
-	for _, chunk := range path {
-		if err := os.Remove(chunk); err != nil && !os.IsNotExist(err) {
-			logs.ErrorLogger.Warn("删除分片文件失败", zap.String("path", chunk), zap.Error(err))
-			// 不立即返回错误，尝试继续清理其他分片
-		}
-	}
-
-	// 2. 删除数据库中的分片索引记录
-	s.DB.Where("file_id = ?", fileId).Delete(&models.FileChunkIndex{})
-
-	// 3. 重置文件状态，标记为需要重新上传
-	s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 1)
-
-	// 4. 清理Redis中的相关缓存
-	s.Rds.Del(ctx, s.Keys.FileChunkTotalKey(fileId))
-
 }
 
 func (s *ServiceImpl) DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error) {
@@ -478,22 +221,32 @@ func (s *ServiceImpl) DirectUpload(ctx context.Context, f models.File, content [
 		return models.File{}, cerrors.NewCommonError(http.StatusBadRequest, "传输内容错误,请重传", "", nil)
 	}
 
-	if f.StoreType == 2 {
-		//阿里云存储
-
-	} else {
-		//本地存储
-		path, err := s.WriteContentToFile(content, hash, "")
-		if err != nil {
-			return models.File{}, err
-		}
-		f.DirectPath = path
-	}
-
-	relateFile, err := s.InsertAndRelateFile(ctx, f, targetUserId)
+	relateFile, err := s.insertAndRelateFile(ctx, f, targetUserId)
 
 	if err != nil {
 		return models.File{}, err
+	}
+
+	// 文件不存在就进行传输
+	if relateFile.Status != MERGESTORE && relateFile.Status != CHUNKSTORE {
+		if f.StoreType == 2 {
+			//阿里云存储
+
+		} else {
+			//本地存储
+			path, err := s.writeContentToFile(content, hash, "")
+			if err != nil {
+				return models.File{}, err
+			}
+			f.DirectPath = path
+		}
+	}
+
+	err = s.DB.Model(&models.File{}).Where("id = ?", relateFile.ID).Update("status", 4).Error
+
+	if err != nil {
+		logs.ErrorLogger.Error("更新文件信息错误,请重试", zap.Error(err))
+		return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新文件信息错误,请重试", err)
 	}
 
 	return relateFile, nil
@@ -521,14 +274,9 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	}
 
 	//以aliasId为根节点递归向下查询
-	sqlStmt := `with recursive file_tree as(
-    select *, ? as level from file_alias where id = ?
-            		union all
-    select fa.*,ft.level+1 from file_alias as fa inner join file_tree ft on fa.parent_id=ft.id
-	)
-	select * from file_tree order by level;`
-	aliasItems := make([]models.FileAlias, 0)
-	err = s.DB.Raw(sqlStmt, 1, aliasId).Scan(&aliasItems).Error
+
+	aliasItems, err := s.takeFileList(ctx, aliasId, true)
+
 	if err != nil {
 		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
 		return nil, requestId, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
@@ -552,7 +300,7 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	}
 
 	// 构建需要被保存的文件树
-	tree := s.BuildNeedSavedTree(aliasId, aliasSaveRootId, aliasItems, targetUserId)
+	tree := s.buildNeedSavedTree(aliasId, aliasSaveRootId, aliasItems, targetUserId)
 
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
@@ -663,43 +411,6 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 
 	tx.Commit()
 	return nil, requestId, nil
-}
-
-func (s *ServiceImpl) BuildNeedSavedTree(aliasId id.UUID, aliasSaveRootId id.UUID, aliasItems []models.FileAlias, targetUserId id.UUID) (tree []*FileAliasNode) {
-	// 构建需要被保存目录哈希表
-	nodeMap := make(map[id.UUID]*FileAliasNode)
-	root := aliasItems[0].ParentID
-	for _, alias := range aliasItems {
-		nodeMap[alias.ID] = &FileAliasNode{FileAlias: alias, Children: make([]*FileAliasNode, 0), IsFile: !alias.IsDirectory}
-		if alias.ID == aliasId {
-			root = alias.ParentID
-		}
-	}
-
-	// / 构建需要被保存目录的树型结构
-	tree = make([]*FileAliasNode, 0)
-	for _, v := range aliasItems {
-		node := nodeMap[v.ID]
-		node.FileAlias.UserID = targetUserId
-		parentId := v.ParentID
-
-		// 当前节点为根节点,直接加入树的根中
-		if parentId == root {
-			tree = append(tree, node)
-			node.Father = &FileAliasNode{FileAlias: models.FileAlias{ID: aliasSaveRootId}}
-			continue
-		}
-
-		parentNode, exists := nodeMap[parentId]
-		// 父节点不存在,跳过构建此节点
-		if !exists {
-			continue
-		}
-		// 设置当前节点的父节点为parentNode
-		parentNode.Children = append(parentNode.Children, node)
-		node.Father = parentNode
-	}
-	return tree
 }
 
 func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error) {
@@ -846,6 +557,165 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 	return ans, uint64(count), nil
 }
 
+func (s *ServiceImpl) DirectDownload(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (content []byte, aliasName string, requestId string, err error) {
+
+	// 生产requestId
+	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 20*60*time.Minute)
+	if err != nil {
+		logs.ErrorLogger.Error("产生requestId失败", zap.Error(err))
+		return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "产生requestId失败", requestId, err)
+	}
+
+	// 查询文件信息
+	sqlStmt := `select f.* from file as f inner join file_alias as fa on fa.file_id = f.id and fa.is_directory = 0 where fa.id = ?`
+	res := models.File{}
+
+	// 如果文件不存在或者没有上传成功就显示查询失败
+	err = s.DB.Raw(sqlStmt, aliasId).Scan(&res).Error
+	if err != nil || res.ID.IsZero() || (res.Status != MERGESTORE && res.Status != CHUNKSTORE) {
+		logs.ErrorLogger.Error("查询文件失败", zap.Error(err))
+		return nil, "", "", cerrors.NewSQLError(http.StatusBadRequest, "查询文件失败", err)
+	}
+
+	// 查询到文件信息后根据信息去查询文件信息
+	aliasName = uuid.NewUUID() + "." + res.FileType
+
+	// 本地合并存储
+	if res.Status == MERGESTORE && res.StoreType == 1 {
+		path := res.DirectPath
+		bytes, err := s.readFile(path, res.FileHash)
+		if err != nil {
+			return nil, "", "", err
+		}
+		return bytes, aliasName, requestId, nil
+	}
+
+	// 本地分片存储
+	if res.Status == CHUNKSTORE && res.StoreType == 1 {
+		sqlStmt = `select fc.* from
+             file as f
+                 inner join
+             file_chunk_index as fci
+                 inner join
+             file_chunk as fc
+                 on f.id = fci.file_id and fc.id in (fci.chunk_id)
+                 where f.id = ?
+                 order by fci.chunk_index`
+
+		//读取分片信息
+		chunks := make([]models.FileChunk, 0)
+		err = s.DB.Raw(sqlStmt, res.ID).Scan(&chunks).Error
+		if err != nil {
+			logs.ErrorLogger.Error("读取分片信息失败", zap.Error(err))
+			return nil, "", "", cerrors.NewSQLError(http.StatusInternalServerError, "读取分片信息失败", err)
+		}
+
+		ans := make([]byte, 0)
+		// 合并分片到一个文件中
+		for _, chunk := range chunks {
+			bytes, err := s.readFile(chunk.ChunkName, chunk.ChunkHash)
+			if err != nil {
+				logs.ErrorLogger.Error("读取分片失败", zap.Error(err))
+				return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "读取分片失败", "", err)
+			}
+			ans = append(ans, bytes...)
+		}
+		// 校验分片哈希和
+		hash := toMd5.ContentToMd5(ans)
+		if hash != res.FileHash {
+			logs.ErrorLogger.Error("文件已损坏", zap.Error(err))
+			return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "文件已损坏", "", err)
+		}
+
+		return ans, aliasName, requestId, nil
+	}
+
+	return nil, "", "", cerrors.NewCommonError(http.StatusBadRequest, "不支持当前类型的请求", "", nil)
+}
+
+func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, userId id.UUID) (models.File, error) {
+
+	var res models.File
+
+	err := s.DB.WithContext(ctx).Model(&models.File{}).Where("file_hash = ?", file.FileHash).First(&res).Error //查询文件是否存在
+
+	alias := file.FileName
+
+	// 不存在就直接创建
+	if res.FileHash == "" || res.ID.IsZero() {
+		file.ID = id.NewUUID()
+		file.Status = 1
+		err := s.DB.Create(&file).Error
+		if err != nil {
+			logs.ErrorLogger.Error("创建文件错误", zap.Error(err))
+			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "创建文件错误", err)
+		}
+		res = file
+	}
+
+	// 校验文件是否被关联
+	var count int64 = 0
+	s.DB.Model(&models.FileAlias{}).Where("file_id = ? and user_id = ?", res.ID, userId).Count(&count)
+
+	if count > 0 {
+		return res, nil
+	}
+
+	now := time.Now()
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	// 创建文件路径与用户的关联
+	splitPaths := SplitPathToLevels(alias)
+	parentId := id.EmptyUUID
+	needFind := true
+
+	for i, path := range splitPaths {
+
+		fa := models.FileAlias{}
+
+		if needFind {
+			tx.Model(&models.FileAlias{}).Where(" parent_id = ? and user_id = ? and file_name = ?", parentId, userId, path).First(&fa)
+		}
+
+		if !fa.ID.IsZero() {
+			parentId = fa.ID
+			needFind = false
+			continue
+		}
+
+		fa = models.FileAlias{
+			ID:          id.NewUUID(),
+			UserID:      userId,
+			ParentID:    parentId,
+			FileName:    path,
+			CreatedAt:   &now,
+			IsDirectory: i < len(splitPaths)-1,
+			IsPublic:    false,
+		}
+
+		fmt.Println(i == len(splitPaths)-1)
+		if i == len(splitPaths)-1 {
+			fa.FileID = res.ID
+		}
+
+		err = tx.Model(&models.FileAlias{}).Create(&fa).Error
+		if err != nil {
+			logs.ErrorLogger.Error("更新错误", zap.Error(err))
+			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新错误", err)
+		}
+
+		parentId = fa.ID
+	}
+
+	tx.Commit()
+
+	s.Rds.Set(ctx, s.Keys.FileChunkTotalKey(res.ID), res.Total, 10*time.Minute)
+
+	return res, nil
+}
+
 func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, userId id.UUID) (file models.FileAlias, err error) {
 	simpleQuery := urds.SimpleCacheComponent[id.UUID, models.FileAlias]{
 		Rds:       s.Rds,
@@ -882,4 +752,313 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 	}
 
 	return aliasFile, nil
+}
+
+func (s *ServiceImpl) takeFileList(ctx context.Context, aliasId id.UUID, isRecursive bool) (aliasItems []models.FileAlias, err error) {
+	if isRecursive {
+		return s.recursiveTakeFileList(ctx, aliasId)
+	}
+	return s.iterateTakeFileList(ctx, aliasId)
+}
+
+func (s *ServiceImpl) recursiveTakeFileList(ctx context.Context, aliasId id.UUID) (aliasItems []models.FileAlias, err error) {
+
+	//以aliasId为根节点递归向下查询
+	sqlStmt := `with recursive file_tree as(
+    select *, ? as level from file_alias where id = ?
+            		union all
+    select fa.*,ft.level+1 from file_alias as fa inner join file_tree ft on fa.parent_id=ft.id
+	)
+	select * from file_tree order by level;`
+	aliasItems = make([]models.FileAlias, 0)
+	err = s.DB.Raw(sqlStmt, 1, aliasId).Scan(&aliasItems).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+	}
+	return aliasItems, nil
+}
+
+func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) (aliasItems []models.FileAlias, err error) {
+
+	aliasItems = make([]models.FileAlias, 0)
+
+	queue := make([]models.FileAlias, 0)
+	root := models.FileAlias{}
+
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", aliasId).Find(&root).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+	}
+
+	// 初始化队头
+	if !root.ID.IsZero() {
+		queue = append(queue, root)
+	}
+
+	//层次遍历
+	for len(queue) > 0 {
+
+		//取出队头数据
+		head := queue[0]
+		queue = queue[1:]
+
+		// 将节点写入结果
+		aliasItems = append(aliasItems, head)
+
+		// 当前节点为文件,直接跳过
+		if !head.IsDirectory {
+			continue
+		}
+
+		//逐层取出数据
+		children := make([]models.FileAlias, 0)
+		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", head.ID).Find(&children).Error
+		if err != nil {
+			logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+			return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+		}
+
+		//将每层的数据写入队列
+		queue = append(queue, children...)
+	}
+
+	return aliasItems, nil
+}
+
+func (s *ServiceImpl) buildNeedSavedTree(aliasId id.UUID, aliasSaveRootId id.UUID, aliasItems []models.FileAlias, targetUserId id.UUID) (tree []*FileAliasNode) {
+	// 构建需要被保存目录哈希表
+	nodeMap := make(map[id.UUID]*FileAliasNode)
+	root := aliasItems[0].ParentID
+	for _, alias := range aliasItems {
+		nodeMap[alias.ID] = &FileAliasNode{FileAlias: alias, Children: make([]*FileAliasNode, 0), IsFile: !alias.IsDirectory}
+		if alias.ID == aliasId {
+			root = alias.ParentID
+		}
+	}
+
+	// / 构建需要被保存目录的树型结构
+	tree = make([]*FileAliasNode, 0)
+	for _, v := range aliasItems {
+		node := nodeMap[v.ID]
+		node.FileAlias.UserID = targetUserId
+		parentId := v.ParentID
+
+		// 当前节点为根节点,直接加入树的根中
+		if parentId == root {
+			tree = append(tree, node)
+			node.Father = &FileAliasNode{FileAlias: models.FileAlias{ID: aliasSaveRootId}}
+			continue
+		}
+
+		parentNode, exists := nodeMap[parentId]
+		// 父节点不存在,跳过构建此节点
+		if !exists {
+			continue
+		}
+		// 设置当前节点的父节点为parentNode
+		parentNode.Children = append(parentNode.Children, node)
+		node.Father = parentNode
+	}
+	return tree
+}
+
+func (s *ServiceImpl) cleanFailChunks(ctx context.Context, path []string, fileId id.UUID) {
+
+	// 1. 删除物理分片文件
+	for _, chunk := range path {
+		if err := os.Remove(chunk); err != nil && !os.IsNotExist(err) {
+			logs.ErrorLogger.Warn("删除分片文件失败", zap.String("path", chunk), zap.Error(err))
+			// 不立即返回错误，尝试继续清理其他分片
+		}
+	}
+
+	// 2. 删除数据库中的分片索引记录
+	s.DB.Where("file_id = ?", fileId).Delete(&models.FileChunkIndex{})
+
+	// 3. 重置文件状态，标记为需要重新上传
+	s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 1)
+
+	// 4. 清理Redis中的相关缓存
+	s.Rds.Del(ctx, s.Keys.FileChunkTotalKey(fileId))
+
+}
+
+func (s *ServiceImpl) writeContentToFile(content []byte, hash string, requestId string) (string, error) {
+	dirPath, _ := filepath.Abs(config.Conf.FileConfig.FileStorePosition)
+
+	path := filepath.Join(dirPath, hash)
+	path = filepath.Clean(path)
+
+	// 序列化写入文件
+	os.MkdirAll(dirPath, 0755)
+	file, err := os.Create(path)
+	if err != nil {
+		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "创建文件失败", requestId, err)
+	}
+
+	defer file.Close()
+
+	// 写入文件内容
+	if _, err = file.Write(content); err != nil {
+		logs.ErrorLogger.Error("写入分片内容失败", zap.Error(err))
+		return "", cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
+	}
+
+	return path, nil
+}
+
+func (s *ServiceImpl) readFile(path string, hash string) ([]byte, error) {
+	cleanPath := filepath.Clean(path)
+	file, err := os.Open(cleanPath)
+	if err != nil {
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "打开文件失败", "", err)
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "读取文件失败", "", err)
+	}
+
+	if toMd5.ContentToMd5(content) != hash {
+		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "文件损坏,无法读取", "", err)
+	}
+
+	return content, nil
+}
+
+func (s *ServiceImpl) uploadToLocal(ctx context.Context, fileId id.UUID, chunkIndex uint64, content []byte, chunkHash string, requestId string) (verify bool, requestID string, err error) {
+
+	path, err := s.writeContentToFile(content, chunkHash, requestId)
+
+	if err != nil {
+		return false, requestId, err
+	}
+
+	tx := s.DB.WithContext(ctx).Begin()
+	defer tx.Rollback()
+
+	now := time.Now()
+
+	// 记录分片元数据到数据库
+	chunk := models.FileChunk{
+		ID:        id.NewUUID(),
+		ChunkHash: chunkHash,
+		ChunkName: path,
+		CreatedAt: &now,
+	}
+	err = tx.Model(&models.FileChunk{}).Create(&chunk).Error
+	if err != nil {
+		logs.ErrorLogger.Error("数据库记录分片错误", zap.Error(err))
+		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
+	}
+
+	// 记录分片和文件的关系
+	fileChunkIndex := models.FileChunkIndex{
+		FileID:     fileId,
+		ChunkID:    chunk.ID,
+		ChunkIndex: chunkIndex,
+		CreatedAt:  &now,
+	}
+	err = tx.Model(&models.FileChunkIndex{}).Create(&fileChunkIndex).Error
+	if err != nil {
+		logs.ErrorLogger.Error("数据库记录分片序号错误", zap.Error(err))
+		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入记录失败", requestId, err)
+	}
+
+	tx.Commit()
+
+	return true, requestId, nil
+}
+
+func (s *ServiceImpl) verifyFile(ctx context.Context, fileId id.UUID) (VerifyFile, error) {
+
+	// 校验文件是否存在
+	f := models.File{}
+	s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&f)
+	if f.ID.IsZero() || f.FileHash == "" {
+		logs.ErrorLogger.Error("文件不存在", zap.String("fileId", fileId.MarshalBase64()))
+		return VerifyFile{}, cerrors.NewSQLError(http.StatusBadRequest, "文件不存在", nil)
+	}
+
+	// 如果文件状态为正常存储就直接返回
+	if f.Status == MERGESTORE || f.Status == CHUNKSTORE {
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
+	}
+
+	type ChunkIndex struct {
+		ChunkIndex uint64 `gorm:"column:chunk_index"`
+		ChunkName  string `gorm:"column:chunk_name"`
+	}
+
+	//查询分片
+	res := make([]ChunkIndex, 0)
+	sql := `select fci.chunk_index,fc.chunk_name 
+					from file_chunk as fc inner join file_chunk_index as fci 
+					on fc.id = fci.chunk_id and fci.file_id = ? 
+					order by fci.chunk_index`
+	err := s.DB.Raw(sql, fileId).Scan(&res).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败", zap.Error(err))
+		return VerifyFile{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+	}
+
+	// 分片数量不足,要求补全分片
+	if uint64(len(res)) != f.Total {
+
+		f.Status = 2
+		needChunk := make([]uint64, 0)
+		containChunk := make([]uint64, len(res))
+
+		for _, chunk := range res {
+			containChunk[chunk.ChunkIndex] = 1
+		}
+
+		for i, v := range containChunk {
+			if v == 1 {
+				continue
+			}
+			needChunk = append(needChunk, uint64(i))
+		}
+
+		return VerifyFile{File: f, NeedChunk: needChunk}, nil
+	}
+
+	path := make([]string, len(res))
+
+	for i, chunk := range res {
+		path[i] = chunk.ChunkName
+	}
+
+	var hash string
+
+	if f.StoreType == 2 {
+		//阿里云存储
+
+	} else {
+		//本地存储
+		hash, err = toMd5.ChunksToMd5(path)
+	}
+
+	if err != nil {
+		logs.ErrorLogger.Error("校验出错", zap.Error(err))
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "校验出错", err)
+	}
+
+	// 校验分片hash
+	if hash != f.FileHash {
+		s.cleanFailChunks(ctx, path, fileId)
+		logs.ErrorLogger.Error("分片传输出错", zap.String("hash", hash))
+		return VerifyFile{File: f}, cerrors.NewSQLError(http.StatusNoContent, "分片传输出错,请重试", nil)
+	}
+
+	if err = s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 3).Error; err != nil {
+		logs.ErrorLogger.Error("修改文件状态错误", zap.Error(err))
+		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "修改文件状态错误", err)
+	}
+
+	return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
 }

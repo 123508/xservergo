@@ -14,7 +14,7 @@ service FileService {
 
   // ---------- 文件下载模块 ---------- //
   rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);                 //文件转存
-  rpc DownloadFile(DownloadFileReq) returns (DownloadFileResp);      //文件下载
+  rpc DirectDownload(DirectDownloadFileReq) returns (DirectDownloadFileResp);      //文件下载
 
   // ---------- 文件操作模块 ---------- //
   rpc CreateFolder(CreateFolderReq) returns (FileMeta);                 // 创建目录
@@ -173,15 +173,16 @@ message TransferSaveResp{
   string request_id=3;
 }
 
-message DownloadFileReq{
+message DirectDownloadFileReq{
   string alias_id=1;
   string request_user_id=2;
   string target_user_id=3;
 }
 
-message DownloadFileResp{
+message DirectDownloadFileResp{
   string request_id=1;
-  repeated string list_alias_name=2;
+  string alias_name=2;
+  bytes content=3;
 }
 
 // 外部存储上传相关

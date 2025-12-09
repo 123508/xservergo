@@ -772,60 +772,72 @@ func (x *TransferSaveResp) GetRequestId() string {
 	return ""
 }
 
-type DownloadFileReq struct {
+type DirectDownloadFileReq struct {
 	AliasId       string `protobuf:"bytes,1,opt,name=alias_id" json:"alias_id,omitempty"`
 	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
 	TargetUserId  string `protobuf:"bytes,3,opt,name=target_user_id" json:"target_user_id,omitempty"`
 }
 
-func (x *DownloadFileReq) Reset() { *x = DownloadFileReq{} }
+func (x *DirectDownloadFileReq) Reset() { *x = DirectDownloadFileReq{} }
 
-func (x *DownloadFileReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *DirectDownloadFileReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
 
-func (x *DownloadFileReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *DirectDownloadFileReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *DownloadFileReq) GetAliasId() string {
+func (x *DirectDownloadFileReq) GetAliasId() string {
 	if x != nil {
 		return x.AliasId
 	}
 	return ""
 }
 
-func (x *DownloadFileReq) GetRequestUserId() string {
+func (x *DirectDownloadFileReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
 	}
 	return ""
 }
 
-func (x *DownloadFileReq) GetTargetUserId() string {
+func (x *DirectDownloadFileReq) GetTargetUserId() string {
 	if x != nil {
 		return x.TargetUserId
 	}
 	return ""
 }
 
-type DownloadFileResp struct {
-	RequestId     string   `protobuf:"bytes,1,opt,name=request_id" json:"request_id,omitempty"`
-	ListAliasName []string `protobuf:"bytes,2,rep,name=list_alias_name" json:"list_alias_name,omitempty"`
+type DirectDownloadFileResp struct {
+	RequestId string `protobuf:"bytes,1,opt,name=request_id" json:"request_id,omitempty"`
+	AliasName string `protobuf:"bytes,2,opt,name=alias_name" json:"alias_name,omitempty"`
+	Content   []byte `protobuf:"bytes,3,opt,name=content" json:"content,omitempty"`
 }
 
-func (x *DownloadFileResp) Reset() { *x = DownloadFileResp{} }
+func (x *DirectDownloadFileResp) Reset() { *x = DirectDownloadFileResp{} }
 
-func (x *DownloadFileResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *DirectDownloadFileResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
 
-func (x *DownloadFileResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *DirectDownloadFileResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *DownloadFileResp) GetRequestId() string {
+func (x *DirectDownloadFileResp) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
 	}
 	return ""
 }
 
-func (x *DownloadFileResp) GetListAliasName() []string {
+func (x *DirectDownloadFileResp) GetAliasName() string {
 	if x != nil {
-		return x.ListAliasName
+		return x.AliasName
+	}
+	return ""
+}
+
+func (x *DirectDownloadFileResp) GetContent() []byte {
+	if x != nil {
+		return x.Content
 	}
 	return nil
 }
@@ -1601,7 +1613,7 @@ type FileService interface {
 	UploadVerify(ctx context.Context, req *UploadVerifyReq) (res *UploadVerifyResp, err error)
 	DirectUpload(ctx context.Context, req *DirectUploadReq) (res *DirectUploadResp, err error)
 	TransferSave(ctx context.Context, req *TransferSaveReq) (res *TransferSaveResp, err error)
-	DownloadFile(ctx context.Context, req *DownloadFileReq) (res *DownloadFileResp, err error)
+	DirectDownload(ctx context.Context, req *DirectDownloadFileReq) (res *DirectDownloadFileResp, err error)
 	CreateFolder(ctx context.Context, req *CreateFolderReq) (res *FileMeta, err error)
 	RenameFile(ctx context.Context, req *RenameFileReq) (res *FileMeta, err error)
 	MoveFile(ctx context.Context, req *MoveFileReq) (res *FileMeta, err error)

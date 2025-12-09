@@ -180,6 +180,7 @@ func main() {
 		fileGroup.POST("/upload_chunk", file.UploadChunk)
 		fileGroup.POST("/upload_verify", file.UploadVerify)
 		fileGroup.POST("/direct_upload", file.DirectUpload)
+		fileGroup.POST("/direct_download", file.DirectDownLoad)
 
 		if err := hz.Run(); err != nil {
 			panic(err)
