@@ -8,6 +8,11 @@ import (
 	"github.com/123508/xservergo/pkg/util/id"
 )
 
+const (
+	MERGESTORE = 4
+	CHUNKSTORE = 3
+)
+
 type VerifyFile struct {
 	File      models.File
 	NeedChunk []uint64
@@ -81,6 +86,15 @@ func SplitPathToLevels(path string) []string {
 	// 分割路径
 	parts := strings.Split(cleanPath, string(filepath.Separator))
 	levels = append(levels, parts...)
+
+	ans := levels
+
+	for _, v := range levels {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		ans = append(ans, v)
+	}
 
 	return levels
 }

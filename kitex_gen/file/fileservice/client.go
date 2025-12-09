@@ -16,7 +16,7 @@ type Client interface {
 	UploadVerify(ctx context.Context, Req *file.UploadVerifyReq, callOptions ...callopt.Option) (r *file.UploadVerifyResp, err error)
 	DirectUpload(ctx context.Context, Req *file.DirectUploadReq, callOptions ...callopt.Option) (r *file.DirectUploadResp, err error)
 	TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error)
-	DownloadFile(ctx context.Context, Req *file.DownloadFileReq, callOptions ...callopt.Option) (r *file.DownloadFileResp, err error)
+	DirectDownload(ctx context.Context, Req *file.DirectDownloadFileReq, callOptions ...callopt.Option) (r *file.DirectDownloadFileResp, err error)
 	CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
 	RenameFile(ctx context.Context, Req *file.RenameFileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
 	MoveFile(ctx context.Context, Req *file.MoveFileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
@@ -91,9 +91,9 @@ func (p *kFileServiceClient) TransferSave(ctx context.Context, Req *file.Transfe
 	return p.kClient.TransferSave(ctx, Req)
 }
 
-func (p *kFileServiceClient) DownloadFile(ctx context.Context, Req *file.DownloadFileReq, callOptions ...callopt.Option) (r *file.DownloadFileResp, err error) {
+func (p *kFileServiceClient) DirectDownload(ctx context.Context, Req *file.DirectDownloadFileReq, callOptions ...callopt.Option) (r *file.DirectDownloadFileResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.DownloadFile(ctx, Req)
+	return p.kClient.DirectDownload(ctx, Req)
 }
 
 func (p *kFileServiceClient) CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {

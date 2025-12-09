@@ -50,10 +50,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"DownloadFile": kitex.NewMethodInfo(
-		downloadFileHandler,
-		newDownloadFileArgs,
-		newDownloadFileResult,
+	"DirectDownload": kitex.NewMethodInfo(
+		directDownloadHandler,
+		newDirectDownloadArgs,
+		newDirectDownloadResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -804,52 +804,52 @@ func (p *TransferSaveResult) GetResult() interface{} {
 	return p.Success
 }
 
-func downloadFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func directDownloadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.DownloadFileReq)
+		req := new(file.DirectDownloadFileReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).DownloadFile(ctx, req)
+		resp, err := handler.(file.FileService).DirectDownload(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *DownloadFileArgs:
-		success, err := handler.(file.FileService).DownloadFile(ctx, s.Req)
+	case *DirectDownloadArgs:
+		success, err := handler.(file.FileService).DirectDownload(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*DownloadFileResult)
+		realResult := result.(*DirectDownloadResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newDownloadFileArgs() interface{} {
-	return &DownloadFileArgs{}
+func newDirectDownloadArgs() interface{} {
+	return &DirectDownloadArgs{}
 }
 
-func newDownloadFileResult() interface{} {
-	return &DownloadFileResult{}
+func newDirectDownloadResult() interface{} {
+	return &DirectDownloadResult{}
 }
 
-type DownloadFileArgs struct {
-	Req *file.DownloadFileReq
+type DirectDownloadArgs struct {
+	Req *file.DirectDownloadFileReq
 }
 
-func (p *DownloadFileArgs) Marshal(out []byte) ([]byte, error) {
+func (p *DirectDownloadArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *DownloadFileArgs) Unmarshal(in []byte) error {
-	msg := new(file.DownloadFileReq)
+func (p *DirectDownloadArgs) Unmarshal(in []byte) error {
+	msg := new(file.DirectDownloadFileReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -857,38 +857,38 @@ func (p *DownloadFileArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var DownloadFileArgs_Req_DEFAULT *file.DownloadFileReq
+var DirectDownloadArgs_Req_DEFAULT *file.DirectDownloadFileReq
 
-func (p *DownloadFileArgs) GetReq() *file.DownloadFileReq {
+func (p *DirectDownloadArgs) GetReq() *file.DirectDownloadFileReq {
 	if !p.IsSetReq() {
-		return DownloadFileArgs_Req_DEFAULT
+		return DirectDownloadArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *DownloadFileArgs) IsSetReq() bool {
+func (p *DirectDownloadArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *DownloadFileArgs) GetFirstArgument() interface{} {
+func (p *DirectDownloadArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type DownloadFileResult struct {
-	Success *file.DownloadFileResp
+type DirectDownloadResult struct {
+	Success *file.DirectDownloadFileResp
 }
 
-var DownloadFileResult_Success_DEFAULT *file.DownloadFileResp
+var DirectDownloadResult_Success_DEFAULT *file.DirectDownloadFileResp
 
-func (p *DownloadFileResult) Marshal(out []byte) ([]byte, error) {
+func (p *DirectDownloadResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *DownloadFileResult) Unmarshal(in []byte) error {
-	msg := new(file.DownloadFileResp)
+func (p *DirectDownloadResult) Unmarshal(in []byte) error {
+	msg := new(file.DirectDownloadFileResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -896,22 +896,22 @@ func (p *DownloadFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *DownloadFileResult) GetSuccess() *file.DownloadFileResp {
+func (p *DirectDownloadResult) GetSuccess() *file.DirectDownloadFileResp {
 	if !p.IsSetSuccess() {
-		return DownloadFileResult_Success_DEFAULT
+		return DirectDownloadResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *DownloadFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.DownloadFileResp)
+func (p *DirectDownloadResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.DirectDownloadFileResp)
 }
 
-func (p *DownloadFileResult) IsSetSuccess() bool {
+func (p *DirectDownloadResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *DownloadFileResult) GetResult() interface{} {
+func (p *DirectDownloadResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2973,11 +2973,11 @@ func (p *kClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq) (
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) DownloadFile(ctx context.Context, Req *file.DownloadFileReq) (r *file.DownloadFileResp, err error) {
-	var _args DownloadFileArgs
+func (p *kClient) DirectDownload(ctx context.Context, Req *file.DirectDownloadFileReq) (r *file.DirectDownloadFileResp, err error) {
+	var _args DirectDownloadArgs
 	_args.Req = Req
-	var _result DownloadFileResult
-	if err = p.c.Call(ctx, "DownloadFile", &_args, &_result); err != nil {
+	var _result DirectDownloadResult
+	if err = p.c.Call(ctx, "DirectDownload", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

@@ -151,4 +151,5 @@ var apiRateLimitMap = map[string]RateLimitNumber{
 	"type:post uri:/file/upload_chunk":            {second: 5, count: 200, ok: true},
 	"type:post uri:/file/upload_verify":           {second: 5, count: 200, ok: true},
 	"type:post uri:/file/direct_upload":           {second: 5, count: 200, ok: true},
+	"type:post uri:/file/direct_download":         {second: 5, count: 400, ok: true},
 }
