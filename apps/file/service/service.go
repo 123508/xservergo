@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,7 +32,8 @@ type FileService interface {
 	DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error)
 	TransferSave(ctx context.Context, aliasId id.UUID, aliasSaveRootId id.UUID, needSelect bool, resolutionStrategy uint64, selectedFileIds []id.UUID, requestId string, targetUserId, requestUserId id.UUID) ([]ReflectFile, string, error)
 	ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
-	DirectDownload(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (content []byte, aliasName string, requestId string, err error)
+	PreDownLoad(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (aliasName string, requestId string, list []PreDownload, storeType, total uint64, err error)
+	Download(ctx context.Context, oneId, requestUserId, targetUserId id.UUID, requestId string, storeType uint64) (content []byte, err error)
 }
 
 type ServiceImpl struct {
@@ -552,18 +554,15 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 		}
 	}
 
-	fmt.Println(ans)
-
 	return ans, uint64(count), nil
 }
 
-func (s *ServiceImpl) DirectDownload(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (content []byte, aliasName string, requestId string, err error) {
-
+func (s *ServiceImpl) PreDownLoad(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (aliasName string, requestId string, list []PreDownload, storeType, total uint64, err error) {
 	// 生产requestId
 	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 20*60*time.Minute)
 	if err != nil {
 		logs.ErrorLogger.Error("产生requestId失败", zap.Error(err))
-		return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "产生requestId失败", requestId, err)
+		return "", "", nil, 0, 0, cerrors.NewCommonError(http.StatusInternalServerError, "产生requestId失败", requestId, err)
 	}
 
 	// 查询文件信息
@@ -572,27 +571,32 @@ func (s *ServiceImpl) DirectDownload(ctx context.Context, aliasId id.UUID, reque
 
 	// 如果文件不存在或者没有上传成功就显示查询失败
 	err = s.DB.Raw(sqlStmt, aliasId).Scan(&res).Error
-	if err != nil || res.ID.IsZero() || (res.Status != MERGESTORE && res.Status != CHUNKSTORE) {
+	if err != nil {
 		logs.ErrorLogger.Error("查询文件失败", zap.Error(err))
-		return nil, "", "", cerrors.NewSQLError(http.StatusBadRequest, "查询文件失败", err)
+		return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询文件失败", err)
+	}
+
+	if res.ID.IsZero() || (res.Status != MERGESTORE && res.Status != CHUNKSTORE) {
+		logs.ErrorLogger.Error("文件不存在")
+		return "", "", nil, 0, 0, cerrors.NewCommonError(http.StatusBadRequest, "文件不存在", "", errors.New("文件不存在"))
 	}
 
 	// 查询到文件信息后根据信息去查询文件信息
 	aliasName = uuid.NewUUID() + "." + res.FileType
 
+	list = make([]PreDownload, 0)
+
 	// 本地合并存储
 	if res.Status == MERGESTORE && res.StoreType == 1 {
-		path := res.DirectPath
-		bytes, err := s.readFile(path, res.FileHash)
-		if err != nil {
-			return nil, "", "", err
-		}
-		return bytes, aliasName, requestId, nil
+		list = append(list, PreDownload{
+			FileId: res.ID.MarshalBase64(),
+		})
+		return aliasName, requestId, list, res.Status, res.Total, nil
 	}
 
 	// 本地分片存储
 	if res.Status == CHUNKSTORE && res.StoreType == 1 {
-		sqlStmt = `select fc.* from
+		sqlStmt = `select fc.*,fci.chunk_index from
              file as f
                  inner join
              file_chunk_index as fci
@@ -602,35 +606,82 @@ func (s *ServiceImpl) DirectDownload(ctx context.Context, aliasId id.UUID, reque
                  where f.id = ?
                  order by fci.chunk_index`
 
+		type ChunkMsg struct {
+			models.FileChunk
+			ChunkIndex uint64 `json:"chunk_index"`
+		}
+
 		//读取分片信息
-		chunks := make([]models.FileChunk, 0)
+		chunks := make([]ChunkMsg, 0)
 		err = s.DB.Raw(sqlStmt, res.ID).Scan(&chunks).Error
 		if err != nil {
 			logs.ErrorLogger.Error("读取分片信息失败", zap.Error(err))
-			return nil, "", "", cerrors.NewSQLError(http.StatusInternalServerError, "读取分片信息失败", err)
+			return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "读取分片信息失败", err)
 		}
 
-		ans := make([]byte, 0)
-		// 合并分片到一个文件中
+		// 组装结果
 		for _, chunk := range chunks {
-			bytes, err := s.readFile(chunk.ChunkName, chunk.ChunkHash)
-			if err != nil {
-				logs.ErrorLogger.Error("读取分片失败", zap.Error(err))
-				return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "读取分片失败", "", err)
-			}
-			ans = append(ans, bytes...)
-		}
-		// 校验分片哈希和
-		hash := toMd5.ContentToMd5(ans)
-		if hash != res.FileHash {
-			logs.ErrorLogger.Error("文件已损坏", zap.Error(err))
-			return nil, "", "", cerrors.NewCommonError(http.StatusInternalServerError, "文件已损坏", "", err)
-		}
 
-		return ans, aliasName, requestId, nil
+			pd := PreDownload{
+				ChunkId:    chunk.ID.MarshalBase64(),
+				ChunkIndex: chunk.ChunkIndex,
+			}
+
+			list = append(list, pd)
+		}
+		return aliasName, requestId, list, res.Status, res.Total, nil
 	}
 
-	return nil, "", "", cerrors.NewCommonError(http.StatusBadRequest, "不支持当前类型的请求", "", nil)
+	return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
+}
+
+func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUserId id.UUID, requestId string, storeType uint64) (content []byte, err error) {
+
+	// 校验requestId
+	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
+	if err != nil {
+		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
+	}
+
+	findPath := ""
+	hash := ""
+
+	// 合并存储
+	if storeType == MERGESTORE {
+		res := models.File{}
+		err = s.DB.Model(&models.File{}).Where("id = ?", id).First(&res).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			logs.ErrorLogger.Error("查询失败", zap.String("requestId", requestId), zap.Error(err))
+			return nil, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+		}
+		findPath = res.DirectPath
+		hash = res.FileHash
+	}
+
+	// 分片存储
+	if storeType == CHUNKSTORE {
+		res := models.FileChunk{}
+		err = s.DB.Model(&models.FileChunk{}).Where("id = ?", id).First(&res).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			logs.ErrorLogger.Error("查询失败", zap.String("requestId", requestId), zap.Error(err))
+			return nil, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+		}
+		findPath = res.ChunkName
+		hash = res.ChunkHash
+	}
+
+	if findPath == "" || hash == "" {
+		logs.ErrorLogger.Error("数据已损坏", zap.String("requestId", requestId), zap.Error(err))
+		return nil, cerrors.NewCommonError(http.StatusBadRequest, "数据已损坏", requestId, err)
+	}
+
+	bytes, err := s.readFile(findPath, hash)
+
+	if err != nil {
+		return nil, err
+	}
+	return bytes, nil
 }
 
 func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, userId id.UUID) (models.File, error) {

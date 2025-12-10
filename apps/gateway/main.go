@@ -168,8 +168,12 @@ func main() {
 
 		// 文件服务
 		fileGroup := hz.Group("/file")
-		//限速+白名单
+		//限速
 		fileGroup.Use(middleware.RateLimit())
+
+		// 下载文件
+		fileGroup.POST("/download", file.DownLoad)
+		fileGroup.POST("/pre_download", file.PreDownload)
 		// 解析token
 		fileGroup.Use(middleware.ParseToken())
 		// 刷新token
