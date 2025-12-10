@@ -331,33 +331,91 @@ func (s *FileServiceImpl) TransferSave(ctx context.Context, req *file.TransferSa
 	}, nil
 }
 
-// DirectDownload implements the FileServiceImpl interface.
-func (s *FileServiceImpl) DirectDownload(ctx context.Context, req *file.DirectDownloadFileReq) (resp *file.DirectDownloadFileResp, err error) {
+// PreDownLoad implements the FileServiceImpl interface.
+func (s *FileServiceImpl) PreDownLoad(ctx context.Context, req *file.PreDownLoadReq) (resp *file.PreDownloadResp, err error) {
 	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
 	if err != nil {
-		return &file.DirectDownloadFileResp{}, err
+		return &file.PreDownloadResp{}, err
 	}
 
 	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
 	if err != nil {
-		return &file.DirectDownloadFileResp{}, err
+		return &file.PreDownloadResp{}, err
 	}
 
 	aliasId, err := unmarshalUUID(ctx, req.AliasId)
 	if err != nil {
-		return &file.DirectDownloadFileResp{}, err
+		return &file.PreDownloadResp{}, err
 	}
 
-	content, name, requestId, err := s.fileService.DirectDownload(ctx, aliasId, requestUid, targetUid)
+	aliasName, requestId, list, storeType, total, err := s.fileService.PreDownLoad(ctx, aliasId, targetUid, requestUid)
 
 	if err != nil {
-		return &file.DirectDownloadFileResp{}, err
+		return &file.PreDownloadResp{}, err
 	}
 
-	return &file.DirectDownloadFileResp{
+	dm := make([]*file.DownloadMsg, 0)
+
+	for _, v := range list {
+		dm = append(dm, &file.DownloadMsg{
+			FileId:     v.FileId,
+			ChunkId:    v.ChunkId,
+			ChunkIndex: v.ChunkIndex,
+		})
+	}
+
+	return &file.PreDownloadResp{
 		RequestId: requestId,
-		AliasName: name,
-		Content:   content,
+		Type:      storeType,
+		Dms:       dm,
+		AliasName: aliasName,
+		Total:     total,
+	}, nil
+}
+
+// Download implements the FileServiceImpl interface.
+func (s *FileServiceImpl) Download(ctx context.Context, req *file.DownloadReq) (resp *file.DownloadResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.DownloadResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.DownloadResp{}, err
+	}
+
+	oneId := id.NewUUID()
+	execute := false
+
+	if req.Dm.FileId != "" && req.Type == 4 {
+		oneId, err = unmarshalUUID(ctx, req.Dm.FileId)
+		if err != nil {
+			return &file.DownloadResp{}, err
+		}
+		execute = true
+	}
+
+	if !execute && req.Dm.ChunkId != "" && req.Type == 3 {
+		oneId, err = unmarshalUUID(ctx, req.Dm.ChunkId)
+		if err != nil {
+			return &file.DownloadResp{}, err
+		}
+		execute = true
+	}
+
+	if !execute {
+		return &file.DownloadResp{}, cerrors.NewGRPCError(http.StatusBadRequest, "请求错误")
+	}
+
+	content, err := s.fileService.Download(ctx, oneId, requestUid, targetUid, req.RequestId, req.Type)
+
+	if err != nil {
+		return &file.DownloadResp{}, err
+	}
+
+	return &file.DownloadResp{
+		Content: content,
 	}, nil
 }
 

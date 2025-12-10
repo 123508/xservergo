@@ -168,8 +168,12 @@ func main() {
 
 		// 文件服务
 		fileGroup := hz.Group("/file")
-		//限速+白名单
+		//限速
 		fileGroup.Use(middleware.RateLimit())
+
+		// 下载文件
+		fileGroup.POST("/download", file.DownLoad)
+		fileGroup.POST("/pre_download", file.PreDownload)
 		// 解析token
 		fileGroup.Use(middleware.ParseToken())
 		// 刷新token
@@ -180,7 +184,6 @@ func main() {
 		fileGroup.POST("/upload_chunk", file.UploadChunk)
 		fileGroup.POST("/upload_verify", file.UploadVerify)
 		fileGroup.POST("/direct_upload", file.DirectUpload)
-		fileGroup.POST("/direct_download", file.DirectDownLoad)
 
 		if err := hz.Run(); err != nil {
 			panic(err)

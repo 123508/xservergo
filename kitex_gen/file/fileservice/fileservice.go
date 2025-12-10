@@ -50,10 +50,17 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"DirectDownload": kitex.NewMethodInfo(
-		directDownloadHandler,
-		newDirectDownloadArgs,
-		newDirectDownloadResult,
+	"PreDownLoad": kitex.NewMethodInfo(
+		preDownLoadHandler,
+		newPreDownLoadArgs,
+		newPreDownLoadResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"Download": kitex.NewMethodInfo(
+		downloadHandler,
+		newDownloadArgs,
+		newDownloadResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -804,52 +811,52 @@ func (p *TransferSaveResult) GetResult() interface{} {
 	return p.Success
 }
 
-func directDownloadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func preDownLoadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.DirectDownloadFileReq)
+		req := new(file.PreDownLoadReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).DirectDownload(ctx, req)
+		resp, err := handler.(file.FileService).PreDownLoad(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *DirectDownloadArgs:
-		success, err := handler.(file.FileService).DirectDownload(ctx, s.Req)
+	case *PreDownLoadArgs:
+		success, err := handler.(file.FileService).PreDownLoad(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*DirectDownloadResult)
+		realResult := result.(*PreDownLoadResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newDirectDownloadArgs() interface{} {
-	return &DirectDownloadArgs{}
+func newPreDownLoadArgs() interface{} {
+	return &PreDownLoadArgs{}
 }
 
-func newDirectDownloadResult() interface{} {
-	return &DirectDownloadResult{}
+func newPreDownLoadResult() interface{} {
+	return &PreDownLoadResult{}
 }
 
-type DirectDownloadArgs struct {
-	Req *file.DirectDownloadFileReq
+type PreDownLoadArgs struct {
+	Req *file.PreDownLoadReq
 }
 
-func (p *DirectDownloadArgs) Marshal(out []byte) ([]byte, error) {
+func (p *PreDownLoadArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *DirectDownloadArgs) Unmarshal(in []byte) error {
-	msg := new(file.DirectDownloadFileReq)
+func (p *PreDownLoadArgs) Unmarshal(in []byte) error {
+	msg := new(file.PreDownLoadReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -857,38 +864,38 @@ func (p *DirectDownloadArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var DirectDownloadArgs_Req_DEFAULT *file.DirectDownloadFileReq
+var PreDownLoadArgs_Req_DEFAULT *file.PreDownLoadReq
 
-func (p *DirectDownloadArgs) GetReq() *file.DirectDownloadFileReq {
+func (p *PreDownLoadArgs) GetReq() *file.PreDownLoadReq {
 	if !p.IsSetReq() {
-		return DirectDownloadArgs_Req_DEFAULT
+		return PreDownLoadArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *DirectDownloadArgs) IsSetReq() bool {
+func (p *PreDownLoadArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *DirectDownloadArgs) GetFirstArgument() interface{} {
+func (p *PreDownLoadArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type DirectDownloadResult struct {
-	Success *file.DirectDownloadFileResp
+type PreDownLoadResult struct {
+	Success *file.PreDownloadResp
 }
 
-var DirectDownloadResult_Success_DEFAULT *file.DirectDownloadFileResp
+var PreDownLoadResult_Success_DEFAULT *file.PreDownloadResp
 
-func (p *DirectDownloadResult) Marshal(out []byte) ([]byte, error) {
+func (p *PreDownLoadResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *DirectDownloadResult) Unmarshal(in []byte) error {
-	msg := new(file.DirectDownloadFileResp)
+func (p *PreDownLoadResult) Unmarshal(in []byte) error {
+	msg := new(file.PreDownloadResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -896,22 +903,133 @@ func (p *DirectDownloadResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *DirectDownloadResult) GetSuccess() *file.DirectDownloadFileResp {
+func (p *PreDownLoadResult) GetSuccess() *file.PreDownloadResp {
 	if !p.IsSetSuccess() {
-		return DirectDownloadResult_Success_DEFAULT
+		return PreDownLoadResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *DirectDownloadResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.DirectDownloadFileResp)
+func (p *PreDownLoadResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.PreDownloadResp)
 }
 
-func (p *DirectDownloadResult) IsSetSuccess() bool {
+func (p *PreDownLoadResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *DirectDownloadResult) GetResult() interface{} {
+func (p *PreDownLoadResult) GetResult() interface{} {
+	return p.Success
+}
+
+func downloadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(file.DownloadReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(file.FileService).Download(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *DownloadArgs:
+		success, err := handler.(file.FileService).Download(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*DownloadResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newDownloadArgs() interface{} {
+	return &DownloadArgs{}
+}
+
+func newDownloadResult() interface{} {
+	return &DownloadResult{}
+}
+
+type DownloadArgs struct {
+	Req *file.DownloadReq
+}
+
+func (p *DownloadArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *DownloadArgs) Unmarshal(in []byte) error {
+	msg := new(file.DownloadReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var DownloadArgs_Req_DEFAULT *file.DownloadReq
+
+func (p *DownloadArgs) GetReq() *file.DownloadReq {
+	if !p.IsSetReq() {
+		return DownloadArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *DownloadArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *DownloadArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type DownloadResult struct {
+	Success *file.DownloadResp
+}
+
+var DownloadResult_Success_DEFAULT *file.DownloadResp
+
+func (p *DownloadResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *DownloadResult) Unmarshal(in []byte) error {
+	msg := new(file.DownloadResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *DownloadResult) GetSuccess() *file.DownloadResp {
+	if !p.IsSetSuccess() {
+		return DownloadResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *DownloadResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.DownloadResp)
+}
+
+func (p *DownloadResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *DownloadResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2973,11 +3091,21 @@ func (p *kClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq) (
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) DirectDownload(ctx context.Context, Req *file.DirectDownloadFileReq) (r *file.DirectDownloadFileResp, err error) {
-	var _args DirectDownloadArgs
+func (p *kClient) PreDownLoad(ctx context.Context, Req *file.PreDownLoadReq) (r *file.PreDownloadResp, err error) {
+	var _args PreDownLoadArgs
 	_args.Req = Req
-	var _result DirectDownloadResult
-	if err = p.c.Call(ctx, "DirectDownload", &_args, &_result); err != nil {
+	var _result PreDownLoadResult
+	if err = p.c.Call(ctx, "PreDownLoad", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) Download(ctx context.Context, Req *file.DownloadReq) (r *file.DownloadResp, err error) {
+	var _args DownloadArgs
+	_args.Req = Req
+	var _result DownloadResult
+	if err = p.c.Call(ctx, "Download", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

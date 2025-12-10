@@ -11,12 +11,11 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
-type DirectDownLoadStruct struct {
-	AliasID string `json:"alias_id"`
+type PreDownloadReq struct {
+	AliasId string `json:"alias_id"`
 }
 
-func DirectDownLoad(ctx context.Context, c *app.RequestContext) {
-
+func PreDownload(ctx context.Context, c *app.RequestContext) {
 	userId := ctx.Value("userId")
 
 	if userId == nil {
@@ -25,7 +24,7 @@ func DirectDownLoad(ctx context.Context, c *app.RequestContext) {
 
 	requestUserId := userId.(string)
 
-	init := &DirectDownLoadStruct{}
+	init := &PreDownloadReq{}
 	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
@@ -34,13 +33,13 @@ func DirectDownLoad(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &file.DirectDownloadFileReq{
-		AliasId:       init.AliasID,
+	req := &file.PreDownLoadReq{
+		AliasId:       init.AliasId,
 		RequestUserId: requestUserId,
 		TargetUserId:  requestUserId,
 	}
 
-	resp, err := infra.FileClient.DirectDownload(ctx, req)
+	resp, err := infra.FileClient.PreDownLoad(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
@@ -52,5 +51,4 @@ func DirectDownLoad(ctx context.Context, c *app.RequestContext) {
 		"msg":  "请求成功",
 		"data": resp,
 	})
-
 }

@@ -45,6 +45,12 @@ type FileAliasItem struct {
 	IsDirectory     bool
 }
 
+type PreDownload struct {
+	FileId     string
+	ChunkId    string
+	ChunkIndex uint64
+}
+
 // SplitPathToLevels 将路径分割为层级数组
 func SplitPathToLevels(path string) []string {
 	// 清理路径
