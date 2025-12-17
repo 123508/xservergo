@@ -9,6 +9,7 @@ import (
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/models"
 	"github.com/123508/xservergo/pkg/util/id"
+	"github.com/123508/xservergo/pkg/util/validate"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -200,7 +201,7 @@ func (s *FileServiceImpl) UploadVerify(ctx context.Context, req *file.UploadVeri
 	files, err := s.fileService.UploadVerify(ctx, fileId, req.RequestId, req.UploadId, targetUid, requestUid)
 
 	if err != nil {
-		return &file.UploadVerifyResp{}, err
+		return &file.UploadVerifyResp{}, parseServiceErrToHandlerError(ctx, err)
 	}
 
 	result := make([]*file.UploadVerifyFile, len(files))
@@ -249,7 +250,7 @@ func (s *FileServiceImpl) DirectUpload(ctx context.Context, req *file.DirectUplo
 	result, err := s.fileService.DirectUpload(ctx, f, req.Content, targetUid, requestUid)
 
 	if err != nil {
-		return &file.DirectUploadResp{}, err
+		return &file.DirectUploadResp{}, parseServiceErrToHandlerError(ctx, err)
 	}
 
 	return &file.DirectUploadResp{
@@ -299,7 +300,7 @@ func (s *FileServiceImpl) TransferSave(ctx context.Context, req *file.TransferSa
 	reflectFiles, requestId, err := s.fileService.TransferSave(ctx, aliasId, aliasSaveRootId, needSelect, req.ResolutionStrategy, selectIds, req.RequestId, targetUid, requestUid)
 
 	if err != nil {
-		return &file.TransferSaveResp{}, err
+		return &file.TransferSaveResp{}, parseServiceErrToHandlerError(ctx, err)
 	}
 
 	// 无冲突,直接返回
@@ -351,7 +352,7 @@ func (s *FileServiceImpl) PreDownLoad(ctx context.Context, req *file.PreDownLoad
 	aliasName, requestId, list, storeType, total, err := s.fileService.PreDownLoad(ctx, aliasId, targetUid, requestUid)
 
 	if err != nil {
-		return &file.PreDownloadResp{}, err
+		return &file.PreDownloadResp{}, parseServiceErrToHandlerError(ctx, err)
 	}
 
 	dm := make([]*file.DownloadMsg, 0)
@@ -411,7 +412,7 @@ func (s *FileServiceImpl) Download(ctx context.Context, req *file.DownloadReq) (
 	content, err := s.fileService.Download(ctx, oneId, requestUid, targetUid, req.RequestId, req.Type)
 
 	if err != nil {
-		return &file.DownloadResp{}, err
+		return &file.DownloadResp{}, parseServiceErrToHandlerError(ctx, err)
 	}
 
 	return &file.DownloadResp{
@@ -420,31 +421,120 @@ func (s *FileServiceImpl) Download(ctx context.Context, req *file.DownloadReq) (
 }
 
 // CreateFolder implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CreateFolder(ctx context.Context, req *file.CreateFolderReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) CreateFolder(ctx context.Context, req *file.CreateFolderReq) (resp *file.FileAliasItem, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	parentAliasId, err := unmarshalUUID(ctx, req.ParentAliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	err = validate.IsValidateString(req.FolderName)
+	if err != nil {
+		return &file.FileAliasItem{}, cerrors.NewGRPCError(http.StatusBadRequest, err.Error())
+	}
+
+	fileAlias, err := s.fileService.CreateFolder(ctx, parentAliasId, req.FolderName, req.IsRoot, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+		IsPublic:    fileAlias.IsPublic,
+	}, nil
 }
 
 // RenameFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) RenameFile(ctx context.Context, req *file.RenameFileReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) RenameFile(ctx context.Context, req *file.RenameFileReq) (resp *file.FileAliasItem, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	err = validate.IsValidateString(req.NewName)
+	if err != nil {
+		return &file.FileAliasItem{}, cerrors.NewGRPCError(http.StatusBadRequest, err.Error())
+	}
+
+	fileAlias, err := s.fileService.RenameFile(ctx, aliasId, req.NewName, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		FileId:      fileAlias.FileID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+		IsPublic:    fileAlias.IsPublic,
+	}, nil
 }
 
 // MoveFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) MoveFile(ctx context.Context, req *file.MoveFileReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) MoveFile(ctx context.Context, req *file.MoveFileReq) (resp *file.FileAliasItem, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	newParentId, err := unmarshalUUID(ctx, req.NewParentId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+	fileAlias, err := s.fileService.MoveFile(ctx, aliasId, newParentId, req.IsMoveToRoot, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		FileId:      fileAlias.FileID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+		IsPublic:    fileAlias.IsPublic,
+	}, nil
 }
 
 // CopyFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CopyFile(ctx context.Context, req *file.CopyFileReq) (resp *file.FileMeta, err error) {
+func (s *FileServiceImpl) CopyFile(ctx context.Context, req *file.CopyFileReq) (resp *file.FileAliasItem, err error) {
 	// TODO: Your code here...
 	return
 }
 
 // UpdateFilePublic implements the FileServiceImpl interface.
-func (s *FileServiceImpl) UpdateFilePublic(ctx context.Context, req *file.UpdateFilePublicReq) (resp *file.FileMeta, err error) {
+func (s *FileServiceImpl) UpdateFilePublic(ctx context.Context, req *file.UpdateFilePublicReq) (resp *file.FileAliasItem, err error) {
 	// TODO: Your code here...
 	return
 }
@@ -455,8 +545,8 @@ func (s *FileServiceImpl) TrashFile(ctx context.Context, req *file.FileReq) (res
 	return
 }
 
-// DeleteFilePermanently implements the FileServiceImpl interface.
-func (s *FileServiceImpl) DeleteFilePermanently(ctx context.Context, req *file.FileReq) (resp *file.Empty, err error) {
+// DeleteFile implements the FileServiceImpl interface.
+func (s *FileServiceImpl) DeleteFile(ctx context.Context, req *file.FileReq) (resp *file.Empty, err error) {
 	// TODO: Your code here...
 	return
 }
@@ -551,12 +641,6 @@ func (s *FileServiceImpl) CleanExpiredTrash(ctx context.Context, req *file.Clean
 
 // GetStorageQuota implements the FileServiceImpl interface.
 func (s *FileServiceImpl) GetStorageQuota(ctx context.Context, req *file.UserReq) (resp *file.StorageQuotaResp, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// DeduplicateFiles implements the FileServiceImpl interface.
-func (s *FileServiceImpl) DeduplicateFiles(ctx context.Context, req *file.UserReq) (resp *file.DeduplicationResp, err error) {
 	// TODO: Your code here...
 	return
 }

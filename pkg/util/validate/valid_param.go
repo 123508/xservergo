@@ -1,9 +1,11 @@
 package validate
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/badoux/checkmail"
 	"github.com/gabriel-vasile/mimetype"
@@ -136,4 +138,69 @@ func IsValidateFile(fileName string) bool {
 	}
 
 	return false // 文件类型不在白名单中
+}
+
+// IsValidateString 检查字符串是否可作为符合微软规范的有效文件名。它首先进行基础格式校验，然后进行系统保留字校验。
+func IsValidateString(name string) error {
+	// 1. 基础格式校验 (长度、非法字符)
+	if err := validateFormat(name); err != nil {
+		return err
+	}
+
+	// 2. 系统保留字校验
+	if err := validateReservedNames(name); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateFormat 校验文件名长度和是否包含非法字符。
+func validateFormat(filename string) error {
+	// 检查是否为空
+	if len(filename) == 0 {
+		return fmt.Errorf("文件名不能为空")
+	}
+
+	// 检查长度（通常不超过255字符，考虑具体文件系统限制）
+	if utf8.RuneCountInString(filename) > 255 {
+		return fmt.Errorf("文件名长度超过系统限制")
+	}
+
+	// 定义Windows文件名中的非法字符集
+	illegalChars := `\/:*?"<>|`
+	if strings.ContainsAny(filename, illegalChars) {
+		return fmt.Errorf("文件名包含非法字符: %s", illegalChars)
+	}
+
+	// 检查首尾字符（不能以空格或点结尾）
+	if strings.HasSuffix(filename, " ") || strings.HasSuffix(filename, ".") {
+		return fmt.Errorf("文件名不能以空格或点结尾")
+	}
+
+	return nil
+}
+
+// validateReservedNames 校验文件名是否为系统保留字。
+func validateReservedNames(filename string) error {
+	// 提取文件名（去掉路径和扩展名的主要部分进行比较更稳妥，这里假设传入的是纯文件名）
+	nameWithoutExt := strings.ToUpper(filename) // 不区分大小写
+	if idx := strings.LastIndex(nameWithoutExt, "."); idx != -1 {
+		nameWithoutExt = nameWithoutExt[:idx]
+	}
+
+	// 定义Windows保留的设备名称
+	reservedNames := []string{
+		"CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+	}
+
+	for _, reserved := range reservedNames {
+		if nameWithoutExt == reserved {
+			return fmt.Errorf("文件名不能是系统保留字: %s", reserved)
+		}
+	}
+
+	return nil
 }

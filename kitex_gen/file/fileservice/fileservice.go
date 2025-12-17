@@ -106,10 +106,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"DeleteFilePermanently": kitex.NewMethodInfo(
-		deleteFilePermanentlyHandler,
-		newDeleteFilePermanentlyArgs,
-		newDeleteFilePermanentlyResult,
+	"DeleteFile": kitex.NewMethodInfo(
+		deleteFileHandler,
+		newDeleteFileArgs,
+		newDeleteFileResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -180,13 +180,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		getStorageQuotaHandler,
 		newGetStorageQuotaArgs,
 		newGetStorageQuotaResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"DeduplicateFiles": kitex.NewMethodInfo(
-		deduplicateFilesHandler,
-		newDeduplicateFilesArgs,
-		newDeduplicateFilesResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -1104,10 +1097,10 @@ func (p *CreateFolderArgs) GetFirstArgument() interface{} {
 }
 
 type CreateFolderResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var CreateFolderResult_Success_DEFAULT *file.FileMeta
+var CreateFolderResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *CreateFolderResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1117,7 +1110,7 @@ func (p *CreateFolderResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CreateFolderResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1125,7 +1118,7 @@ func (p *CreateFolderResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CreateFolderResult) GetSuccess() *file.FileMeta {
+func (p *CreateFolderResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return CreateFolderResult_Success_DEFAULT
 	}
@@ -1133,7 +1126,7 @@ func (p *CreateFolderResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *CreateFolderResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *CreateFolderResult) IsSetSuccess() bool {
@@ -1215,10 +1208,10 @@ func (p *RenameFileArgs) GetFirstArgument() interface{} {
 }
 
 type RenameFileResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var RenameFileResult_Success_DEFAULT *file.FileMeta
+var RenameFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *RenameFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1228,7 +1221,7 @@ func (p *RenameFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *RenameFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1236,7 +1229,7 @@ func (p *RenameFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *RenameFileResult) GetSuccess() *file.FileMeta {
+func (p *RenameFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return RenameFileResult_Success_DEFAULT
 	}
@@ -1244,7 +1237,7 @@ func (p *RenameFileResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *RenameFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *RenameFileResult) IsSetSuccess() bool {
@@ -1326,10 +1319,10 @@ func (p *MoveFileArgs) GetFirstArgument() interface{} {
 }
 
 type MoveFileResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var MoveFileResult_Success_DEFAULT *file.FileMeta
+var MoveFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *MoveFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1339,7 +1332,7 @@ func (p *MoveFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *MoveFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1347,7 +1340,7 @@ func (p *MoveFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *MoveFileResult) GetSuccess() *file.FileMeta {
+func (p *MoveFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return MoveFileResult_Success_DEFAULT
 	}
@@ -1355,7 +1348,7 @@ func (p *MoveFileResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *MoveFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *MoveFileResult) IsSetSuccess() bool {
@@ -1437,10 +1430,10 @@ func (p *CopyFileArgs) GetFirstArgument() interface{} {
 }
 
 type CopyFileResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var CopyFileResult_Success_DEFAULT *file.FileMeta
+var CopyFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *CopyFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1450,7 +1443,7 @@ func (p *CopyFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *CopyFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1458,7 +1451,7 @@ func (p *CopyFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CopyFileResult) GetSuccess() *file.FileMeta {
+func (p *CopyFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return CopyFileResult_Success_DEFAULT
 	}
@@ -1466,7 +1459,7 @@ func (p *CopyFileResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *CopyFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *CopyFileResult) IsSetSuccess() bool {
@@ -1548,10 +1541,10 @@ func (p *UpdateFilePublicArgs) GetFirstArgument() interface{} {
 }
 
 type UpdateFilePublicResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var UpdateFilePublicResult_Success_DEFAULT *file.FileMeta
+var UpdateFilePublicResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *UpdateFilePublicResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1561,7 +1554,7 @@ func (p *UpdateFilePublicResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *UpdateFilePublicResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1569,7 +1562,7 @@ func (p *UpdateFilePublicResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *UpdateFilePublicResult) GetSuccess() *file.FileMeta {
+func (p *UpdateFilePublicResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return UpdateFilePublicResult_Success_DEFAULT
 	}
@@ -1577,7 +1570,7 @@ func (p *UpdateFilePublicResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *UpdateFilePublicResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *UpdateFilePublicResult) IsSetSuccess() bool {
@@ -1699,7 +1692,7 @@ func (p *TrashFileResult) GetResult() interface{} {
 	return p.Success
 }
 
-func deleteFilePermanentlyHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func deleteFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
@@ -1707,43 +1700,43 @@ func deleteFilePermanentlyHandler(ctx context.Context, handler interface{}, arg,
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).DeleteFilePermanently(ctx, req)
+		resp, err := handler.(file.FileService).DeleteFile(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *DeleteFilePermanentlyArgs:
-		success, err := handler.(file.FileService).DeleteFilePermanently(ctx, s.Req)
+	case *DeleteFileArgs:
+		success, err := handler.(file.FileService).DeleteFile(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*DeleteFilePermanentlyResult)
+		realResult := result.(*DeleteFileResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newDeleteFilePermanentlyArgs() interface{} {
-	return &DeleteFilePermanentlyArgs{}
+func newDeleteFileArgs() interface{} {
+	return &DeleteFileArgs{}
 }
 
-func newDeleteFilePermanentlyResult() interface{} {
-	return &DeleteFilePermanentlyResult{}
+func newDeleteFileResult() interface{} {
+	return &DeleteFileResult{}
 }
 
-type DeleteFilePermanentlyArgs struct {
+type DeleteFileArgs struct {
 	Req *file.FileReq
 }
 
-func (p *DeleteFilePermanentlyArgs) Marshal(out []byte) ([]byte, error) {
+func (p *DeleteFileArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *DeleteFilePermanentlyArgs) Unmarshal(in []byte) error {
+func (p *DeleteFileArgs) Unmarshal(in []byte) error {
 	msg := new(file.FileReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -1752,37 +1745,37 @@ func (p *DeleteFilePermanentlyArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var DeleteFilePermanentlyArgs_Req_DEFAULT *file.FileReq
+var DeleteFileArgs_Req_DEFAULT *file.FileReq
 
-func (p *DeleteFilePermanentlyArgs) GetReq() *file.FileReq {
+func (p *DeleteFileArgs) GetReq() *file.FileReq {
 	if !p.IsSetReq() {
-		return DeleteFilePermanentlyArgs_Req_DEFAULT
+		return DeleteFileArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *DeleteFilePermanentlyArgs) IsSetReq() bool {
+func (p *DeleteFileArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *DeleteFilePermanentlyArgs) GetFirstArgument() interface{} {
+func (p *DeleteFileArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type DeleteFilePermanentlyResult struct {
+type DeleteFileResult struct {
 	Success *file.Empty
 }
 
-var DeleteFilePermanentlyResult_Success_DEFAULT *file.Empty
+var DeleteFileResult_Success_DEFAULT *file.Empty
 
-func (p *DeleteFilePermanentlyResult) Marshal(out []byte) ([]byte, error) {
+func (p *DeleteFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *DeleteFilePermanentlyResult) Unmarshal(in []byte) error {
+func (p *DeleteFileResult) Unmarshal(in []byte) error {
 	msg := new(file.Empty)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -1791,22 +1784,22 @@ func (p *DeleteFilePermanentlyResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *DeleteFilePermanentlyResult) GetSuccess() *file.Empty {
+func (p *DeleteFileResult) GetSuccess() *file.Empty {
 	if !p.IsSetSuccess() {
-		return DeleteFilePermanentlyResult_Success_DEFAULT
+		return DeleteFileResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *DeleteFilePermanentlyResult) SetSuccess(x interface{}) {
+func (p *DeleteFileResult) SetSuccess(x interface{}) {
 	p.Success = x.(*file.Empty)
 }
 
-func (p *DeleteFilePermanentlyResult) IsSetSuccess() bool {
+func (p *DeleteFileResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *DeleteFilePermanentlyResult) GetResult() interface{} {
+func (p *DeleteFileResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2920,117 +2913,6 @@ func (p *GetStorageQuotaResult) GetResult() interface{} {
 	return p.Success
 }
 
-func deduplicateFilesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.UserReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).DeduplicateFiles(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *DeduplicateFilesArgs:
-		success, err := handler.(file.FileService).DeduplicateFiles(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*DeduplicateFilesResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newDeduplicateFilesArgs() interface{} {
-	return &DeduplicateFilesArgs{}
-}
-
-func newDeduplicateFilesResult() interface{} {
-	return &DeduplicateFilesResult{}
-}
-
-type DeduplicateFilesArgs struct {
-	Req *file.UserReq
-}
-
-func (p *DeduplicateFilesArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *DeduplicateFilesArgs) Unmarshal(in []byte) error {
-	msg := new(file.UserReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var DeduplicateFilesArgs_Req_DEFAULT *file.UserReq
-
-func (p *DeduplicateFilesArgs) GetReq() *file.UserReq {
-	if !p.IsSetReq() {
-		return DeduplicateFilesArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *DeduplicateFilesArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *DeduplicateFilesArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type DeduplicateFilesResult struct {
-	Success *file.DeduplicationResp
-}
-
-var DeduplicateFilesResult_Success_DEFAULT *file.DeduplicationResp
-
-func (p *DeduplicateFilesResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *DeduplicateFilesResult) Unmarshal(in []byte) error {
-	msg := new(file.DeduplicationResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *DeduplicateFilesResult) GetSuccess() *file.DeduplicationResp {
-	if !p.IsSetSuccess() {
-		return DeduplicateFilesResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *DeduplicateFilesResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.DeduplicationResp)
-}
-
-func (p *DeduplicateFilesResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *DeduplicateFilesResult) GetResult() interface{} {
-	return p.Success
-}
-
 type kClient struct {
 	c client.Client
 }
@@ -3111,7 +2993,7 @@ func (p *kClient) Download(ctx context.Context, Req *file.DownloadReq) (r *file.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CreateFolder(ctx context.Context, Req *file.CreateFolderReq) (r *file.FileMeta, err error) {
+func (p *kClient) CreateFolder(ctx context.Context, Req *file.CreateFolderReq) (r *file.FileAliasItem, err error) {
 	var _args CreateFolderArgs
 	_args.Req = Req
 	var _result CreateFolderResult
@@ -3121,7 +3003,7 @@ func (p *kClient) CreateFolder(ctx context.Context, Req *file.CreateFolderReq) (
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) RenameFile(ctx context.Context, Req *file.RenameFileReq) (r *file.FileMeta, err error) {
+func (p *kClient) RenameFile(ctx context.Context, Req *file.RenameFileReq) (r *file.FileAliasItem, err error) {
 	var _args RenameFileArgs
 	_args.Req = Req
 	var _result RenameFileResult
@@ -3131,7 +3013,7 @@ func (p *kClient) RenameFile(ctx context.Context, Req *file.RenameFileReq) (r *f
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) MoveFile(ctx context.Context, Req *file.MoveFileReq) (r *file.FileMeta, err error) {
+func (p *kClient) MoveFile(ctx context.Context, Req *file.MoveFileReq) (r *file.FileAliasItem, err error) {
 	var _args MoveFileArgs
 	_args.Req = Req
 	var _result MoveFileResult
@@ -3141,7 +3023,7 @@ func (p *kClient) MoveFile(ctx context.Context, Req *file.MoveFileReq) (r *file.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CopyFile(ctx context.Context, Req *file.CopyFileReq) (r *file.FileMeta, err error) {
+func (p *kClient) CopyFile(ctx context.Context, Req *file.CopyFileReq) (r *file.FileAliasItem, err error) {
 	var _args CopyFileArgs
 	_args.Req = Req
 	var _result CopyFileResult
@@ -3151,7 +3033,7 @@ func (p *kClient) CopyFile(ctx context.Context, Req *file.CopyFileReq) (r *file.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) UpdateFilePublic(ctx context.Context, Req *file.UpdateFilePublicReq) (r *file.FileMeta, err error) {
+func (p *kClient) UpdateFilePublic(ctx context.Context, Req *file.UpdateFilePublicReq) (r *file.FileAliasItem, err error) {
 	var _args UpdateFilePublicArgs
 	_args.Req = Req
 	var _result UpdateFilePublicResult
@@ -3171,11 +3053,11 @@ func (p *kClient) TrashFile(ctx context.Context, Req *file.FileReq) (r *file.Fil
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) DeleteFilePermanently(ctx context.Context, Req *file.FileReq) (r *file.Empty, err error) {
-	var _args DeleteFilePermanentlyArgs
+func (p *kClient) DeleteFile(ctx context.Context, Req *file.FileReq) (r *file.Empty, err error) {
+	var _args DeleteFileArgs
 	_args.Req = Req
-	var _result DeleteFilePermanentlyResult
-	if err = p.c.Call(ctx, "DeleteFilePermanently", &_args, &_result); err != nil {
+	var _result DeleteFileResult
+	if err = p.c.Call(ctx, "DeleteFile", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
@@ -3276,16 +3158,6 @@ func (p *kClient) GetStorageQuota(ctx context.Context, Req *file.UserReq) (r *fi
 	_args.Req = Req
 	var _result GetStorageQuotaResult
 	if err = p.c.Call(ctx, "GetStorageQuota", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) DeduplicateFiles(ctx context.Context, Req *file.UserReq) (r *file.DeduplicationResp, err error) {
-	var _args DeduplicateFilesArgs
-	_args.Req = Req
-	var _result DeduplicateFilesResult
-	if err = p.c.Call(ctx, "DeduplicateFiles", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

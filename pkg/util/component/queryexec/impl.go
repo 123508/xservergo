@@ -2,12 +2,13 @@ package queryexec
 
 import (
 	"errors"
+
 	"github.com/123508/xservergo/pkg/logs"
 	"github.com/123508/xservergo/pkg/util/component/condition"
 	cursor2 "github.com/123508/xservergo/pkg/util/component/cursor"
 	"github.com/123508/xservergo/pkg/util/component/pub"
 	"github.com/123508/xservergo/pkg/util/component/serializer"
-	"github.com/123508/xservergo/pkg/util/component/sort"
+	"github.com/123508/xservergo/pkg/util/component/xsort"
 	"go.uber.org/zap"
 
 	"gorm.io/gorm"
@@ -16,13 +17,13 @@ import (
 type QueryExecStructMySQL[Item pub.ItemType[Id], Id pub.IntegerNumber] struct {
 	RawConditions condition.Condition
 	PageSize      int
-	Sort          *sort.SortOnMySQL
+	Sort          *xsort.SortOnMySQL
 	Database      *gorm.DB
 	Cur           string
 	cur           *cursor2.StandCursor
 }
 
-func NewQueryExecOnMySQL[Item pub.ItemType[Id], Id pub.IntegerNumber](rawConditions condition.Condition, PageSize int, Sort *sort.SortOnMySQL, db *gorm.DB, Cursor string) *QueryExecStructMySQL[Item, Id] {
+func NewQueryExecOnMySQL[Item pub.ItemType[Id], Id pub.IntegerNumber](rawConditions condition.Condition, PageSize int, Sort *xsort.SortOnMySQL, db *gorm.DB, Cursor string) *QueryExecStructMySQL[Item, Id] {
 	return &QueryExecStructMySQL[Item, Id]{
 		RawConditions: rawConditions,
 		PageSize:      PageSize,
@@ -75,7 +76,7 @@ func (q *QueryExecStructMySQL[Item, Id]) withSort(db *gorm.DB, reverse bool) *go
 
 	// 排序
 	if q.Sort == nil {
-		q.Sort = sort.NewSortOnMySQL()
+		q.Sort = xsort.NewSortOnMySQL()
 	}
 
 	innerSort := q.Sort
