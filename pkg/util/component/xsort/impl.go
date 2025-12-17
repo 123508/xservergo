@@ -1,10 +1,11 @@
-package sort
+package xsort
 
 import (
 	"fmt"
-	"github.com/123508/xservergo/pkg/util/component/pub"
 	"regexp"
 	"strings"
+
+	"github.com/123508/xservergo/pkg/util/component/pub"
 )
 
 //对添加排序字段的实现

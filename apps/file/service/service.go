@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -34,6 +33,9 @@ type FileService interface {
 	ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
 	PreDownLoad(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (aliasName string, requestId string, list []PreDownload, storeType, total uint64, err error)
 	Download(ctx context.Context, oneId, requestUserId, targetUserId id.UUID, requestId string, storeType uint64) (content []byte, err error)
+	CreateFolder(ctx context.Context, parentAliasId id.UUID, folderName string, isRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	RenameFile(ctx context.Context, aliasId id.UUID, newName string, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	MoveFile(ctx context.Context, aliasId id.UUID, newParentId id.UUID, isMoveToRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 }
 
 type ServiceImpl struct {
@@ -70,21 +72,27 @@ func (s *ServiceImpl) InitFileUpload(ctx context.Context, fileList []models.File
 	// 获取requestId
 	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 24*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("产生requestId失败", zap.Error(err))
+		logs.ErrorLogger.Error("产生requestId失败",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return nil, "", "", err
 	}
 
 	// 获取uploadId
 	uploadId, err = urds.GenerateUploadId(s.Rds, s.Keys, ctx, 24*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("产生uploadId失败", zap.Error(err))
+		logs.ErrorLogger.Error("产生uploadId失败",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return nil, "", "", err
 	}
 
 	needs := make([]models.File, 0)
 
 	for _, f := range fileList {
-		file, err := s.insertAndRelateFile(ctx, f, targetUserId)
+		file, err := s.insertAndRelateFile(ctx, f, targetUserId, requestUserId)
 		if err != nil {
 			return nil, "", "", err
 		}
@@ -99,14 +107,23 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	// 校验requestId
 	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+		logs.ErrorLogger.Error("requestId过期",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
 	}
 
 	// 校验uploadId
 	uploadRs := s.Rds.Get(ctx, s.Keys.UploadIdKey(uploadId)).String()
 	if uploadRs == "" {
-		logs.ErrorLogger.Error("uploadId过期", zap.String("uploadId", uploadId))
+		logs.ErrorLogger.Error("uploadId过期",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()))
 		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "上传id过期", requestId, nil)
 	}
 	s.Rds.Expire(ctx, s.Keys.UploadIdKey(uploadId), 24*60*time.Minute)
@@ -114,7 +131,12 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	// 文件内容hash校验
 	hashData := toMd5.ContentToMd5(content)
 	if chunkHash != hashData {
-		logs.ErrorLogger.Error("分片数据校验失败,请重新传输", zap.String("requestId", requestId), zap.Uint64("chunkIndex", chunkIndex))
+		logs.ErrorLogger.Error("分片数据校验失败,请重新传输",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("chunkIndex", chunkIndex))
 		return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "分片数据错误", requestId, nil)
 	}
 
@@ -126,7 +148,11 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 		fileExist := models.File{}
 		s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&fileExist)
 		if fileExist.ID.IsZero() || fileExist.FileHash == "" {
-			logs.ErrorLogger.Error("文件不存在,无法传输分片", zap.String("uploadId", uploadId))
+			logs.ErrorLogger.Error("文件不存在,无法传输分片",
+				zap.String("uploadId", uploadId),
+				zap.String("requestId", requestId),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()))
 			return false, requestId, cerrors.NewCommonError(http.StatusBadRequest, "文件不存在", requestId, nil)
 		}
 
@@ -135,7 +161,11 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 	}
 
 	if chunkIndex > totalCount || chunkIndex <= 0 {
-		logs.ErrorLogger.Error("分片索引错误", zap.String("uploadId", uploadId))
+		logs.ErrorLogger.Error("分片索引错误",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()))
 		return false, "", cerrors.NewCommonError(http.StatusBadRequest, "分片索引错误", requestId, nil)
 	}
 
@@ -165,7 +195,12 @@ func (s *ServiceImpl) UploadChunk(ctx context.Context, fileId id.UUID, chunkInde
 			}
 
 			if err := s.DB.Create(&fileChunkIndex).Error; err != nil {
-				logs.ErrorLogger.Error("数据库记录分片序号错误", zap.Error(err))
+				logs.ErrorLogger.Error("数据库记录分片序号错误",
+					zap.String("uploadId", uploadId),
+					zap.String("requestId", requestId),
+					zap.String("targetUserId", targetUserId.MarshalBase64()),
+					zap.String("requestUserId", requestUserId.MarshalBase64()),
+					zap.Error(err))
 				return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入记录失败", requestId, err)
 			}
 		}
@@ -186,14 +221,23 @@ func (s *ServiceImpl) UploadVerify(ctx context.Context, fileIds []id.UUID, reque
 	// 校验requestId
 	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+		logs.ErrorLogger.Error("requestId过期",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
 	}
 
 	// 校验uploadId
 	uploadRs := s.Rds.Get(ctx, s.Keys.UploadIdKey(uploadId)).String()
 	if uploadRs == "" {
-		logs.ErrorLogger.Error("uploadId过期", zap.String("uploadId", uploadId))
+		logs.ErrorLogger.Error("uploadId过期",
+			zap.String("uploadId", uploadId),
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()))
 		return nil, cerrors.NewCommonError(http.StatusBadRequest, "上传id过期", requestId, nil)
 	}
 	s.Rds.Expire(ctx, s.Keys.UploadIdKey(uploadId), 24*60*time.Minute)
@@ -220,10 +264,13 @@ func (s *ServiceImpl) DirectUpload(ctx context.Context, f models.File, content [
 	f.FileName = filepath.Base(f.FileName)
 
 	if hash != f.FileHash {
+		logs.ErrorLogger.Error("传输内容错误",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()))
 		return models.File{}, cerrors.NewCommonError(http.StatusBadRequest, "传输内容错误,请重传", "", nil)
 	}
 
-	relateFile, err := s.insertAndRelateFile(ctx, f, targetUserId)
+	relateFile, err := s.insertAndRelateFile(ctx, f, targetUserId, requestUserId)
 
 	if err != nil {
 		return models.File{}, err
@@ -244,10 +291,13 @@ func (s *ServiceImpl) DirectUpload(ctx context.Context, f models.File, content [
 		}
 	}
 
-	err = s.DB.Model(&models.File{}).Where("id = ?", relateFile.ID).Update("status", 4).Error
+	err = s.DB.Model(&models.File{}).Where("id = ?", relateFile.ID).Update("status", 4).Update("direct_path", f.DirectPath).Error
 
 	if err != nil {
-		logs.ErrorLogger.Error("更新文件信息错误,请重试", zap.Error(err))
+		logs.ErrorLogger.Error("更新文件信息错误,请重试",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新文件信息错误,请重试", err)
 	}
 
@@ -419,7 +469,7 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 
 	// 如果查询的是根目录开始,就跳过前置查询
 	if !isRoot {
-		_, err = s.takeSingleFileAlias(ctx, aliasId, targetUserId)
+		_, err = s.takeSingleFileAlias(ctx, aliasId, targetUserId, requestUserId)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -435,9 +485,15 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 
 	if err != nil {
 		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", aliasId).Count(&count).Error
-		fmt.Println(count)
 		if err != nil {
-			logs.ErrorLogger.Error("请求错误", zap.Error(err))
+			logs.ErrorLogger.Error("请求错误",
+				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Uint64("page", page),
+				zap.Uint64("pageSize", pageSize),
+				zap.Bool("isRoot", isRoot),
+				zap.Error(err))
 			return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
 		}
 		s.Rds.Set(ctx, s.Keys.FileAliasKey(aliasId), count, 20*time.Minute)
@@ -481,7 +537,14 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 	}
 	res, err := listQuery.QueryListWithCache()
 	if err != nil {
-		logs.ErrorLogger.Error("查询失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("page", page),
+			zap.Uint64("pageSize", pageSize),
+			zap.Bool("isRoot", isRoot),
+			zap.Error(err))
 		return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 	}
 
@@ -531,7 +594,14 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 
 		fileList, err := fileListQuery.QueryListWithCache()
 		if err != nil {
-			logs.ErrorLogger.Error("查询失败", zap.Error(err))
+			logs.ErrorLogger.Error("查询失败",
+				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Uint64("page", page),
+				zap.Uint64("pageSize", pageSize),
+				zap.Bool("isRoot", isRoot),
+				zap.Error(err))
 			return nil, 0, err
 		}
 		for _, v := range fileList {
@@ -561,7 +631,11 @@ func (s *ServiceImpl) PreDownLoad(ctx context.Context, aliasId id.UUID, requestU
 	// 生产requestId
 	requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 20*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("产生requestId失败", zap.Error(err))
+		logs.ErrorLogger.Error("产生requestId失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return "", "", nil, 0, 0, cerrors.NewCommonError(http.StatusInternalServerError, "产生requestId失败", requestId, err)
 	}
 
@@ -572,12 +646,19 @@ func (s *ServiceImpl) PreDownLoad(ctx context.Context, aliasId id.UUID, requestU
 	// 如果文件不存在或者没有上传成功就显示查询失败
 	err = s.DB.Raw(sqlStmt, aliasId).Scan(&res).Error
 	if err != nil {
-		logs.ErrorLogger.Error("查询文件失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询文件失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
 		return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询文件失败", err)
 	}
 
 	if res.ID.IsZero() || (res.Status != MERGESTORE && res.Status != CHUNKSTORE) {
-		logs.ErrorLogger.Error("文件不存在")
+		logs.ErrorLogger.Error("文件不存在",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()))
 		return "", "", nil, 0, 0, cerrors.NewCommonError(http.StatusBadRequest, "文件不存在", "", errors.New("文件不存在"))
 	}
 
@@ -615,7 +696,11 @@ func (s *ServiceImpl) PreDownLoad(ctx context.Context, aliasId id.UUID, requestU
 		chunks := make([]ChunkMsg, 0)
 		err = s.DB.Raw(sqlStmt, res.ID).Scan(&chunks).Error
 		if err != nil {
-			logs.ErrorLogger.Error("读取分片信息失败", zap.Error(err))
+			logs.ErrorLogger.Error("读取分片信息失败",
+				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Error(err))
 			return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "读取分片信息失败", err)
 		}
 
@@ -632,7 +717,11 @@ func (s *ServiceImpl) PreDownLoad(ctx context.Context, aliasId id.UUID, requestU
 		return aliasName, requestId, list, res.Status, res.Total, nil
 	}
 
-	return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
+	logs.ErrorLogger.Error("错误的请求,没有符合条件的组合,请注意",
+		zap.String("aliasId", aliasId.MarshalBase64()),
+		zap.String("targetUserId", targetUserId.MarshalBase64()),
+		zap.String("requestUserId", requestUserId.MarshalBase64()))
+	return "", "", nil, 0, 0, cerrors.NewSQLError(http.StatusBadRequest, "请求错误", err)
 }
 
 func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUserId id.UUID, requestId string, storeType uint64) (content []byte, err error) {
@@ -640,7 +729,13 @@ func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUse
 	// 校验requestId
 	err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
 	if err != nil {
-		logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+		logs.ErrorLogger.Error("requestId过期",
+			zap.String("requestId", requestId),
+			zap.String("id", id.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("storeType(3:分片存储 4:合并存储)", storeType),
+			zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
 	}
 
@@ -652,7 +747,13 @@ func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUse
 		res := models.File{}
 		err = s.DB.Model(&models.File{}).Where("id = ?", id).First(&res).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.ErrorLogger.Error("查询失败", zap.String("requestId", requestId), zap.Error(err))
+			logs.ErrorLogger.Error("查询失败",
+				zap.String("requestId", requestId),
+				zap.String("id", id.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Uint64("storeType(3:分片存储 4:合并存储)", storeType),
+				zap.Error(err))
 			return nil, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 		}
 		findPath = res.DirectPath
@@ -664,7 +765,13 @@ func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUse
 		res := models.FileChunk{}
 		err = s.DB.Model(&models.FileChunk{}).Where("id = ?", id).First(&res).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.ErrorLogger.Error("查询失败", zap.String("requestId", requestId), zap.Error(err))
+			logs.ErrorLogger.Error("查询失败",
+				zap.String("requestId", requestId),
+				zap.String("id", id.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Uint64("storeType(3:分片存储 4:合并存储)", storeType),
+				zap.Error(err))
 			return nil, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 		}
 		findPath = res.ChunkName
@@ -672,7 +779,13 @@ func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUse
 	}
 
 	if findPath == "" || hash == "" {
-		logs.ErrorLogger.Error("数据已损坏", zap.String("requestId", requestId), zap.Error(err))
+		logs.ErrorLogger.Error("数据已损坏",
+			zap.String("requestId", requestId),
+			zap.String("id", id.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("storeType(3:分片存储 4:合并存储)", storeType),
+			zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusBadRequest, "数据已损坏", requestId, err)
 	}
 
@@ -684,7 +797,156 @@ func (s *ServiceImpl) Download(ctx context.Context, id, requestUserId, targetUse
 	return bytes, nil
 }
 
-func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, userId id.UUID) (models.File, error) {
+func (s *ServiceImpl) CreateFolder(ctx context.Context, parentAliasId id.UUID, folderName string, isRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+
+	if !isRoot {
+		// 查询父文件夹是否存在
+		parentRs, err := s.takeSingleFileAliasWithCleanCache(ctx, parentAliasId, targetUserId, requestUserId)
+		if err != nil {
+			return models.FileAlias{}, err
+		}
+		// 查询父文件夹是否为文件夹
+		if !parentRs.IsDirectory {
+			logs.ErrorLogger.Error("父文件夹类型错误",
+				zap.String("parentAliasId", parentAliasId.MarshalBase64()),
+				zap.String("folderName", folderName),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Bool("isRoot", isRoot),
+				zap.Error(err))
+			return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "父文件夹类型错误", err)
+		}
+	} else {
+		parentAliasId = id.EmptyUUID
+	}
+
+	// 检测是否有重复文件夹
+	var Count int64
+	err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ? and user_id = ? and file_name = ? and is_directory = 1", parentAliasId, targetUserId, folderName).Count(&Count).Error
+
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("parentAliasId", parentAliasId.MarshalBase64()),
+			zap.String("folderName", folderName),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("isRoot", isRoot),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+	}
+
+	// 存在重复文件夹,报错返回
+	if Count > 0 {
+		logs.ErrorLogger.Error("文件夹已存在,不可重复创建",
+			zap.String("parentAliasId", parentAliasId.MarshalBase64()),
+			zap.String("folderName", folderName),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("isRoot", isRoot),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "文件夹已存在,不可重复创建", err)
+	}
+
+	// 创建目标文件夹
+	now := time.Now()
+	data := models.FileAlias{
+		ID:          id.NewUUID(),
+		UserID:      targetUserId,
+		ParentID:    parentAliasId,
+		FileName:    folderName,
+		CreatedAt:   &now,
+		IsDirectory: true,
+		IsPublic:    false,
+	}
+
+	err = s.DB.Model(&models.FileAlias{}).Create(&data).Error
+	if err != nil {
+		logs.ErrorLogger.Error("创建失败",
+			zap.String("parentAliasId", parentAliasId.MarshalBase64()),
+			zap.String("folderName", folderName),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("isRoot", isRoot),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "创建失败", err)
+	}
+
+	return data, nil
+}
+
+func (s *ServiceImpl) RenameFile(ctx context.Context, aliasId id.UUID, newName string, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+
+	// 查询文件夹
+	rs, err := s.takeSingleFileAliasWithCleanCache(ctx, aliasId, targetUserId, requestUserId)
+	if err != nil {
+		return models.FileAlias{}, err
+	}
+
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", rs.ID).Update("file_name", newName).Error
+	if err != nil {
+		logs.ErrorLogger.Error("更改失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("newName", newName),
+			zap.String("targetUserId", targetUserId.String()),
+			zap.String("requestUserId", requestUserId.String()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "更改失败", err)
+	}
+
+	rs.FileName = newName
+	return rs, nil
+}
+
+func (s *ServiceImpl) MoveFile(ctx context.Context, aliasId id.UUID, newParentId id.UUID, isMoveToRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+
+	rs, err := s.takeSingleFileAliasWithCleanCache(ctx, aliasId, targetUserId, requestUserId)
+	if err != nil {
+		return models.FileAlias{}, err
+	}
+
+	// 构建新父Id
+	if !isMoveToRoot {
+		parentRs, err := s.takeSingleFileAliasWithCleanCache(ctx, newParentId, targetUserId, requestUserId)
+		if err != nil {
+			return models.FileAlias{}, err
+		}
+		if !parentRs.IsDirectory {
+			logs.ErrorLogger.Error("移动到的目录不是文件夹目录,请重试",
+				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.String("newParentId", newParentId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Bool("isMoveToRoot", isMoveToRoot),
+				zap.Error(err))
+			return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "移动到的目录不是文件夹目录,请重试", nil)
+		}
+	} else {
+		newParentId = id.EmptyUUID
+	}
+
+	// 如果新旧相同,不变
+	if rs.ParentID.MarshalBase64() == newParentId.MarshalBase64() {
+		return rs, nil
+	}
+
+	// 更新父id
+	rs.ParentID = newParentId
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", rs.ID).Update("parent_id = ?", newParentId).Error
+	if err != nil {
+		logs.ErrorLogger.Error("更新失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("newParentId", newParentId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("isMoveToRoot", isMoveToRoot),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "更新失败", err)
+	}
+
+	return rs, nil
+}
+
+func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, targetUserId, requestUserId id.UUID) (models.File, error) {
 
 	var res models.File
 
@@ -698,7 +960,10 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 		file.Status = 1
 		err := s.DB.Create(&file).Error
 		if err != nil {
-			logs.ErrorLogger.Error("创建文件错误", zap.Error(err))
+			logs.ErrorLogger.Error("创建文件错误",
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.Error(err))
 			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "创建文件错误", err)
 		}
 		res = file
@@ -706,7 +971,7 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 
 	// 校验文件是否被关联
 	var count int64 = 0
-	s.DB.Model(&models.FileAlias{}).Where("file_id = ? and user_id = ?", res.ID, userId).Count(&count)
+	s.DB.Model(&models.FileAlias{}).Where("file_id = ? and user_id = ?", res.ID, targetUserId).Count(&count)
 
 	if count > 0 {
 		return res, nil
@@ -727,7 +992,9 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 		fa := models.FileAlias{}
 
 		if needFind {
-			tx.Model(&models.FileAlias{}).Where(" parent_id = ? and user_id = ? and file_name = ?", parentId, userId, path).First(&fa)
+			tx.Model(&models.FileAlias{}).
+				Where(" parent_id = ? and user_id = ? and file_name = ?", parentId, targetUserId, path).
+				First(&fa)
 		}
 
 		if !fa.ID.IsZero() {
@@ -738,7 +1005,7 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 
 		fa = models.FileAlias{
 			ID:          id.NewUUID(),
-			UserID:      userId,
+			UserID:      targetUserId,
 			ParentID:    parentId,
 			FileName:    path,
 			CreatedAt:   &now,
@@ -746,14 +1013,17 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 			IsPublic:    false,
 		}
 
-		fmt.Println(i == len(splitPaths)-1)
 		if i == len(splitPaths)-1 {
 			fa.FileID = res.ID
 		}
 
 		err = tx.Model(&models.FileAlias{}).Create(&fa).Error
 		if err != nil {
-			logs.ErrorLogger.Error("更新错误", zap.Error(err))
+			logs.ErrorLogger.Error("更新错误",
+				zap.String("fileHash", file.FileHash),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.Error(err))
 			return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新错误", err)
 		}
 
@@ -767,7 +1037,7 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 	return res, nil
 }
 
-func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, userId id.UUID) (file models.FileAlias, err error) {
+func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (file models.FileAlias, err error) {
 	simpleQuery := urds.SimpleCacheComponent[id.UUID, models.FileAlias]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
@@ -776,7 +1046,7 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 		Unmarshal: json.Unmarshal,
 		QueryExec: func() (models.FileAlias, error) {
 			res := models.FileAlias{}
-			err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, userId).Find(&res).Error
+			err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).Find(&res).Error
 			if err != nil {
 				return models.FileAlias{}, err
 			}
@@ -793,16 +1063,50 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 
 	aliasFile, err := simpleQuery.QueryWithCache()
 	if err != nil {
-		logs.ErrorLogger.Error("查询失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
 		return models.FileAlias{}, err
 	}
 
 	if !aliasFile.IsDirectory {
-		logs.ErrorLogger.Error("文件无法查询子目录", zap.Error(err))
+		logs.ErrorLogger.Error("文件无法查询子目录",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
 		return models.FileAlias{}, err
 	}
 
 	return aliasFile, nil
+}
+
+func (s *ServiceImpl) takeSingleFileAliasWithCleanCache(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (file models.FileAlias, err error) {
+	rs := models.FileAlias{}
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).First(&rs).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+	}
+
+	if rs.ID.IsZero() {
+		logs.ErrorLogger.Error("文件不存在",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "文件不存在", err)
+	}
+
+	s.Rds.Del(ctx, s.Keys.FileAliasKey(aliasId))
+
+	return rs, nil
 }
 
 func (s *ServiceImpl) takeFileList(ctx context.Context, aliasId id.UUID, isRecursive bool) (aliasItems []models.FileAlias, err error) {
@@ -824,7 +1128,9 @@ func (s *ServiceImpl) recursiveTakeFileList(ctx context.Context, aliasId id.UUID
 	aliasItems = make([]models.FileAlias, 0)
 	err = s.DB.Raw(sqlStmt, 1, aliasId).Scan(&aliasItems).Error
 	if err != nil {
-		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询被转存节点失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.Error(err))
 		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
 	}
 	return aliasItems, nil
@@ -839,7 +1145,9 @@ func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) 
 
 	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", aliasId).Find(&root).Error
 	if err != nil {
-		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询被转存节点失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.Error(err))
 		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
 	}
 
@@ -867,7 +1175,9 @@ func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) 
 		children := make([]models.FileAlias, 0)
 		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", head.ID).Find(&children).Error
 		if err != nil {
-			logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
+			logs.ErrorLogger.Error("查询被转存节点失败",
+				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.Error(err))
 			return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
 		}
 
@@ -920,7 +1230,10 @@ func (s *ServiceImpl) cleanFailChunks(ctx context.Context, path []string, fileId
 	// 1. 删除物理分片文件
 	for _, chunk := range path {
 		if err := os.Remove(chunk); err != nil && !os.IsNotExist(err) {
-			logs.ErrorLogger.Warn("删除分片文件失败", zap.String("path", chunk), zap.Error(err))
+			logs.ErrorLogger.Warn("删除分片文件失败",
+				zap.String("path", chunk),
+				zap.String("fileId", fileId.MarshalBase64()),
+				zap.Error(err))
 			// 不立即返回错误，尝试继续清理其他分片
 		}
 	}
@@ -946,7 +1259,11 @@ func (s *ServiceImpl) writeContentToFile(content []byte, hash string, requestId 
 	os.MkdirAll(dirPath, 0755)
 	file, err := os.Create(path)
 	if err != nil {
-		logs.ErrorLogger.Error("创建文件失败", zap.Error(err))
+		logs.ErrorLogger.Error("创建文件失败",
+			zap.String("requestId", requestId),
+			zap.String("path", path),
+			zap.String("fileHash", hash),
+			zap.Error(err))
 		return "", cerrors.NewCommonError(http.StatusInternalServerError, "创建文件失败", requestId, err)
 	}
 
@@ -954,7 +1271,11 @@ func (s *ServiceImpl) writeContentToFile(content []byte, hash string, requestId 
 
 	// 写入文件内容
 	if _, err = file.Write(content); err != nil {
-		logs.ErrorLogger.Error("写入分片内容失败", zap.Error(err))
+		logs.ErrorLogger.Error("写入分片内容失败",
+			zap.String("requestId", requestId),
+			zap.String("path", path),
+			zap.String("filehash", hash),
+			zap.Error(err))
 		return "", cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
 	}
 
@@ -965,16 +1286,27 @@ func (s *ServiceImpl) readFile(path string, hash string) ([]byte, error) {
 	cleanPath := filepath.Clean(path)
 	file, err := os.Open(cleanPath)
 	if err != nil {
+		logs.ErrorLogger.Error("打开文件失败",
+			zap.String("path", cleanPath),
+			zap.String("fileHash", hash),
+			zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "打开文件失败", "", err)
 	}
 	defer file.Close()
 
 	content, err := io.ReadAll(file)
 	if err != nil {
+		logs.ErrorLogger.Error("读取文件失败",
+			zap.String("path", cleanPath),
+			zap.String("fileHash", hash),
+			zap.Error(err))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "读取文件失败", "", err)
 	}
 
 	if toMd5.ContentToMd5(content) != hash {
+		logs.ErrorLogger.Error("文件损坏,无法读取",
+			zap.String("path", cleanPath),
+			zap.String("fileHash", hash))
 		return nil, cerrors.NewCommonError(http.StatusInternalServerError, "文件损坏,无法读取", "", err)
 	}
 
@@ -1003,7 +1335,12 @@ func (s *ServiceImpl) uploadToLocal(ctx context.Context, fileId id.UUID, chunkIn
 	}
 	err = tx.Model(&models.FileChunk{}).Create(&chunk).Error
 	if err != nil {
-		logs.ErrorLogger.Error("数据库记录分片错误", zap.Error(err))
+		logs.ErrorLogger.Error("数据库记录分片错误",
+			zap.String("requestId", requestId),
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.String("chunkHash", chunkHash),
+			zap.Uint64("chunkIndex", chunkIndex),
+			zap.Error(err))
 		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入分片失败", requestId, err)
 	}
 
@@ -1016,7 +1353,12 @@ func (s *ServiceImpl) uploadToLocal(ctx context.Context, fileId id.UUID, chunkIn
 	}
 	err = tx.Model(&models.FileChunkIndex{}).Create(&fileChunkIndex).Error
 	if err != nil {
-		logs.ErrorLogger.Error("数据库记录分片序号错误", zap.Error(err))
+		logs.ErrorLogger.Error("数据库记录分片序号错误",
+			zap.String("requestId", requestId),
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.String("chunkHash", chunkHash),
+			zap.Uint64("chunkIndex", chunkIndex),
+			zap.Error(err))
 		return false, requestId, cerrors.NewCommonError(http.StatusInternalServerError, "写入记录失败", requestId, err)
 	}
 
@@ -1053,7 +1395,9 @@ func (s *ServiceImpl) verifyFile(ctx context.Context, fileId id.UUID) (VerifyFil
 					order by fci.chunk_index`
 	err := s.DB.Raw(sql, fileId).Scan(&res).Error
 	if err != nil {
-		logs.ErrorLogger.Error("查询失败", zap.Error(err))
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.Error(err))
 		return VerifyFile{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 	}
 
@@ -1095,19 +1439,25 @@ func (s *ServiceImpl) verifyFile(ctx context.Context, fileId id.UUID) (VerifyFil
 	}
 
 	if err != nil {
-		logs.ErrorLogger.Error("校验出错", zap.Error(err))
+		logs.ErrorLogger.Error("校验出错",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.Error(err))
 		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "校验出错", err)
 	}
 
 	// 校验分片hash
 	if hash != f.FileHash {
 		s.cleanFailChunks(ctx, path, fileId)
-		logs.ErrorLogger.Error("分片传输出错", zap.String("hash", hash))
+		logs.ErrorLogger.Error("分片传输出错",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.String("hash", hash))
 		return VerifyFile{File: f}, cerrors.NewSQLError(http.StatusNoContent, "分片传输出错,请重试", nil)
 	}
 
 	if err = s.DB.Model(&models.File{}).Where("id = ?", fileId).Update("status", 3).Error; err != nil {
-		logs.ErrorLogger.Error("修改文件状态错误", zap.Error(err))
+		logs.ErrorLogger.Error("修改文件状态错误",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.Error(err))
 		return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, cerrors.NewSQLError(http.StatusInternalServerError, "修改文件状态错误", err)
 	}
 

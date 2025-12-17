@@ -7,28 +7,28 @@ option go_package = "/file";
 // ====================== 服务定义 ====================== //
 service FileService {
   // ---------- 文件上传模块 ---------- //
-  rpc InitUpload(InitUploadReq) returns (InitUploadResp);           // 初始化上传
-  rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);        // 上传分片
-  rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);         // 完成上传
+  rpc InitUpload(InitUploadReq) returns (InitUploadResp);             // 初始化上传
+  rpc UploadChunk(UploadChunkReq) returns (UploadChunkResp);          // 上传分片
+  rpc UploadVerify(UploadVerifyReq) returns (UploadVerifyResp);       // 完成上传
   rpc DirectUpload(DirectUploadReq) returns (DirectUploadResp);       //简单直接上传
 
   // ---------- 文件下载模块 ---------- //
-  rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);                 //文件转存
-  rpc PreDownLoad(PreDownLoadReq) returns (PreDownloadResp);
-  rpc Download(DownloadReq) returns (DownloadResp);      //文件下载
+  rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);       //文件转存
+  rpc PreDownLoad(PreDownLoadReq) returns (PreDownloadResp);          // 文件预下载
+  rpc Download(DownloadReq) returns (DownloadResp);                   //文件下载
 
   // ---------- 文件操作模块 ---------- //
-  rpc CreateFolder(CreateFolderReq) returns (FileMeta);                 // 创建目录
-  rpc RenameFile(RenameFileReq) returns (FileMeta);                     // 重命名文件
-  rpc MoveFile(MoveFileReq) returns (FileMeta);                         // 移动文件
-  rpc CopyFile(CopyFileReq) returns (FileMeta);                         // 复制文件
-  rpc UpdateFilePublic(UpdateFilePublicReq) returns (FileMeta);         // 修改文件公开状态
+  rpc CreateFolder(CreateFolderReq) returns (FileAliasItem);            // 创建目录
+  rpc RenameFile(RenameFileReq) returns (FileAliasItem);                // 重命名文件
+  rpc MoveFile(MoveFileReq) returns (FileAliasItem);                    // 移动文件
+  rpc CopyFile(CopyFileReq) returns (FileAliasItem);                    // 复制文件
+  rpc UpdateFilePublic(UpdateFilePublicReq) returns (FileAliasItem);    // 修改文件公开状态
 
   // ---------- 回收站管理模块 ---------- //
   rpc TrashFile(FileReq) returns (FileMeta);                            // 移入回收站
-  rpc DeleteFilePermanently(FileReq) returns (Empty);   // 彻底删除
+  rpc DeleteFile(FileReq) returns (Empty);                              // 彻底删除
   rpc RestoreFile(FileReq) returns (FileMeta);                          // 恢复文件
-  rpc GetTrashedFiles(UserReq) returns (ListDirectoryResp);         // 获取回收站文件
+  rpc GetTrashedFiles(UserReq) returns (ListDirectoryResp);             // 获取回收站文件
 
   // ---------- 文件查询模块 ---------- //
   rpc GetFileMeta(FileReq) returns (FileMeta);                      // 获取文件元数据
@@ -43,7 +43,6 @@ service FileService {
   // ---------- 存储管理模块 ---------- //
   rpc CleanExpiredTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理过期回收站
   rpc GetStorageQuota(UserReq) returns (StorageQuotaResp);          // 获取存储配额
-  rpc DeduplicateFiles(UserReq) returns (DeduplicationResp);        // 文件去重
 }
 
 // ====================== 数据结构 ====================== //
@@ -67,6 +66,28 @@ message FileMeta {
   uint64 status = 16;
 }
 
+message FileItem {
+  string file_content_hash = 1; // 文件内容哈希值
+  uint64 file_size = 2;
+  string file_name = 3;
+  string file_id = 4;
+  uint64 status = 5;
+  uint64 total=6;
+  string file_type=7;
+  uint64 store_type=8;
+  string file_cover=9;
+  string created_at=10;
+}
+
+message FileAliasItem{
+  string alias_id=1;
+  string user_id=2;
+  string file_id=3;
+  string file_name=4;
+  bool   is_directory=5;
+  bool   is_public=6;
+}
+
 // 文件大类枚举
 enum FileCategory {
   CATEGORY_UNKNOWN = 0;
@@ -85,19 +106,6 @@ message InitUploadReq {
   repeated FileItem file_list = 1; // 核心：要上传的文件列表
   string request_user_id = 2;
   string target_user_id = 3;
-}
-
-message FileItem {
-  string file_content_hash = 1; // 文件内容哈希值
-  uint64 file_size = 2;
-  string file_name = 3;
-  string file_id = 4;
-  uint64 status = 5;
-  uint64 total=6;
-  string file_type=7;
-  uint64 store_type=8;
-  string file_cover=9;
-  string created_at=10;
 }
 
 message InitUploadResp {
@@ -232,42 +240,48 @@ message RegisterUploadReq {
 
 // ---------- 文件操作 ---------- //
 message CreateFolderReq {
-  string target_user_id = 1;
-  string folder_name = 2;
-  string parent_id = 3;
+  string folder_name = 1;
+  string parent_alias_id = 2;
+  string target_user_id = 3;
   string request_user_id=4;
+  bool   is_root=5;
 }
 
 message RenameFileReq {
-  string file_id = 1;
+  string alias_id = 1;
   string new_name = 2;
   string request_user_id=3;
+  string target_user_id=4;
 }
 
 message MoveFileReq {
-  string file_id = 1;
+  string alias_id = 1;
   string new_parent_id = 2;
   string request_user_id=3;
+  string target_user_id=4;
+  bool   is_move_to_root=5;
 }
 
 message CopyFileReq {
-  string file_id = 1;
+  string alias_id = 1;
   string target_parent_id = 2;
   string request_user_id=3;
+  string target_user_id=4;
+  bool   is_move_to_root=5;
 }
 
 message UpdateFilePublicReq{
-  string file_id=1;
-  string target_user_id=2;
-  uint64 is_public=3;
-  string request_user_id=4;
+  string alias_id=1;
+  uint64 is_public=2;
+  string request_user_id=3;
+  string target_user_id=4;
 }
-
 
 // ---------- 回收站管理 ---------- //
 message FileReq {
-  string file_id = 1;
+  string alias_id = 1;
   string request_user_id=2;
+  string target_user_id=3;
 }
 
 // ---------- 文件查询 ---------- //
@@ -347,9 +361,4 @@ message StorageQuotaResp {
   uint64 used_bytes = 1;    // 已使用空间
   uint64 quota_bytes = 2;   // 总配额
   double usage_percent = 3; // 使用百分比
-}
-
-message DeduplicationResp {
-  uint64 duplicate_count = 1; // 发现的重复文件数
-  uint64 saved_space = 2;     // 节省的空间
 }

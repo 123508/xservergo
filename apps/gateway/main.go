@@ -184,6 +184,9 @@ func main() {
 		fileGroup.POST("/upload_chunk", file.UploadChunk)
 		fileGroup.POST("/upload_verify", file.UploadVerify)
 		fileGroup.POST("/direct_upload", file.DirectUpload)
+		fileGroup.POST("/create_folder", file.CreateFolder)
+		fileGroup.POST("/rename_file", file.RenameFile)
+		fileGroup.POST("/move_file", file.MoveFile)
 
 		if err := hz.Run(); err != nil {
 			panic(err)
