@@ -40,6 +40,7 @@ type FileService interface {
 	DeleteFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 	RestoreFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 	GetFileMeta(ctx context.Context, aliasId, requestUserId, targetUserId id.UUID) (fileAlias FileMeta, err error)
+	SearchFile(ctx context.Context, keyword, fileType string, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
 }
 
 type ServiceImpl struct {
@@ -553,7 +554,7 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, rootTy
 	listQuery := urds.ListCacheComponent[id.UUID, models.FileAlias]{
 		Rds:             s.Rds,
 		Ctx:             ctx,
-		ListKey:         s.Keys.FileAliasListKeyWithFunc(aliasId, "ListDirectory"),
+		ListKey:         s.Keys.FileAliasListKeyWithFunc(aliasId, "ListDirectory", page, pageSize),
 		DetailKeyPrefix: s.Keys.FileAliasKeyPrefix(),
 		Marshal:         json.Marshal,
 		Unmarshal:       json.Unmarshal,
@@ -596,80 +597,11 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, rootTy
 		return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 	}
 
-	ans := make([]FileAliasItem, len(res))
+	// 将每个文件目录进行填充
+	ans, err := s.fillFileAliasWithFile(ctx, res, s.Keys.FileListKeyWithFunc(aliasId, "ListDirectory", page, pageSize))
 
-	fileIdList := make([]id.UUID, 0)
-	for _, v := range res {
-		if !v.FileID.IsZero() {
-			fileIdList = append(fileIdList, v.FileID)
-		}
-	}
-
-	FileMap := map[id.UUID]models.File{}
-
-	//如果存在文件就查询一次文件信息
-	if len(fileIdList) != 0 {
-		fileListQuery := urds.ListCacheComponent[id.UUID, models.File]{
-			Rds:             s.Rds,
-			Ctx:             ctx,
-			ListKey:         s.Keys.FileListKeyWithFunc(aliasId, "ListDirectory"),
-			DetailKeyPrefix: s.Keys.FileKeyPrefix(),
-			Marshal:         json.Marshal,
-			Unmarshal:       json.Unmarshal,
-			FullQueryExec: func() ([]models.File, error) {
-				data := make([]models.File, 0)
-				err = s.DB.Model(&models.File{}).Where("id in ?", fileIdList).Find(&data).Error
-				if err != nil {
-					return nil, err
-				}
-				return data, nil
-			},
-			PartQueryExec: func(fails []id.UUID) ([]models.File, error) {
-				data := make([]models.File, 0)
-				err = s.DB.Model(&models.File{}).Where("id in ?", fails).Find(&data).Error
-				if err != nil {
-					return nil, err
-				}
-				return data, nil
-			},
-			Expires:     30 * time.Minute,
-			Random:      2 * time.Minute,
-			MaxLostRate: 30,
-			Sort: func(aliases []models.File) []models.File {
-				return aliases
-			},
-		}
-
-		fileList, err := fileListQuery.QueryListWithCache()
-		if err != nil {
-			logs.ErrorLogger.Error("查询失败",
-				zap.String("aliasId", aliasId.MarshalBase64()),
-				zap.String("targetUserId", targetUserId.MarshalBase64()),
-				zap.String("requestUserId", requestUserId.MarshalBase64()),
-				zap.Uint64("page", page),
-				zap.Uint64("pageSize", pageSize),
-				zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
-				zap.Error(err))
-			return nil, 0, err
-		}
-		for _, v := range fileList {
-			FileMap[v.ID] = v
-		}
-	}
-
-	for i, v := range res {
-		ans[i] = FileAliasItem{
-			FileName:    v.FileName,
-			AliasID:     v.ID,
-			CreatedAt:   "",
-			IsDirectory: v.IsDirectory,
-		}
-		if item, ok := FileMap[v.FileID]; ok {
-			ans[i].FileType = item.FileType
-			ans[i].FileCover = item.FileCover
-			ans[i].FileSize = item.FileSize
-			ans[i].FileID = item.ID
-		}
+	if err != nil {
+		return nil, 0, err
 	}
 
 	return ans, uint64(count), nil
@@ -1135,6 +1067,157 @@ func (s *ServiceImpl) GetFileMeta(ctx context.Context, aliasId, requestUserId, t
 	result.FileType = file.FileType
 
 	return result, nil
+}
+
+func (s *ServiceImpl) SearchFile(ctx context.Context, keyword, fileType string, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error) {
+
+	//查询文件(夹)目录
+	listQuery := urds.ListCacheComponent[id.UUID, models.FileAlias]{
+		Rds:             s.Rds,
+		Ctx:             ctx,
+		ListKey:         s.Keys.FileAliasListKeyWithFunc(targetUserId, "SearchFile", page, pageSize, keyword, fileType),
+		DetailKeyPrefix: s.Keys.FileAliasKeyPrefix(),
+		Marshal:         json.Marshal,
+		Unmarshal:       json.Unmarshal,
+		FullQueryExec: func() ([]models.FileAlias, error) {
+			var res []models.FileAlias
+
+			// 安全地构建搜索条件
+			var searchCondition string
+			if keyword != "" && fileType != "" {
+				searchCondition = "+" + keyword + " +" + fileType
+			} else if keyword != "" {
+				searchCondition = "+" + keyword
+			} else if fileType != "" {
+				searchCondition = "+" + fileType
+			} else {
+				searchCondition = ""
+			}
+
+			offset := (page - 1) * pageSize
+
+			sqlStmt := `select * from file_alias where match(file_name) against(? in boolean mode) and user_id = ?`
+
+			err := s.DB.Raw(sqlStmt, searchCondition, targetUserId).Offset(int(offset)).Limit(int(pageSize)).Scan(&res).Error
+
+			if err != nil {
+				return nil, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+			}
+
+			return res, nil
+		},
+		PartQueryExec: func(fails []id.UUID) ([]models.FileAlias, error) {
+			res := make([]models.FileAlias, 0)
+			err = s.DB.Model(&models.FileAlias{}).Where("id in ?", fails).Find(&res).Error
+			if err != nil {
+				return nil, err
+			}
+			return res, nil
+		},
+		Expires:     30 * time.Minute,
+		Random:      2 * time.Minute,
+		MaxLostRate: 30,
+		Sort: func(aliases []models.FileAlias) []models.FileAlias {
+			return aliases
+		},
+	}
+
+	res, err := listQuery.QueryListWithCache()
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("keyword", keyword),
+			zap.String("fileType", fileType),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("page", page),
+			zap.Uint64("pageSize", pageSize),
+			zap.Error(err))
+		return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+	}
+
+	// 将每个文件目录进行填充
+	ans, err := s.fillFileAliasWithFile(ctx, res, s.Keys.FileListKeyWithFunc(targetUserId, "SearchFile", page, pageSize, keyword, fileType))
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return ans, uint64(len(ans)), nil
+}
+
+func (s *ServiceImpl) fillFileAliasWithFile(ctx context.Context, res []models.FileAlias, fileListKey string) (files []FileAliasItem, err error) {
+	ans := make([]FileAliasItem, len(res))
+
+	fileIdList := make([]id.UUID, 0)
+	for _, v := range res {
+		if !v.FileID.IsZero() {
+			fileIdList = append(fileIdList, v.FileID)
+		}
+	}
+
+	FileMap := map[id.UUID]models.File{}
+
+	//如果存在文件就查询一次文件信息
+	if len(fileIdList) != 0 {
+		fileListQuery := urds.ListCacheComponent[id.UUID, models.File]{
+			Rds:             s.Rds,
+			Ctx:             ctx,
+			ListKey:         fileListKey,
+			DetailKeyPrefix: s.Keys.FileKeyPrefix(),
+			Marshal:         json.Marshal,
+			Unmarshal:       json.Unmarshal,
+			FullQueryExec: func() ([]models.File, error) {
+				data := make([]models.File, 0)
+				err = s.DB.Model(&models.File{}).Where("id in ?", fileIdList).Find(&data).Error
+				if err != nil {
+					return nil, err
+				}
+				return data, nil
+			},
+			PartQueryExec: func(fails []id.UUID) ([]models.File, error) {
+				data := make([]models.File, 0)
+				err = s.DB.Model(&models.File{}).Where("id in ?", fails).Find(&data).Error
+				if err != nil {
+					return nil, err
+				}
+				return data, nil
+			},
+			Expires:     30 * time.Minute,
+			Random:      2 * time.Minute,
+			MaxLostRate: 30,
+			Sort: func(aliases []models.File) []models.File {
+				return aliases
+			},
+		}
+
+		fileList, err := fileListQuery.QueryListWithCache()
+		if err != nil {
+			logs.ErrorLogger.Error("查询失败",
+				zap.String("fileListKey", fileListKey),
+				zap.Error(err))
+			return nil, err
+		}
+		for _, v := range fileList {
+			FileMap[v.ID] = v
+		}
+	}
+
+	for i, v := range res {
+		ans[i] = FileAliasItem{
+			FileName:    v.FileName,
+			AliasID:     v.ID,
+			CreatedAt:   "",
+			IsDirectory: v.IsDirectory,
+		}
+		if item, ok := FileMap[v.FileID]; ok {
+			ans[i].FileType = item.FileType
+			ans[i].FileCover = item.FileCover
+			ans[i].FileSize = item.FileSize
+			ans[i].FileID = item.ID
+		}
+	}
+
+	return ans, nil
 }
 
 func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, targetUserId, requestUserId id.UUID) (models.File, error) {

@@ -31,7 +31,10 @@ func logRequest(c *app.RequestContext, message string) {
 
 	param = append(param, zap.String("ip", getClientIP(c)),
 		zap.String("method", string(c.Method())),
-		zap.String("path", string(c.Path())))
+		zap.String("path", string(c.Path())),
+		zap.String("Host", string(c.Host())),
+		zap.String("Content-Type", string(c.ContentType())),
+		zap.String("User-Agent", string(c.UserAgent())))
 
 	logs.AccessLogger.Info(message, param...)
 }
@@ -45,7 +48,10 @@ func logResponse(c *app.RequestContext, message string, duration time.Duration) 
 		zap.String("method", string(c.Method())),
 		zap.String("path", string(c.Path())),
 		zap.Duration("duration", duration),
-		zap.Int("status", c.Response.StatusCode()))
+		zap.Int("status", c.Response.StatusCode()),
+		zap.String("User-Agent", string(c.UserAgent())),
+		zap.String("Host", string(c.Host())),
+		zap.String("Content-Type", string(c.ContentType())))
 
 	logs.AccessLogger.Info(message, param...)
 }

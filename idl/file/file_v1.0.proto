@@ -29,17 +29,16 @@ service FileService {
 
   // ---------- 文件查询模块 ---------- //
   rpc GetFileMeta(FileReq) returns (FileMetaResp);                  // 获取文件元数据
-  rpc ListDirectory(ListDirectoryReq) returns (ListDirectoryResp);  // 列出目录内容
-  rpc SearchFiles(SearchFilesReq) returns (SearchFilesResp);        // 搜索文件
+  rpc ListDirectory(ListDirectoryReq) returns (FileListResp);       // 列出目录内容
+  rpc SearchFiles(SearchFilesReq) returns (FileListResp);           // 搜索文件
 
   // ---------- 文件预览模块 ---------- //
-  rpc BuildSharedUrl(FileReq)returns(BuildSharedUrlResp);           // 构建临时url用于分享
-  rpc GetPreviewUrl(FileReq) returns (PreviewResp);                 // 获取预览URL
+  rpc BuildSharedUrl(FileReq)returns(PreviewUrlResp);           // 构建临时url用于分享
   rpc GetTranscodeStatus(FileReq) returns (TranscodeStatusResp);    // 获取转码状态
-  rpc GenerateDocumentPreview(FileReq) returns (PreviewResp);       // 生成文档预览
+  rpc GenerateFilePreview(FileReq) returns (PreviewUrlResp);       // 生成文档预览
 
   // ---------- 存储管理模块 ---------- //
-  rpc CleanTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理过期回收站
+  rpc CleanTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理回收站
   rpc GetStorageQuota(StorageQuotaReq) returns (StorageQuotaResp);          // 获取存储配额
 }
 
@@ -66,17 +65,6 @@ message FileAliasItem{
   string file_id=3;
   string file_name=4;
   bool   is_directory=5;
-}
-
-// 文件大类枚举
-enum FileCategory {
-  CATEGORY_UNKNOWN = 0;
-  VIDEO = 1;        // 视频
-  AUDIO = 2;        // 音频
-  IMAGE = 3;        // 图片
-  DOCUMENT = 4;     // 文档
-  ARCHIVE = 5;      // 压缩包
-  OTHER = 6;        // 其他
 }
 
 // ---------- 上传相关 ---------- //
@@ -240,8 +228,11 @@ message MoveFileReq {
   bool   is_move_to_root=5;
 }
 
-message BuildSharedUrlResp{
-  string preview_url=1;
+message PreviewUrlResp{
+  string preview_url = 1;     // 预览URL (带签名)
+  uint64 expire_seconds = 2;   // URL有效期(秒)
+  string request_user_id=3;
+  string request_id = 4;
 }
 
 // ---------- 回收站管理 ---------- //
@@ -275,7 +266,7 @@ message ListDirectoryReq {
   uint64 root_type=6;        // 根目录类型 1:根目录 2:非根目录 3:回收站目录
 }
 
-message ListDirectoryResp {
+message FileListResp {
   repeated FileItem files = 1;
   uint64 total_count = 2;
   uint64 page = 3;
@@ -283,25 +274,15 @@ message ListDirectoryResp {
 }
 
 message SearchFilesReq {
-  string keyword = 2;
-  FileCategory category = 3;  // 可选：按类别过滤
-  uint64 page = 4;
-  uint64 page_size = 5;
-  string request_user_id=6;
-}
-
-message SearchFilesResp {
-  repeated FileItem files = 1;
-  uint64 total_count = 2;
+  string keyword = 1;
+  string file_type = 2;  // 可选：按类别过滤
+  uint64 page = 3;
+  uint64 page_size = 4;
+  string request_user_id=5;
+  string target_user_id=6;
 }
 
 // ---------- 文件预览 ---------- //
-message PreviewResp {
-  string preview_url = 1;     // 预览URL (带签名)
-  uint64 expire_seconds = 2;   // URL有效期(秒)
-  string request_user_id=3;
-  string request_id = 4;
-}
 
 message PreviewDocumentResp{
   uint64 page = 1;      //当前页数

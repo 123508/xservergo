@@ -172,8 +172,12 @@ func (f FileKeys) FIleMd5AndNameAndSizeKey(fileMd5, fileName string, fileSize ui
 	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_md5_name_size", fileMd5, fileName, fileSize)
 }
 
-func (f FileKeys) FileListKeyWithFunc(userId id.UUID, funcName string) string {
-	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_list", userId, funcName)
+func (f FileKeys) FileListKeyWithFunc(userId id.UUID, funcName string, page, pageSize uint64, sign ...string) string {
+	key := TakeKey(f.GetEnvPrefix(), f.GetService(), "file_list", userId, funcName, page, pageSize)
+	for _, v := range sign {
+		key = TakeKey(key, v)
+	}
+	return key
 }
 
 func (f FileKeys) DetailFileQueryKey() string {
@@ -204,8 +208,12 @@ func (f FileKeys) FileAliasKeyPrefix() string {
 	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias")
 }
 
-func (f FileKeys) FileAliasListKeyWithFunc(alisId id.UUID, funcName string) string {
-	return TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias_list", alisId, funcName)
+func (f FileKeys) FileAliasListKeyWithFunc(alisId id.UUID, funcName string, page, pageSize uint64, sign ...string) string {
+	key := TakeKey(f.GetEnvPrefix(), f.GetService(), "file_alias_list", alisId, funcName, page, pageSize)
+	for _, v := range sign {
+		key = TakeKey(key, v)
+	}
+	return key
 }
 
 func (f FileKeys) FileAliasCountKey(aliasId id.UUID) string {
