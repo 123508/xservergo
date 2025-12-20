@@ -10,3 +10,7 @@ type FileItem struct {
 	FileType        string `json:"file_type"`
 	StoreType       uint64 `json:"store_type"`
 }
+
+type FileReq struct {
+	AliasId string `json:"alias_id"`
+}

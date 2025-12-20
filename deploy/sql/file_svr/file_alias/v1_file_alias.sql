@@ -6,6 +6,7 @@ create table if not exists file_alias(
     file_id   binary(16) not null comment '文件id',
     user_id   binary(16) not null comment '用户id',
     parent_id binary(16) default null comment '父id',
+    recovery_id binary(16) default null comment '进入回收站时的父id',
     file_name varchar(200) not null comment '文件名称',
 
     -- 时间戳
@@ -13,7 +14,6 @@ create table if not exists file_alias(
     updated_at datetime(3) not null default current_timestamp(3) on update CURRENT_TIMESTAMP(3) comment '更新时间',
 
     is_directory tinyint(1) not null default 0 comment '0:文件 1:目录',
-    is_public tinyint(1) comment '0不公开 1公开',
 
     primary key udx_file_user_id(id),
     unique udx_parent_user_file(parent_id,user_id,file_name),

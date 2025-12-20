@@ -14,7 +14,7 @@ type ListDirectoryReq struct {
 	Page         uint64 `json:"page"`
 	PageSize     uint64 `json:"page_size"`
 	AliasId      string `json:"alias_id"`
-	IsRoot       bool   `json:"is_root"`
+	RootType     uint64 `json:"root_type"`
 	TargetUserId string `json:"target_user_id"`
 }
 
@@ -53,7 +53,7 @@ func ListDirectory(ctx context.Context, c *app.RequestContext) {
 		PageSize:      dir.PageSize,
 		RequestUserId: requestUserId,
 		AliasId:       dir.AliasId,
-		IsRoot:        dir.IsRoot,
+		RootType:      dir.RootType,
 	}
 
 	resp, err := infra.FileClient.ListDirectory(ctx, req)

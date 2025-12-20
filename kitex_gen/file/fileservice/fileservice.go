@@ -43,13 +43,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"TransferSave": kitex.NewMethodInfo(
-		transferSaveHandler,
-		newTransferSaveArgs,
-		newTransferSaveResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"PreDownLoad": kitex.NewMethodInfo(
 		preDownLoadHandler,
 		newPreDownLoadArgs,
@@ -78,24 +71,17 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"TransferSave": kitex.NewMethodInfo(
+		transferSaveHandler,
+		newTransferSaveArgs,
+		newTransferSaveResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 	"MoveFile": kitex.NewMethodInfo(
 		moveFileHandler,
 		newMoveFileArgs,
 		newMoveFileResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"CopyFile": kitex.NewMethodInfo(
-		copyFileHandler,
-		newCopyFileArgs,
-		newCopyFileResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
-	"UpdateFilePublic": kitex.NewMethodInfo(
-		updateFilePublicHandler,
-		newUpdateFilePublicArgs,
-		newUpdateFilePublicResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -120,13 +106,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"GetTrashedFiles": kitex.NewMethodInfo(
-		getTrashedFilesHandler,
-		newGetTrashedFilesArgs,
-		newGetTrashedFilesResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"GetFileMeta": kitex.NewMethodInfo(
 		getFileMetaHandler,
 		newGetFileMetaArgs,
@@ -145,6 +124,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		searchFilesHandler,
 		newSearchFilesArgs,
 		newSearchFilesResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
+	"BuildSharedUrl": kitex.NewMethodInfo(
+		buildSharedUrlHandler,
+		newBuildSharedUrlArgs,
+		newBuildSharedUrlResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -169,10 +155,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"CleanExpiredTrash": kitex.NewMethodInfo(
-		cleanExpiredTrashHandler,
-		newCleanExpiredTrashArgs,
-		newCleanExpiredTrashResult,
+	"CleanTrash": kitex.NewMethodInfo(
+		cleanTrashHandler,
+		newCleanTrashArgs,
+		newCleanTrashResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -693,117 +679,6 @@ func (p *DirectUploadResult) GetResult() interface{} {
 	return p.Success
 }
 
-func transferSaveHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.TransferSaveReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).TransferSave(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *TransferSaveArgs:
-		success, err := handler.(file.FileService).TransferSave(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*TransferSaveResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newTransferSaveArgs() interface{} {
-	return &TransferSaveArgs{}
-}
-
-func newTransferSaveResult() interface{} {
-	return &TransferSaveResult{}
-}
-
-type TransferSaveArgs struct {
-	Req *file.TransferSaveReq
-}
-
-func (p *TransferSaveArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *TransferSaveArgs) Unmarshal(in []byte) error {
-	msg := new(file.TransferSaveReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var TransferSaveArgs_Req_DEFAULT *file.TransferSaveReq
-
-func (p *TransferSaveArgs) GetReq() *file.TransferSaveReq {
-	if !p.IsSetReq() {
-		return TransferSaveArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *TransferSaveArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *TransferSaveArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type TransferSaveResult struct {
-	Success *file.TransferSaveResp
-}
-
-var TransferSaveResult_Success_DEFAULT *file.TransferSaveResp
-
-func (p *TransferSaveResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *TransferSaveResult) Unmarshal(in []byte) error {
-	msg := new(file.TransferSaveResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *TransferSaveResult) GetSuccess() *file.TransferSaveResp {
-	if !p.IsSetSuccess() {
-		return TransferSaveResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *TransferSaveResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.TransferSaveResp)
-}
-
-func (p *TransferSaveResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *TransferSaveResult) GetResult() interface{} {
-	return p.Success
-}
-
 func preDownLoadHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
@@ -1248,6 +1123,117 @@ func (p *RenameFileResult) GetResult() interface{} {
 	return p.Success
 }
 
+func transferSaveHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(file.TransferSaveReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(file.FileService).TransferSave(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *TransferSaveArgs:
+		success, err := handler.(file.FileService).TransferSave(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*TransferSaveResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newTransferSaveArgs() interface{} {
+	return &TransferSaveArgs{}
+}
+
+func newTransferSaveResult() interface{} {
+	return &TransferSaveResult{}
+}
+
+type TransferSaveArgs struct {
+	Req *file.TransferSaveReq
+}
+
+func (p *TransferSaveArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *TransferSaveArgs) Unmarshal(in []byte) error {
+	msg := new(file.TransferSaveReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var TransferSaveArgs_Req_DEFAULT *file.TransferSaveReq
+
+func (p *TransferSaveArgs) GetReq() *file.TransferSaveReq {
+	if !p.IsSetReq() {
+		return TransferSaveArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *TransferSaveArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *TransferSaveArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type TransferSaveResult struct {
+	Success *file.TransferSaveResp
+}
+
+var TransferSaveResult_Success_DEFAULT *file.TransferSaveResp
+
+func (p *TransferSaveResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *TransferSaveResult) Unmarshal(in []byte) error {
+	msg := new(file.TransferSaveResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *TransferSaveResult) GetSuccess() *file.TransferSaveResp {
+	if !p.IsSetSuccess() {
+		return TransferSaveResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *TransferSaveResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.TransferSaveResp)
+}
+
+func (p *TransferSaveResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *TransferSaveResult) GetResult() interface{} {
+	return p.Success
+}
+
 func moveFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
@@ -1359,228 +1345,6 @@ func (p *MoveFileResult) GetResult() interface{} {
 	return p.Success
 }
 
-func copyFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.CopyFileReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).CopyFile(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *CopyFileArgs:
-		success, err := handler.(file.FileService).CopyFile(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*CopyFileResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newCopyFileArgs() interface{} {
-	return &CopyFileArgs{}
-}
-
-func newCopyFileResult() interface{} {
-	return &CopyFileResult{}
-}
-
-type CopyFileArgs struct {
-	Req *file.CopyFileReq
-}
-
-func (p *CopyFileArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *CopyFileArgs) Unmarshal(in []byte) error {
-	msg := new(file.CopyFileReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var CopyFileArgs_Req_DEFAULT *file.CopyFileReq
-
-func (p *CopyFileArgs) GetReq() *file.CopyFileReq {
-	if !p.IsSetReq() {
-		return CopyFileArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *CopyFileArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *CopyFileArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type CopyFileResult struct {
-	Success *file.FileAliasItem
-}
-
-var CopyFileResult_Success_DEFAULT *file.FileAliasItem
-
-func (p *CopyFileResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *CopyFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileAliasItem)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *CopyFileResult) GetSuccess() *file.FileAliasItem {
-	if !p.IsSetSuccess() {
-		return CopyFileResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *CopyFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileAliasItem)
-}
-
-func (p *CopyFileResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *CopyFileResult) GetResult() interface{} {
-	return p.Success
-}
-
-func updateFilePublicHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.UpdateFilePublicReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).UpdateFilePublic(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *UpdateFilePublicArgs:
-		success, err := handler.(file.FileService).UpdateFilePublic(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*UpdateFilePublicResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newUpdateFilePublicArgs() interface{} {
-	return &UpdateFilePublicArgs{}
-}
-
-func newUpdateFilePublicResult() interface{} {
-	return &UpdateFilePublicResult{}
-}
-
-type UpdateFilePublicArgs struct {
-	Req *file.UpdateFilePublicReq
-}
-
-func (p *UpdateFilePublicArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *UpdateFilePublicArgs) Unmarshal(in []byte) error {
-	msg := new(file.UpdateFilePublicReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var UpdateFilePublicArgs_Req_DEFAULT *file.UpdateFilePublicReq
-
-func (p *UpdateFilePublicArgs) GetReq() *file.UpdateFilePublicReq {
-	if !p.IsSetReq() {
-		return UpdateFilePublicArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *UpdateFilePublicArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *UpdateFilePublicArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type UpdateFilePublicResult struct {
-	Success *file.FileAliasItem
-}
-
-var UpdateFilePublicResult_Success_DEFAULT *file.FileAliasItem
-
-func (p *UpdateFilePublicResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *UpdateFilePublicResult) Unmarshal(in []byte) error {
-	msg := new(file.FileAliasItem)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *UpdateFilePublicResult) GetSuccess() *file.FileAliasItem {
-	if !p.IsSetSuccess() {
-		return UpdateFilePublicResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *UpdateFilePublicResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileAliasItem)
-}
-
-func (p *UpdateFilePublicResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *UpdateFilePublicResult) GetResult() interface{} {
-	return p.Success
-}
-
 func trashFileHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
@@ -1652,10 +1416,10 @@ func (p *TrashFileArgs) GetFirstArgument() interface{} {
 }
 
 type TrashFileResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var TrashFileResult_Success_DEFAULT *file.FileMeta
+var TrashFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *TrashFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1665,7 +1429,7 @@ func (p *TrashFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *TrashFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1673,7 +1437,7 @@ func (p *TrashFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *TrashFileResult) GetSuccess() *file.FileMeta {
+func (p *TrashFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return TrashFileResult_Success_DEFAULT
 	}
@@ -1681,7 +1445,7 @@ func (p *TrashFileResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *TrashFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *TrashFileResult) IsSetSuccess() bool {
@@ -1763,10 +1527,10 @@ func (p *DeleteFileArgs) GetFirstArgument() interface{} {
 }
 
 type DeleteFileResult struct {
-	Success *file.Empty
+	Success *file.FileAliasItem
 }
 
-var DeleteFileResult_Success_DEFAULT *file.Empty
+var DeleteFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *DeleteFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1776,7 +1540,7 @@ func (p *DeleteFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *DeleteFileResult) Unmarshal(in []byte) error {
-	msg := new(file.Empty)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1784,7 +1548,7 @@ func (p *DeleteFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *DeleteFileResult) GetSuccess() *file.Empty {
+func (p *DeleteFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return DeleteFileResult_Success_DEFAULT
 	}
@@ -1792,7 +1556,7 @@ func (p *DeleteFileResult) GetSuccess() *file.Empty {
 }
 
 func (p *DeleteFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.Empty)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *DeleteFileResult) IsSetSuccess() bool {
@@ -1874,10 +1638,10 @@ func (p *RestoreFileArgs) GetFirstArgument() interface{} {
 }
 
 type RestoreFileResult struct {
-	Success *file.FileMeta
+	Success *file.FileAliasItem
 }
 
-var RestoreFileResult_Success_DEFAULT *file.FileMeta
+var RestoreFileResult_Success_DEFAULT *file.FileAliasItem
 
 func (p *RestoreFileResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1887,7 +1651,7 @@ func (p *RestoreFileResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *RestoreFileResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileAliasItem)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1895,7 +1659,7 @@ func (p *RestoreFileResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *RestoreFileResult) GetSuccess() *file.FileMeta {
+func (p *RestoreFileResult) GetSuccess() *file.FileAliasItem {
 	if !p.IsSetSuccess() {
 		return RestoreFileResult_Success_DEFAULT
 	}
@@ -1903,7 +1667,7 @@ func (p *RestoreFileResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *RestoreFileResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileAliasItem)
 }
 
 func (p *RestoreFileResult) IsSetSuccess() bool {
@@ -1911,117 +1675,6 @@ func (p *RestoreFileResult) IsSetSuccess() bool {
 }
 
 func (p *RestoreFileResult) GetResult() interface{} {
-	return p.Success
-}
-
-func getTrashedFilesHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.UserReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).GetTrashedFiles(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *GetTrashedFilesArgs:
-		success, err := handler.(file.FileService).GetTrashedFiles(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*GetTrashedFilesResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newGetTrashedFilesArgs() interface{} {
-	return &GetTrashedFilesArgs{}
-}
-
-func newGetTrashedFilesResult() interface{} {
-	return &GetTrashedFilesResult{}
-}
-
-type GetTrashedFilesArgs struct {
-	Req *file.UserReq
-}
-
-func (p *GetTrashedFilesArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *GetTrashedFilesArgs) Unmarshal(in []byte) error {
-	msg := new(file.UserReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var GetTrashedFilesArgs_Req_DEFAULT *file.UserReq
-
-func (p *GetTrashedFilesArgs) GetReq() *file.UserReq {
-	if !p.IsSetReq() {
-		return GetTrashedFilesArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *GetTrashedFilesArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *GetTrashedFilesArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type GetTrashedFilesResult struct {
-	Success *file.ListDirectoryResp
-}
-
-var GetTrashedFilesResult_Success_DEFAULT *file.ListDirectoryResp
-
-func (p *GetTrashedFilesResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *GetTrashedFilesResult) Unmarshal(in []byte) error {
-	msg := new(file.ListDirectoryResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *GetTrashedFilesResult) GetSuccess() *file.ListDirectoryResp {
-	if !p.IsSetSuccess() {
-		return GetTrashedFilesResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *GetTrashedFilesResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.ListDirectoryResp)
-}
-
-func (p *GetTrashedFilesResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *GetTrashedFilesResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2096,10 +1749,10 @@ func (p *GetFileMetaArgs) GetFirstArgument() interface{} {
 }
 
 type GetFileMetaResult struct {
-	Success *file.FileMeta
+	Success *file.FileMetaResp
 }
 
-var GetFileMetaResult_Success_DEFAULT *file.FileMeta
+var GetFileMetaResult_Success_DEFAULT *file.FileMetaResp
 
 func (p *GetFileMetaResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -2109,7 +1762,7 @@ func (p *GetFileMetaResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *GetFileMetaResult) Unmarshal(in []byte) error {
-	msg := new(file.FileMeta)
+	msg := new(file.FileMetaResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2117,7 +1770,7 @@ func (p *GetFileMetaResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *GetFileMetaResult) GetSuccess() *file.FileMeta {
+func (p *GetFileMetaResult) GetSuccess() *file.FileMetaResp {
 	if !p.IsSetSuccess() {
 		return GetFileMetaResult_Success_DEFAULT
 	}
@@ -2125,7 +1778,7 @@ func (p *GetFileMetaResult) GetSuccess() *file.FileMeta {
 }
 
 func (p *GetFileMetaResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.FileMeta)
+	p.Success = x.(*file.FileMetaResp)
 }
 
 func (p *GetFileMetaResult) IsSetSuccess() bool {
@@ -2355,6 +2008,117 @@ func (p *SearchFilesResult) IsSetSuccess() bool {
 }
 
 func (p *SearchFilesResult) GetResult() interface{} {
+	return p.Success
+}
+
+func buildSharedUrlHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(file.FileReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(file.FileService).BuildSharedUrl(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *BuildSharedUrlArgs:
+		success, err := handler.(file.FileService).BuildSharedUrl(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*BuildSharedUrlResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newBuildSharedUrlArgs() interface{} {
+	return &BuildSharedUrlArgs{}
+}
+
+func newBuildSharedUrlResult() interface{} {
+	return &BuildSharedUrlResult{}
+}
+
+type BuildSharedUrlArgs struct {
+	Req *file.FileReq
+}
+
+func (p *BuildSharedUrlArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *BuildSharedUrlArgs) Unmarshal(in []byte) error {
+	msg := new(file.FileReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var BuildSharedUrlArgs_Req_DEFAULT *file.FileReq
+
+func (p *BuildSharedUrlArgs) GetReq() *file.FileReq {
+	if !p.IsSetReq() {
+		return BuildSharedUrlArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *BuildSharedUrlArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *BuildSharedUrlArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type BuildSharedUrlResult struct {
+	Success *file.BuildSharedUrlResp
+}
+
+var BuildSharedUrlResult_Success_DEFAULT *file.BuildSharedUrlResp
+
+func (p *BuildSharedUrlResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *BuildSharedUrlResult) Unmarshal(in []byte) error {
+	msg := new(file.BuildSharedUrlResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *BuildSharedUrlResult) GetSuccess() *file.BuildSharedUrlResp {
+	if !p.IsSetSuccess() {
+		return BuildSharedUrlResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *BuildSharedUrlResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.BuildSharedUrlResp)
+}
+
+func (p *BuildSharedUrlResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *BuildSharedUrlResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2691,7 +2455,7 @@ func (p *GenerateDocumentPreviewResult) GetResult() interface{} {
 	return p.Success
 }
 
-func cleanExpiredTrashHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func cleanTrashHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
@@ -2699,43 +2463,43 @@ func cleanExpiredTrashHandler(ctx context.Context, handler interface{}, arg, res
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).CleanExpiredTrash(ctx, req)
+		resp, err := handler.(file.FileService).CleanTrash(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *CleanExpiredTrashArgs:
-		success, err := handler.(file.FileService).CleanExpiredTrash(ctx, s.Req)
+	case *CleanTrashArgs:
+		success, err := handler.(file.FileService).CleanTrash(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*CleanExpiredTrashResult)
+		realResult := result.(*CleanTrashResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newCleanExpiredTrashArgs() interface{} {
-	return &CleanExpiredTrashArgs{}
+func newCleanTrashArgs() interface{} {
+	return &CleanTrashArgs{}
 }
 
-func newCleanExpiredTrashResult() interface{} {
-	return &CleanExpiredTrashResult{}
+func newCleanTrashResult() interface{} {
+	return &CleanTrashResult{}
 }
 
-type CleanExpiredTrashArgs struct {
+type CleanTrashArgs struct {
 	Req *file.CleanTrashReq
 }
 
-func (p *CleanExpiredTrashArgs) Marshal(out []byte) ([]byte, error) {
+func (p *CleanTrashArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *CleanExpiredTrashArgs) Unmarshal(in []byte) error {
+func (p *CleanTrashArgs) Unmarshal(in []byte) error {
 	msg := new(file.CleanTrashReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -2744,37 +2508,37 @@ func (p *CleanExpiredTrashArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var CleanExpiredTrashArgs_Req_DEFAULT *file.CleanTrashReq
+var CleanTrashArgs_Req_DEFAULT *file.CleanTrashReq
 
-func (p *CleanExpiredTrashArgs) GetReq() *file.CleanTrashReq {
+func (p *CleanTrashArgs) GetReq() *file.CleanTrashReq {
 	if !p.IsSetReq() {
-		return CleanExpiredTrashArgs_Req_DEFAULT
+		return CleanTrashArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *CleanExpiredTrashArgs) IsSetReq() bool {
+func (p *CleanTrashArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *CleanExpiredTrashArgs) GetFirstArgument() interface{} {
+func (p *CleanTrashArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type CleanExpiredTrashResult struct {
+type CleanTrashResult struct {
 	Success *file.CleanTrashResp
 }
 
-var CleanExpiredTrashResult_Success_DEFAULT *file.CleanTrashResp
+var CleanTrashResult_Success_DEFAULT *file.CleanTrashResp
 
-func (p *CleanExpiredTrashResult) Marshal(out []byte) ([]byte, error) {
+func (p *CleanTrashResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *CleanExpiredTrashResult) Unmarshal(in []byte) error {
+func (p *CleanTrashResult) Unmarshal(in []byte) error {
 	msg := new(file.CleanTrashResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -2783,22 +2547,22 @@ func (p *CleanExpiredTrashResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *CleanExpiredTrashResult) GetSuccess() *file.CleanTrashResp {
+func (p *CleanTrashResult) GetSuccess() *file.CleanTrashResp {
 	if !p.IsSetSuccess() {
-		return CleanExpiredTrashResult_Success_DEFAULT
+		return CleanTrashResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *CleanExpiredTrashResult) SetSuccess(x interface{}) {
+func (p *CleanTrashResult) SetSuccess(x interface{}) {
 	p.Success = x.(*file.CleanTrashResp)
 }
 
-func (p *CleanExpiredTrashResult) IsSetSuccess() bool {
+func (p *CleanTrashResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *CleanExpiredTrashResult) GetResult() interface{} {
+func (p *CleanTrashResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2806,7 +2570,7 @@ func getStorageQuotaHandler(ctx context.Context, handler interface{}, arg, resul
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
-		req := new(file.UserReq)
+		req := new(file.StorageQuotaReq)
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
@@ -2836,7 +2600,7 @@ func newGetStorageQuotaResult() interface{} {
 }
 
 type GetStorageQuotaArgs struct {
-	Req *file.UserReq
+	Req *file.StorageQuotaReq
 }
 
 func (p *GetStorageQuotaArgs) Marshal(out []byte) ([]byte, error) {
@@ -2847,7 +2611,7 @@ func (p *GetStorageQuotaArgs) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *GetStorageQuotaArgs) Unmarshal(in []byte) error {
-	msg := new(file.UserReq)
+	msg := new(file.StorageQuotaReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2855,9 +2619,9 @@ func (p *GetStorageQuotaArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var GetStorageQuotaArgs_Req_DEFAULT *file.UserReq
+var GetStorageQuotaArgs_Req_DEFAULT *file.StorageQuotaReq
 
-func (p *GetStorageQuotaArgs) GetReq() *file.UserReq {
+func (p *GetStorageQuotaArgs) GetReq() *file.StorageQuotaReq {
 	if !p.IsSetReq() {
 		return GetStorageQuotaArgs_Req_DEFAULT
 	}
@@ -2963,16 +2727,6 @@ func (p *kClient) DirectUpload(ctx context.Context, Req *file.DirectUploadReq) (
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq) (r *file.TransferSaveResp, err error) {
-	var _args TransferSaveArgs
-	_args.Req = Req
-	var _result TransferSaveResult
-	if err = p.c.Call(ctx, "TransferSave", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
 func (p *kClient) PreDownLoad(ctx context.Context, Req *file.PreDownLoadReq) (r *file.PreDownloadResp, err error) {
 	var _args PreDownLoadArgs
 	_args.Req = Req
@@ -3013,6 +2767,16 @@ func (p *kClient) RenameFile(ctx context.Context, Req *file.RenameFileReq) (r *f
 	return _result.GetSuccess(), nil
 }
 
+func (p *kClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq) (r *file.TransferSaveResp, err error) {
+	var _args TransferSaveArgs
+	_args.Req = Req
+	var _result TransferSaveResult
+	if err = p.c.Call(ctx, "TransferSave", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
 func (p *kClient) MoveFile(ctx context.Context, Req *file.MoveFileReq) (r *file.FileAliasItem, err error) {
 	var _args MoveFileArgs
 	_args.Req = Req
@@ -3023,27 +2787,7 @@ func (p *kClient) MoveFile(ctx context.Context, Req *file.MoveFileReq) (r *file.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CopyFile(ctx context.Context, Req *file.CopyFileReq) (r *file.FileAliasItem, err error) {
-	var _args CopyFileArgs
-	_args.Req = Req
-	var _result CopyFileResult
-	if err = p.c.Call(ctx, "CopyFile", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) UpdateFilePublic(ctx context.Context, Req *file.UpdateFilePublicReq) (r *file.FileAliasItem, err error) {
-	var _args UpdateFilePublicArgs
-	_args.Req = Req
-	var _result UpdateFilePublicResult
-	if err = p.c.Call(ctx, "UpdateFilePublic", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) TrashFile(ctx context.Context, Req *file.FileReq) (r *file.FileMeta, err error) {
+func (p *kClient) TrashFile(ctx context.Context, Req *file.FileReq) (r *file.FileAliasItem, err error) {
 	var _args TrashFileArgs
 	_args.Req = Req
 	var _result TrashFileResult
@@ -3053,7 +2797,7 @@ func (p *kClient) TrashFile(ctx context.Context, Req *file.FileReq) (r *file.Fil
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) DeleteFile(ctx context.Context, Req *file.FileReq) (r *file.Empty, err error) {
+func (p *kClient) DeleteFile(ctx context.Context, Req *file.FileReq) (r *file.FileAliasItem, err error) {
 	var _args DeleteFileArgs
 	_args.Req = Req
 	var _result DeleteFileResult
@@ -3063,7 +2807,7 @@ func (p *kClient) DeleteFile(ctx context.Context, Req *file.FileReq) (r *file.Em
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) RestoreFile(ctx context.Context, Req *file.FileReq) (r *file.FileMeta, err error) {
+func (p *kClient) RestoreFile(ctx context.Context, Req *file.FileReq) (r *file.FileAliasItem, err error) {
 	var _args RestoreFileArgs
 	_args.Req = Req
 	var _result RestoreFileResult
@@ -3073,17 +2817,7 @@ func (p *kClient) RestoreFile(ctx context.Context, Req *file.FileReq) (r *file.F
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) GetTrashedFiles(ctx context.Context, Req *file.UserReq) (r *file.ListDirectoryResp, err error) {
-	var _args GetTrashedFilesArgs
-	_args.Req = Req
-	var _result GetTrashedFilesResult
-	if err = p.c.Call(ctx, "GetTrashedFiles", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) GetFileMeta(ctx context.Context, Req *file.FileReq) (r *file.FileMeta, err error) {
+func (p *kClient) GetFileMeta(ctx context.Context, Req *file.FileReq) (r *file.FileMetaResp, err error) {
 	var _args GetFileMetaArgs
 	_args.Req = Req
 	var _result GetFileMetaResult
@@ -3108,6 +2842,16 @@ func (p *kClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq) (r 
 	_args.Req = Req
 	var _result SearchFilesResult
 	if err = p.c.Call(ctx, "SearchFiles", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq) (r *file.BuildSharedUrlResp, err error) {
+	var _args BuildSharedUrlArgs
+	_args.Req = Req
+	var _result BuildSharedUrlResult
+	if err = p.c.Call(ctx, "BuildSharedUrl", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
@@ -3143,17 +2887,17 @@ func (p *kClient) GenerateDocumentPreview(ctx context.Context, Req *file.FileReq
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CleanExpiredTrash(ctx context.Context, Req *file.CleanTrashReq) (r *file.CleanTrashResp, err error) {
-	var _args CleanExpiredTrashArgs
+func (p *kClient) CleanTrash(ctx context.Context, Req *file.CleanTrashReq) (r *file.CleanTrashResp, err error) {
+	var _args CleanTrashArgs
 	_args.Req = Req
-	var _result CleanExpiredTrashResult
-	if err = p.c.Call(ctx, "CleanExpiredTrash", &_args, &_result); err != nil {
+	var _result CleanTrashResult
+	if err = p.c.Call(ctx, "CleanTrash", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) GetStorageQuota(ctx context.Context, Req *file.UserReq) (r *file.StorageQuotaResp, err error) {
+func (p *kClient) GetStorageQuota(ctx context.Context, Req *file.StorageQuotaReq) (r *file.StorageQuotaResp, err error) {
 	var _args GetStorageQuotaArgs
 	_args.Req = Req
 	var _result GetStorageQuotaResult

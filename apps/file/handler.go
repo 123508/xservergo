@@ -452,7 +452,6 @@ func (s *FileServiceImpl) CreateFolder(ctx context.Context, req *file.CreateFold
 		UserId:      req.TargetUserId,
 		FileName:    fileAlias.FileName,
 		IsDirectory: fileAlias.IsDirectory,
-		IsPublic:    fileAlias.IsPublic,
 	}, nil
 }
 
@@ -488,7 +487,6 @@ func (s *FileServiceImpl) RenameFile(ctx context.Context, req *file.RenameFileRe
 		UserId:      req.TargetUserId,
 		FileName:    fileAlias.FileName,
 		IsDirectory: fileAlias.IsDirectory,
-		IsPublic:    fileAlias.IsPublic,
 	}, nil
 }
 
@@ -523,50 +521,139 @@ func (s *FileServiceImpl) MoveFile(ctx context.Context, req *file.MoveFileReq) (
 		UserId:      req.TargetUserId,
 		FileName:    fileAlias.FileName,
 		IsDirectory: fileAlias.IsDirectory,
-		IsPublic:    fileAlias.IsPublic,
 	}, nil
 }
 
-// CopyFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CopyFile(ctx context.Context, req *file.CopyFileReq) (resp *file.FileAliasItem, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// UpdateFilePublic implements the FileServiceImpl interface.
-func (s *FileServiceImpl) UpdateFilePublic(ctx context.Context, req *file.UpdateFilePublicReq) (resp *file.FileAliasItem, err error) {
-	// TODO: Your code here...
-	return
-}
-
 // TrashFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) TrashFile(ctx context.Context, req *file.FileReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) TrashFile(ctx context.Context, req *file.FileReq) (resp *file.FileAliasItem, err error) {
+
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	fileAlias, err := s.fileService.TrashFile(ctx, aliasId, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		FileId:      fileAlias.FileID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+	}, nil
 }
 
 // DeleteFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) DeleteFile(ctx context.Context, req *file.FileReq) (resp *file.Empty, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) DeleteFile(ctx context.Context, req *file.FileReq) (resp *file.FileAliasItem, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	fileAlias, err := s.fileService.DeleteFile(ctx, aliasId, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		FileId:      fileAlias.FileID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+	}, nil
 }
 
 // RestoreFile implements the FileServiceImpl interface.
-func (s *FileServiceImpl) RestoreFile(ctx context.Context, req *file.FileReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
-}
+func (s *FileServiceImpl) RestoreFile(ctx context.Context, req *file.FileReq) (resp *file.FileAliasItem, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
 
-// GetTrashedFiles implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GetTrashedFiles(ctx context.Context, req *file.UserReq) (resp *file.ListDirectoryResp, err error) {
-	// TODO: Your code here...
-	return
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileAliasItem{}, err
+	}
+
+	fileAlias, err := s.fileService.RestoreFile(ctx, aliasId, requestUid, targetUid)
+	if err != nil {
+		return &file.FileAliasItem{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.FileAliasItem{
+		AliasId:     fileAlias.ID.MarshalBase64(),
+		FileId:      fileAlias.FileID.MarshalBase64(),
+		UserId:      req.TargetUserId,
+		FileName:    fileAlias.FileName,
+		IsDirectory: fileAlias.IsDirectory,
+	}, nil
 }
 
 // GetFileMeta implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GetFileMeta(ctx context.Context, req *file.FileReq) (resp *file.FileMeta, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) GetFileMeta(ctx context.Context, req *file.FileReq) (resp *file.FileMetaResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileMetaResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileMetaResp{}, err
+	}
+
+	aliasId, err := unmarshalUUID(ctx, req.AliasId)
+	if err != nil {
+		return &file.FileMetaResp{}, err
+	}
+
+	meta, err := s.fileService.GetFileMeta(ctx, aliasId, requestUid, targetUid)
+
+	if err != nil {
+		return &file.FileMetaResp{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.FileMetaResp{
+		IsDirectory:     meta.IsDirectory,
+		AliasId:         meta.AliasId,
+		FileId:          meta.FileId,
+		FileName:        meta.FileName,
+		FileContentHash: meta.FileContentHash,
+		FileSize:        meta.FileSize,
+		Status:          meta.Status,
+		FileType:        meta.FileType,
+		FileCover:       meta.FileCover,
+		CreatedAt:       meta.CreatedAt,
+		UpdatedAt:       meta.UpdatedAt,
+	}, nil
 }
 
 // ListDirectory implements the FileServiceImpl interface.
@@ -586,7 +673,7 @@ func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirec
 		return &file.ListDirectoryResp{}, err
 	}
 
-	items, total, err := s.fileService.ListDirectory(ctx, aliasId, req.IsRoot, req.Page, req.PageSize, requestUid, targetUid)
+	items, total, err := s.fileService.ListDirectory(ctx, aliasId, req.RootType, req.Page, req.PageSize, requestUid, targetUid)
 	if err != nil {
 		return &file.ListDirectoryResp{}, err
 	}
@@ -615,6 +702,12 @@ func (s *FileServiceImpl) SearchFiles(ctx context.Context, req *file.SearchFiles
 	return
 }
 
+// BuildSharedUrl implements the FileServiceImpl interface.
+func (s *FileServiceImpl) BuildSharedUrl(ctx context.Context, req *file.FileReq) (resp *file.BuildSharedUrlResp, err error) {
+	// TODO: Your code here...
+	return
+}
+
 // GetPreviewUrl implements the FileServiceImpl interface.
 func (s *FileServiceImpl) GetPreviewUrl(ctx context.Context, req *file.FileReq) (resp *file.PreviewResp, err error) {
 	// TODO: Your code here...
@@ -633,14 +726,14 @@ func (s *FileServiceImpl) GenerateDocumentPreview(ctx context.Context, req *file
 	return
 }
 
-// CleanExpiredTrash implements the FileServiceImpl interface.
-func (s *FileServiceImpl) CleanExpiredTrash(ctx context.Context, req *file.CleanTrashReq) (resp *file.CleanTrashResp, err error) {
+// CleanTrash implements the FileServiceImpl interface.
+func (s *FileServiceImpl) CleanTrash(ctx context.Context, req *file.CleanTrashReq) (resp *file.CleanTrashResp, err error) {
 	// TODO: Your code here...
 	return
 }
 
 // GetStorageQuota implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GetStorageQuota(ctx context.Context, req *file.UserReq) (resp *file.StorageQuotaResp, err error) {
+func (s *FileServiceImpl) GetStorageQuota(ctx context.Context, req *file.StorageQuotaReq) (resp *file.StorageQuotaResp, err error) {
 	// TODO: Your code here...
 	return
 }
