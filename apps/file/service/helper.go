@@ -51,6 +51,20 @@ type PreDownload struct {
 	ChunkIndex uint64
 }
 
+type FileMeta struct {
+	IsDirectory     bool
+	AliasId         string
+	FileId          string
+	FileName        string
+	FileContentHash string
+	FileSize        uint64
+	Status          uint64
+	FileType        string
+	FileCover       string
+	CreatedAt       string
+	UpdatedAt       string
+}
+
 // SplitPathToLevels 将路径分割为层级数组
 func SplitPathToLevels(path string) []string {
 	// 清理路径

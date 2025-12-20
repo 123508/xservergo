@@ -30,12 +30,16 @@ type FileService interface {
 	UploadVerify(ctx context.Context, fileIds []id.UUID, requestId, uploadId string, targetUserId, requestUserId id.UUID) (files []VerifyFile, err error)
 	DirectUpload(ctx context.Context, f models.File, content []byte, targetUserId, requestUserId id.UUID) (models.File, error)
 	TransferSave(ctx context.Context, aliasId id.UUID, aliasSaveRootId id.UUID, needSelect bool, resolutionStrategy uint64, selectedFileIds []id.UUID, requestId string, targetUserId, requestUserId id.UUID) ([]ReflectFile, string, error)
-	ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
+	ListDirectory(ctx context.Context, aliasId id.UUID, rootType, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
 	PreDownLoad(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (aliasName string, requestId string, list []PreDownload, storeType, total uint64, err error)
 	Download(ctx context.Context, oneId, requestUserId, targetUserId id.UUID, requestId string, storeType uint64) (content []byte, err error)
 	CreateFolder(ctx context.Context, parentAliasId id.UUID, folderName string, isRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 	RenameFile(ctx context.Context, aliasId id.UUID, newName string, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 	MoveFile(ctx context.Context, aliasId id.UUID, newParentId id.UUID, isMoveToRoot bool, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	TrashFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	DeleteFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	RestoreFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
+	GetFileMeta(ctx context.Context, aliasId, requestUserId, targetUserId id.UUID) (fileAlias FileMeta, err error)
 }
 
 type ServiceImpl struct {
@@ -314,24 +318,42 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	if needSelect {
 		err = urds.VerityRequestID(s.Rds, s.Keys, ctx, requestId, 24*60*time.Minute)
 		if err != nil {
-			logs.ErrorLogger.Error("requestId过期", zap.String("requestId", requestId), zap.Error(err))
+			logs.ErrorLogger.Error("requestId过期",
+				zap.String("requestId", requestId),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Bool("needSelect", needSelect),
+				zap.Uint64("resolutionStrategy", resolutionStrategy),
+				zap.Error(err))
 			return nil, "", cerrors.NewCommonError(http.StatusBadRequest, "请求过期", requestId, err)
 		}
 	} else {
 		requestId, err = urds.GenerateRequestId(s.Rds, s.Keys, ctx, 20*60*time.Minute)
 		if err != nil {
-			logs.ErrorLogger.Error("产生requestId失败", zap.Error(err))
+			logs.ErrorLogger.Error("产生requestId失败",
+				zap.String("requestId", requestId),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
+				zap.Bool("needSelect", needSelect),
+				zap.Uint64("resolutionStrategy", resolutionStrategy),
+				zap.Error(err))
 			return nil, "", cerrors.NewCommonError(http.StatusInternalServerError, "产生requestId失败", requestId, err)
 		}
 	}
 
 	//以aliasId为根节点递归向下查询
 
-	aliasItems, err := s.takeFileList(ctx, aliasId, true)
+	aliasItems, err := s.takeFileList(ctx, aliasId, true, targetUserId, requestUserId)
 
 	if err != nil {
-		logs.ErrorLogger.Error("查询被转存节点失败", zap.Error(err))
-		return nil, requestId, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+		logs.ErrorLogger.Error("查询节点失败",
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("needSelect", needSelect),
+			zap.Uint64("resolutionStrategy", resolutionStrategy),
+			zap.Error(err))
+		return nil, requestId, cerrors.NewSQLError(http.StatusBadRequest, "查询节点失败", err)
 	}
 
 	//如果aliasId不存在,直接返回ok即可
@@ -352,7 +374,7 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	}
 
 	// 构建需要被保存的文件树
-	tree := s.buildNeedSavedTree(aliasId, aliasSaveRootId, aliasItems, targetUserId)
+	tree := s.buildNeedSavedTree(aliasId, aliasSaveRootId, aliasItems, requestUserId)
 
 	tx := s.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
@@ -403,7 +425,13 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 			case 2: // 覆盖,有冲突就覆盖
 				err = tx.Model(&models.FileAlias{}).Update("file_id = ?", data.FileID).Where("id = ?", data.ID).Error
 				if err != nil {
-					logs.ErrorLogger.Error("写入节点失败", zap.Error(err))
+					logs.ErrorLogger.Error("写入节点失败",
+						zap.String("requestId", requestId),
+						zap.String("targetUserId", targetUserId.MarshalBase64()),
+						zap.String("requestUserId", requestUserId.MarshalBase64()),
+						zap.Bool("needSelect", needSelect),
+						zap.Uint64("resolutionStrategy", resolutionStrategy),
+						zap.Error(err))
 					return nil, requestId, cerrors.NewSQLError(http.StatusBadRequest, "写入节点失败", err)
 				}
 				continue
@@ -432,10 +460,21 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 				} else if _, ok = selectIdMap[data.FileID]; ok { // 新节点被选择,就直接构建新节点
 					data.ID = id.NewUUID()
 				} else {
-					logs.ErrorLogger.Error("部分选择不存在,请重新选择")
+					logs.ErrorLogger.Error("部分选择不存在,请重新选择",
+						zap.String("requestId", requestId),
+						zap.String("targetUserId", targetUserId.MarshalBase64()),
+						zap.String("requestUserId", requestUserId.MarshalBase64()),
+						zap.Bool("needSelect", needSelect),
+						zap.Uint64("resolutionStrategy", resolutionStrategy))
 					return nil, requestId, cerrors.NewParamError(http.StatusBadRequest, "部分选择不存在,请重新选择")
 				}
 			default:
+				logs.ErrorLogger.Error("文件存在冲突,请解决",
+					zap.String("requestId", requestId),
+					zap.String("targetUserId", targetUserId.MarshalBase64()),
+					zap.String("requestUserId", requestUserId.MarshalBase64()),
+					zap.Bool("needSelect", needSelect),
+					zap.Uint64("resolutionStrategy", resolutionStrategy))
 				return nil, requestId, cerrors.NewSQLError(http.StatusBadRequest, "文件存在冲突,请解决", nil)
 			}
 		}
@@ -457,7 +496,13 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	// 写入数据
 	err = tx.Model(&models.FileAlias{}).Create(&insertData).Error
 	if err != nil {
-		logs.ErrorLogger.Error("转存失败,请重试", zap.Error(err))
+		logs.ErrorLogger.Error("转存失败,请重试",
+			zap.String("requestId", requestId),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Bool("needSelect", needSelect),
+			zap.Uint64("resolutionStrategy", resolutionStrategy),
+			zap.Error(err))
 		return nil, requestId, err
 	}
 
@@ -465,18 +510,21 @@ func (s *ServiceImpl) TransferSave(ctx context.Context, aliasId id.UUID, aliasSa
 	return nil, requestId, nil
 }
 
-func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot bool, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error) {
+func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, rootType, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error) {
 
 	// 如果查询的是根目录开始,就跳过前置查询
-	if !isRoot {
+	switch rootType {
+	case 1: //根目录
+		aliasId = id.EmptyUUID
+	case 2: //非根目录
 		_, err = s.takeSingleFileAlias(ctx, aliasId, targetUserId, requestUserId)
 		if err != nil {
 			return nil, 0, err
 		}
-	}
-
-	if isRoot {
-		aliasId = id.EmptyUUID
+	case 3: // 回收站目录
+		aliasId = id.RecycleUUID
+	default:
+		return nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "查询类型错误", "", nil)
 	}
 
 	var count int64
@@ -492,7 +540,7 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 				zap.String("requestUserId", requestUserId.MarshalBase64()),
 				zap.Uint64("page", page),
 				zap.Uint64("pageSize", pageSize),
-				zap.Bool("isRoot", isRoot),
+				zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
 				zap.Error(err))
 			return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
 		}
@@ -543,7 +591,7 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 			zap.String("requestUserId", requestUserId.MarshalBase64()),
 			zap.Uint64("page", page),
 			zap.Uint64("pageSize", pageSize),
-			zap.Bool("isRoot", isRoot),
+			zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
 			zap.Error(err))
 		return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
 	}
@@ -600,7 +648,7 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, isRoot
 				zap.String("requestUserId", requestUserId.MarshalBase64()),
 				zap.Uint64("page", page),
 				zap.Uint64("pageSize", pageSize),
-				zap.Bool("isRoot", isRoot),
+				zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
 				zap.Error(err))
 			return nil, 0, err
 		}
@@ -856,7 +904,6 @@ func (s *ServiceImpl) CreateFolder(ctx context.Context, parentAliasId id.UUID, f
 		FileName:    folderName,
 		CreatedAt:   &now,
 		IsDirectory: true,
-		IsPublic:    false,
 	}
 
 	err = s.DB.Model(&models.FileAlias{}).Create(&data).Error
@@ -925,7 +972,7 @@ func (s *ServiceImpl) MoveFile(ctx context.Context, aliasId id.UUID, newParentId
 	}
 
 	// 如果新旧相同,不变
-	if rs.ParentID.MarshalBase64() == newParentId.MarshalBase64() {
+	if rs.ParentID == newParentId {
 		return rs, nil
 	}
 
@@ -944,6 +991,150 @@ func (s *ServiceImpl) MoveFile(ctx context.Context, aliasId id.UUID, newParentId
 	}
 
 	return rs, nil
+}
+
+func (s *ServiceImpl) TrashFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+
+	// 查询文件信息
+	rs, err := s.takeSingleFileAliasWithCleanCache(ctx, aliasId, targetUserId, requestUserId)
+	if err != nil {
+		return models.FileAlias{}, err
+	}
+
+	// 更新文件数据
+	now := time.Now()
+	rs.UpdatedAt = &now
+	rs.RecoveryID = rs.ParentID
+	rs.ParentID = id.RecycleUUID
+
+	updates := map[string]interface{}{
+		"updated_at":  &now,
+		"recovery_id": rs.RecoveryID,
+		"parent_id":   rs.ParentID,
+		"file_name":   now.Format("20060102150405_") + rs.FileName,
+	}
+
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", rs.ID).Updates(updates).Error
+	if err != nil {
+		logs.ErrorLogger.Error("更新失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新失败", err)
+	}
+
+	return rs, nil
+}
+
+func (s *ServiceImpl) DeleteFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+
+	// 查询文件信息
+	rs, err := s.takeSingleFileAliasWithCleanCache(ctx, aliasId, targetUserId, requestUserId)
+
+	if err != nil {
+		return models.FileAlias{}, err
+	}
+
+	// 文件不在回收站中,不允许直接删除
+	if rs.ParentID != id.RecycleUUID {
+		logs.ErrorLogger.Error("文件不在回收站中,无法直接删除",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()))
+		return models.FileAlias{}, cerrors.NewCommonError(http.StatusBadRequest, "文件不在回收站中,无法直接删除", "", nil)
+	}
+
+	// 硬删除数据
+	err = s.DB.Model(&models.FileAlias{}).Unscoped().Delete(&rs).Error
+	if err != nil {
+		logs.ErrorLogger.Error("删除失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "删除失败", err)
+	}
+
+	return rs, nil
+
+}
+
+func (s *ServiceImpl) RestoreFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error) {
+	// 查询文件信息
+	rs, err := s.takeSingleFileAliasWithCleanCache(ctx, aliasId, targetUserId, requestUserId)
+
+	if err != nil {
+		return models.FileAlias{}, err
+	}
+
+	// 文件不在回收站中,不需要回收
+	if rs.ParentID != id.RecycleUUID {
+		return rs, nil
+	}
+
+	// 更新数据
+	now := time.Now()
+	rs.UpdatedAt = &now
+	rs.ParentID = rs.RecoveryID
+	rs.RecoveryID = id.EmptyUUID
+
+	updates := map[string]interface{}{
+		"updated_at":  &now,
+		"parent_id":   rs.ParentID,
+		"recovery_id": nil,
+	}
+
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", rs.ID).Updates(updates).Error
+
+	if err != nil {
+		logs.ErrorLogger.Error("更新失败",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusInternalServerError, "更新失败", err)
+	}
+
+	return rs, nil
+}
+
+func (s *ServiceImpl) GetFileMeta(ctx context.Context, aliasId, requestUserId, targetUserId id.UUID) (fileAlias FileMeta, err error) {
+	// 查询文件信息
+	rs, err := s.takeSingleFileAlias(ctx, aliasId, targetUserId, requestUserId)
+
+	if err != nil {
+		return FileMeta{}, err
+	}
+
+	result := FileMeta{}
+
+	result.IsDirectory = rs.IsDirectory
+	result.FileName = rs.FileName
+	result.AliasId = rs.ID.MarshalBase64()
+	result.CreatedAt = rs.CreatedAt.Format("2006-01-02 15:04:05")
+	result.UpdatedAt = rs.UpdatedAt.Format("2006-01-02 15:04:05")
+
+	// 非文件直接返回
+	if result.IsDirectory {
+		return result, nil
+	}
+
+	// 查询文件本体填充信息
+	file, err := s.takeSingleFile(ctx, aliasId, targetUserId, requestUserId)
+
+	if err != nil {
+		return FileMeta{}, err
+	}
+
+	result.FileId = file.ID.MarshalBase64()
+	result.FileContentHash = file.FileHash
+	result.FileSize = file.FileSize
+	result.FileCover = file.FileCover
+	result.Status = file.Status
+	result.FileType = file.FileType
+
+	return result, nil
 }
 
 func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File, targetUserId, requestUserId id.UUID) (models.File, error) {
@@ -1010,7 +1201,6 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 			FileName:    path,
 			CreatedAt:   &now,
 			IsDirectory: i < len(splitPaths)-1,
-			IsPublic:    false,
 		}
 
 		if i == len(splitPaths)-1 {
@@ -1052,7 +1242,7 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 			}
 
 			if res.ID.IsZero() {
-				return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "请求aliasId不存在", err)
+				return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "请求目标不存在", err)
 			}
 
 			return res, nil
@@ -1083,6 +1273,43 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 	return aliasFile, nil
 }
 
+func (s *ServiceImpl) takeSingleFile(ctx context.Context, fileId id.UUID, targetUserId, requestUserId id.UUID) (file models.File, err error) {
+	simpleQuery := urds.SimpleCacheComponent[id.UUID, models.File]{
+		Rds:       s.Rds,
+		Ctx:       ctx,
+		Key:       s.Keys.FileKey(fileId),
+		Marshal:   json.Marshal,
+		Unmarshal: json.Unmarshal,
+		QueryExec: func() (models.File, error) {
+			res := models.File{}
+			err = s.DB.Model(&models.File{}).Where("id = ?", fileId, targetUserId).Find(&res).Error
+			if err != nil {
+				return models.File{}, err
+			}
+
+			if res.ID.IsZero() {
+				return models.File{}, cerrors.NewSQLError(http.StatusBadRequest, "请求文件不存在", err)
+			}
+
+			return res, nil
+		},
+		Expires: 30 * time.Minute,
+		Random:  2 * time.Minute,
+	}
+
+	File, err := simpleQuery.QueryWithCache()
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.File{}, err
+	}
+
+	return File, nil
+}
+
 func (s *ServiceImpl) takeSingleFileAliasWithCleanCache(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (file models.FileAlias, err error) {
 	rs := models.FileAlias{}
 	err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).First(&rs).Error
@@ -1109,46 +1336,50 @@ func (s *ServiceImpl) takeSingleFileAliasWithCleanCache(ctx context.Context, ali
 	return rs, nil
 }
 
-func (s *ServiceImpl) takeFileList(ctx context.Context, aliasId id.UUID, isRecursive bool) (aliasItems []models.FileAlias, err error) {
+func (s *ServiceImpl) takeFileList(ctx context.Context, aliasId id.UUID, isRecursive bool, targetUserId, requestUserId id.UUID) (aliasItems []models.FileAlias, err error) {
 	if isRecursive {
-		return s.recursiveTakeFileList(ctx, aliasId)
+		return s.recursiveTakeFileList(ctx, aliasId, targetUserId, requestUserId)
 	}
-	return s.iterateTakeFileList(ctx, aliasId)
+	return s.iterateTakeFileList(ctx, aliasId, targetUserId, requestUserId)
 }
 
-func (s *ServiceImpl) recursiveTakeFileList(ctx context.Context, aliasId id.UUID) (aliasItems []models.FileAlias, err error) {
+func (s *ServiceImpl) recursiveTakeFileList(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (aliasItems []models.FileAlias, err error) {
 
 	//以aliasId为根节点递归向下查询
 	sqlStmt := `with recursive file_tree as(
-    select *, ? as level from file_alias where id = ?
+    select *, ? as level from file_alias where id = ? and user_id = ?
             		union all
     select fa.*,ft.level+1 from file_alias as fa inner join file_tree ft on fa.parent_id=ft.id
 	)
 	select * from file_tree order by level;`
 	aliasItems = make([]models.FileAlias, 0)
-	err = s.DB.Raw(sqlStmt, 1, aliasId).Scan(&aliasItems).Error
+	err = s.DB.Raw(sqlStmt, 1, aliasId, targetUserId).Scan(&aliasItems).Error
 	if err != nil {
 		logs.ErrorLogger.Error("查询被转存节点失败",
 			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
 			zap.Error(err))
 		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
 	}
 	return aliasItems, nil
 }
 
-func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) (aliasItems []models.FileAlias, err error) {
+func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (aliasItems []models.FileAlias, err error) {
 
 	aliasItems = make([]models.FileAlias, 0)
 
 	queue := make([]models.FileAlias, 0)
 	root := models.FileAlias{}
 
-	err = s.DB.Model(&models.FileAlias{}).Where("id = ?", aliasId).Find(&root).Error
+	err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).Find(&root).Error
 	if err != nil {
-		logs.ErrorLogger.Error("查询被转存节点失败",
+		logs.ErrorLogger.Error("查询节点失败",
 			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
 			zap.Error(err))
-		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+		return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询节点失败", err)
 	}
 
 	// 初始化队头
@@ -1173,12 +1404,14 @@ func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) 
 
 		//逐层取出数据
 		children := make([]models.FileAlias, 0)
-		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", head.ID).Find(&children).Error
+		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ? and user_id = ?", head.ID, targetUserId).Find(&children).Error
 		if err != nil {
-			logs.ErrorLogger.Error("查询被转存节点失败",
+			logs.ErrorLogger.Error("查询节点失败",
 				zap.String("aliasId", aliasId.MarshalBase64()),
+				zap.String("targetUserId", targetUserId.MarshalBase64()),
+				zap.String("requestUserId", requestUserId.MarshalBase64()),
 				zap.Error(err))
-			return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询被转存节点失败", err)
+			return nil, cerrors.NewSQLError(http.StatusBadRequest, "查询节点失败", err)
 		}
 
 		//将每层的数据写入队列
@@ -1188,7 +1421,7 @@ func (s *ServiceImpl) iterateTakeFileList(ctx context.Context, aliasId id.UUID) 
 	return aliasItems, nil
 }
 
-func (s *ServiceImpl) buildNeedSavedTree(aliasId id.UUID, aliasSaveRootId id.UUID, aliasItems []models.FileAlias, targetUserId id.UUID) (tree []*FileAliasNode) {
+func (s *ServiceImpl) buildNeedSavedTree(aliasId id.UUID, aliasSaveRootId id.UUID, aliasItems []models.FileAlias, userId id.UUID) (tree []*FileAliasNode) {
 	// 构建需要被保存目录哈希表
 	nodeMap := make(map[id.UUID]*FileAliasNode)
 	root := aliasItems[0].ParentID
@@ -1203,7 +1436,7 @@ func (s *ServiceImpl) buildNeedSavedTree(aliasId id.UUID, aliasSaveRootId id.UUI
 	tree = make([]*FileAliasNode, 0)
 	for _, v := range aliasItems {
 		node := nodeMap[v.ID]
-		node.FileAlias.UserID = targetUserId
+		node.FileAlias.UserID = userId
 		parentId := v.ParentID
 
 		// 当前节点为根节点,直接加入树的根中

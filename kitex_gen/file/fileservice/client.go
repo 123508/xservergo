@@ -15,26 +15,24 @@ type Client interface {
 	UploadChunk(ctx context.Context, Req *file.UploadChunkReq, callOptions ...callopt.Option) (r *file.UploadChunkResp, err error)
 	UploadVerify(ctx context.Context, Req *file.UploadVerifyReq, callOptions ...callopt.Option) (r *file.UploadVerifyResp, err error)
 	DirectUpload(ctx context.Context, Req *file.DirectUploadReq, callOptions ...callopt.Option) (r *file.DirectUploadResp, err error)
-	TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error)
 	PreDownLoad(ctx context.Context, Req *file.PreDownLoadReq, callOptions ...callopt.Option) (r *file.PreDownloadResp, err error)
 	Download(ctx context.Context, Req *file.DownloadReq, callOptions ...callopt.Option) (r *file.DownloadResp, err error)
 	CreateFolder(ctx context.Context, Req *file.CreateFolderReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
 	RenameFile(ctx context.Context, Req *file.RenameFileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
+	TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error)
 	MoveFile(ctx context.Context, Req *file.MoveFileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
-	CopyFile(ctx context.Context, Req *file.CopyFileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
-	UpdateFilePublic(ctx context.Context, Req *file.UpdateFilePublicReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
-	TrashFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
-	DeleteFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.Empty, err error)
-	RestoreFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
-	GetTrashedFiles(ctx context.Context, Req *file.UserReq, callOptions ...callopt.Option) (r *file.ListDirectoryResp, err error)
-	GetFileMeta(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error)
+	TrashFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
+	DeleteFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
+	RestoreFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
+	GetFileMeta(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMetaResp, err error)
 	ListDirectory(ctx context.Context, Req *file.ListDirectoryReq, callOptions ...callopt.Option) (r *file.ListDirectoryResp, err error)
 	SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.SearchFilesResp, err error)
+	BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.BuildSharedUrlResp, err error)
 	GetPreviewUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error)
 	GetTranscodeStatus(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.TranscodeStatusResp, err error)
 	GenerateDocumentPreview(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error)
-	CleanExpiredTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error)
-	GetStorageQuota(ctx context.Context, Req *file.UserReq, callOptions ...callopt.Option) (r *file.StorageQuotaResp, err error)
+	CleanTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error)
+	GetStorageQuota(ctx context.Context, Req *file.StorageQuotaReq, callOptions ...callopt.Option) (r *file.StorageQuotaResp, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -86,11 +84,6 @@ func (p *kFileServiceClient) DirectUpload(ctx context.Context, Req *file.DirectU
 	return p.kClient.DirectUpload(ctx, Req)
 }
 
-func (p *kFileServiceClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.TransferSave(ctx, Req)
-}
-
 func (p *kFileServiceClient) PreDownLoad(ctx context.Context, Req *file.PreDownLoadReq, callOptions ...callopt.Option) (r *file.PreDownloadResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.PreDownLoad(ctx, Req)
@@ -111,42 +104,32 @@ func (p *kFileServiceClient) RenameFile(ctx context.Context, Req *file.RenameFil
 	return p.kClient.RenameFile(ctx, Req)
 }
 
+func (p *kFileServiceClient) TransferSave(ctx context.Context, Req *file.TransferSaveReq, callOptions ...callopt.Option) (r *file.TransferSaveResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.TransferSave(ctx, Req)
+}
+
 func (p *kFileServiceClient) MoveFile(ctx context.Context, Req *file.MoveFileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.MoveFile(ctx, Req)
 }
 
-func (p *kFileServiceClient) CopyFile(ctx context.Context, Req *file.CopyFileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.CopyFile(ctx, Req)
-}
-
-func (p *kFileServiceClient) UpdateFilePublic(ctx context.Context, Req *file.UpdateFilePublicReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.UpdateFilePublic(ctx, Req)
-}
-
-func (p *kFileServiceClient) TrashFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {
+func (p *kFileServiceClient) TrashFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.TrashFile(ctx, Req)
 }
 
-func (p *kFileServiceClient) DeleteFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.Empty, err error) {
+func (p *kFileServiceClient) DeleteFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.DeleteFile(ctx, Req)
 }
 
-func (p *kFileServiceClient) RestoreFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {
+func (p *kFileServiceClient) RestoreFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.RestoreFile(ctx, Req)
 }
 
-func (p *kFileServiceClient) GetTrashedFiles(ctx context.Context, Req *file.UserReq, callOptions ...callopt.Option) (r *file.ListDirectoryResp, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GetTrashedFiles(ctx, Req)
-}
-
-func (p *kFileServiceClient) GetFileMeta(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMeta, err error) {
+func (p *kFileServiceClient) GetFileMeta(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMetaResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.GetFileMeta(ctx, Req)
 }
@@ -159,6 +142,11 @@ func (p *kFileServiceClient) ListDirectory(ctx context.Context, Req *file.ListDi
 func (p *kFileServiceClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.SearchFilesResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SearchFiles(ctx, Req)
+}
+
+func (p *kFileServiceClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.BuildSharedUrlResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.BuildSharedUrl(ctx, Req)
 }
 
 func (p *kFileServiceClient) GetPreviewUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error) {
@@ -176,12 +164,12 @@ func (p *kFileServiceClient) GenerateDocumentPreview(ctx context.Context, Req *f
 	return p.kClient.GenerateDocumentPreview(ctx, Req)
 }
 
-func (p *kFileServiceClient) CleanExpiredTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error) {
+func (p *kFileServiceClient) CleanTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.CleanExpiredTrash(ctx, Req)
+	return p.kClient.CleanTrash(ctx, Req)
 }
 
-func (p *kFileServiceClient) GetStorageQuota(ctx context.Context, Req *file.UserReq, callOptions ...callopt.Option) (r *file.StorageQuotaResp, err error) {
+func (p *kFileServiceClient) GetStorageQuota(ctx context.Context, Req *file.StorageQuotaReq, callOptions ...callopt.Option) (r *file.StorageQuotaResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.GetStorageQuota(ctx, Req)
 }

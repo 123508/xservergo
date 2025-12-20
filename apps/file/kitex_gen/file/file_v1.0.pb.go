@@ -83,136 +83,6 @@ func (x TranscodeStatusResp_Status) String() string {
 	return strconv.Itoa(int(x))
 }
 
-// ---------- 通用结构 ---------- //
-type FileMeta struct {
-	FileId       string       `protobuf:"bytes,1,opt,name=file_id" json:"file_id,omitempty"`       // 文件ID
-	UserId       string       `protobuf:"bytes,2,opt,name=user_id" json:"user_id,omitempty"`       // 用户ID
-	FileMd5      string       `protobuf:"bytes,3,opt,name=file_md5" json:"file_md5,omitempty"`     // 文件MD5
-	ParentId     string       `protobuf:"bytes,4,opt,name=parent_id" json:"parent_id,omitempty"`   // 父目录ID
-	FileSize     uint64       `protobuf:"varint,5,opt,name=file_size" json:"file_size,omitempty"`  // 文件大小
-	FileName     string       `protobuf:"bytes,6,opt,name=file_name" json:"file_name,omitempty"`   // 文件名
-	FileCover    string       `protobuf:"bytes,7,opt,name=file_cover" json:"file_cover,omitempty"` // 封面URL
-	FilePath     string       `protobuf:"bytes,8,opt,name=file_path" json:"file_path,omitempty"`   // 存储路径
-	CreatedAt    string       `protobuf:"bytes,9,opt,name=created_at" json:"created_at,omitempty"`
-	UpdatedAt    string       `protobuf:"bytes,10,opt,name=updated_at" json:"updated_at,omitempty"`
-	DeletedAt    string       `protobuf:"bytes,11,opt,name=deleted_at" json:"deleted_at,omitempty"`
-	IsPublic     bool         `protobuf:"varint,13,opt,name=is_public" json:"is_public,omitempty"`         // 是否公开
-	FileCategory FileCategory `protobuf:"varint,14,opt,name=file_category" json:"file_category,omitempty"` // 文件大类
-	FileType     string       `protobuf:"bytes,15,opt,name=file_type" json:"file_type,omitempty"`          // 文件扩展名
-	Status       uint64       `protobuf:"varint,16,opt,name=status" json:"status,omitempty"`
-}
-
-func (x *FileMeta) Reset() { *x = FileMeta{} }
-
-func (x *FileMeta) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *FileMeta) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *FileMeta) GetFileId() string {
-	if x != nil {
-		return x.FileId
-	}
-	return ""
-}
-
-func (x *FileMeta) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *FileMeta) GetFileMd5() string {
-	if x != nil {
-		return x.FileMd5
-	}
-	return ""
-}
-
-func (x *FileMeta) GetParentId() string {
-	if x != nil {
-		return x.ParentId
-	}
-	return ""
-}
-
-func (x *FileMeta) GetFileSize() uint64 {
-	if x != nil {
-		return x.FileSize
-	}
-	return 0
-}
-
-func (x *FileMeta) GetFileName() string {
-	if x != nil {
-		return x.FileName
-	}
-	return ""
-}
-
-func (x *FileMeta) GetFileCover() string {
-	if x != nil {
-		return x.FileCover
-	}
-	return ""
-}
-
-func (x *FileMeta) GetFilePath() string {
-	if x != nil {
-		return x.FilePath
-	}
-	return ""
-}
-
-func (x *FileMeta) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *FileMeta) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
-func (x *FileMeta) GetDeletedAt() string {
-	if x != nil {
-		return x.DeletedAt
-	}
-	return ""
-}
-
-func (x *FileMeta) GetIsPublic() bool {
-	if x != nil {
-		return x.IsPublic
-	}
-	return false
-}
-
-func (x *FileMeta) GetFileCategory() FileCategory {
-	if x != nil {
-		return x.FileCategory
-	}
-	return FileCategory_CATEGORY_UNKNOWN
-}
-
-func (x *FileMeta) GetFileType() string {
-	if x != nil {
-		return x.FileType
-	}
-	return ""
-}
-
-func (x *FileMeta) GetStatus() uint64 {
-	if x != nil {
-		return x.Status
-	}
-	return 0
-}
-
 type FileItem struct {
 	FileContentHash string `protobuf:"bytes,1,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 文件内容哈希值
 	FileSize        uint64 `protobuf:"varint,2,opt,name=file_size" json:"file_size,omitempty"`
@@ -308,7 +178,6 @@ type FileAliasItem struct {
 	FileId      string `protobuf:"bytes,3,opt,name=file_id" json:"file_id,omitempty"`
 	FileName    string `protobuf:"bytes,4,opt,name=file_name" json:"file_name,omitempty"`
 	IsDirectory bool   `protobuf:"varint,5,opt,name=is_directory" json:"is_directory,omitempty"`
-	IsPublic    bool   `protobuf:"varint,6,opt,name=is_public" json:"is_public,omitempty"`
 }
 
 func (x *FileAliasItem) Reset() { *x = FileAliasItem{} }
@@ -351,22 +220,6 @@ func (x *FileAliasItem) GetIsDirectory() bool {
 	}
 	return false
 }
-
-func (x *FileAliasItem) GetIsPublic() bool {
-	if x != nil {
-		return x.IsPublic
-	}
-	return false
-}
-
-type Empty struct {
-}
-
-func (x *Empty) Reset() { *x = Empty{} }
-
-func (x *Empty) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *Empty) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
 // ---------- 上传相关 ---------- //
 type InitUploadReq struct {
@@ -1290,92 +1143,19 @@ func (x *MoveFileReq) GetIsMoveToRoot() bool {
 	return false
 }
 
-type CopyFileReq struct {
-	AliasId        string `protobuf:"bytes,1,opt,name=alias_id" json:"alias_id,omitempty"`
-	TargetParentId string `protobuf:"bytes,2,opt,name=target_parent_id" json:"target_parent_id,omitempty"`
-	RequestUserId  string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	TargetUserId   string `protobuf:"bytes,4,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	IsMoveToRoot   bool   `protobuf:"varint,5,opt,name=is_move_to_root" json:"is_move_to_root,omitempty"`
+type BuildSharedUrlResp struct {
+	PreviewUrl string `protobuf:"bytes,1,opt,name=preview_url" json:"preview_url,omitempty"`
 }
 
-func (x *CopyFileReq) Reset() { *x = CopyFileReq{} }
+func (x *BuildSharedUrlResp) Reset() { *x = BuildSharedUrlResp{} }
 
-func (x *CopyFileReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+func (x *BuildSharedUrlResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
-func (x *CopyFileReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+func (x *BuildSharedUrlResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *CopyFileReq) GetAliasId() string {
+func (x *BuildSharedUrlResp) GetPreviewUrl() string {
 	if x != nil {
-		return x.AliasId
-	}
-	return ""
-}
-
-func (x *CopyFileReq) GetTargetParentId() string {
-	if x != nil {
-		return x.TargetParentId
-	}
-	return ""
-}
-
-func (x *CopyFileReq) GetRequestUserId() string {
-	if x != nil {
-		return x.RequestUserId
-	}
-	return ""
-}
-
-func (x *CopyFileReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
-	}
-	return ""
-}
-
-func (x *CopyFileReq) GetIsMoveToRoot() bool {
-	if x != nil {
-		return x.IsMoveToRoot
-	}
-	return false
-}
-
-type UpdateFilePublicReq struct {
-	AliasId       string `protobuf:"bytes,1,opt,name=alias_id" json:"alias_id,omitempty"`
-	IsPublic      uint64 `protobuf:"varint,2,opt,name=is_public" json:"is_public,omitempty"`
-	RequestUserId string `protobuf:"bytes,3,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	TargetUserId  string `protobuf:"bytes,4,opt,name=target_user_id" json:"target_user_id,omitempty"`
-}
-
-func (x *UpdateFilePublicReq) Reset() { *x = UpdateFilePublicReq{} }
-
-func (x *UpdateFilePublicReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *UpdateFilePublicReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UpdateFilePublicReq) GetAliasId() string {
-	if x != nil {
-		return x.AliasId
-	}
-	return ""
-}
-
-func (x *UpdateFilePublicReq) GetIsPublic() uint64 {
-	if x != nil {
-		return x.IsPublic
-	}
-	return 0
-}
-
-func (x *UpdateFilePublicReq) GetRequestUserId() string {
-	if x != nil {
-		return x.RequestUserId
-	}
-	return ""
-}
-
-func (x *UpdateFilePublicReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
+		return x.PreviewUrl
 	}
 	return ""
 }
@@ -1414,16 +1194,111 @@ func (x *FileReq) GetTargetUserId() string {
 	return ""
 }
 
+type FileMetaResp struct {
+	IsDirectory     bool   `protobuf:"varint,1,opt,name=is_directory" json:"is_directory,omitempty"`
+	AliasId         string `protobuf:"bytes,2,opt,name=alias_id" json:"alias_id,omitempty"`
+	FileId          string `protobuf:"bytes,3,opt,name=file_id" json:"file_id,omitempty"`
+	FileName        string `protobuf:"bytes,4,opt,name=file_name" json:"file_name,omitempty"`
+	FileContentHash string `protobuf:"bytes,5,opt,name=file_content_hash" json:"file_content_hash,omitempty"` // 文件内容哈希值
+	FileSize        uint64 `protobuf:"varint,6,opt,name=file_size" json:"file_size,omitempty"`
+	Status          uint64 `protobuf:"varint,7,opt,name=status" json:"status,omitempty"`
+	FileType        string `protobuf:"bytes,8,opt,name=file_type" json:"file_type,omitempty"`
+	FileCover       string `protobuf:"bytes,9,opt,name=file_cover" json:"file_cover,omitempty"`
+	CreatedAt       string `protobuf:"bytes,10,opt,name=created_at" json:"created_at,omitempty"`
+	UpdatedAt       string `protobuf:"bytes,11,opt,name=updated_at" json:"updated_at,omitempty"`
+}
+
+func (x *FileMetaResp) Reset() { *x = FileMetaResp{} }
+
+func (x *FileMetaResp) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *FileMetaResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *FileMetaResp) GetIsDirectory() bool {
+	if x != nil {
+		return x.IsDirectory
+	}
+	return false
+}
+
+func (x *FileMetaResp) GetAliasId() string {
+	if x != nil {
+		return x.AliasId
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetFileId() string {
+	if x != nil {
+		return x.FileId
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetFileContentHash() string {
+	if x != nil {
+		return x.FileContentHash
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetFileSize() uint64 {
+	if x != nil {
+		return x.FileSize
+	}
+	return 0
+}
+
+func (x *FileMetaResp) GetStatus() uint64 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *FileMetaResp) GetFileType() string {
+	if x != nil {
+		return x.FileType
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetFileCover() string {
+	if x != nil {
+		return x.FileCover
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *FileMetaResp) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
 // ---------- 文件查询 ---------- //
 type ListDirectoryReq struct {
-	TargetUserId string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
-	Page         uint64 `protobuf:"varint,3,opt,name=page" json:"page,omitempty"`           // 分页页码
-	PageSize     uint64 `protobuf:"varint,4,opt,name=page_size" json:"page_size,omitempty"` // 每页数量
-
-	// bool include_trashed = 5;   // 是否包含回收站文件
-	RequestUserId string `protobuf:"bytes,6,opt,name=request_user_id" json:"request_user_id,omitempty"`
-	AliasId       string `protobuf:"bytes,7,opt,name=alias_id" json:"alias_id,omitempty"` //要查询文件的根目录
-	IsRoot        bool   `protobuf:"varint,8,opt,name=is_root" json:"is_root,omitempty"`
+	Page          uint64 `protobuf:"varint,1,opt,name=page" json:"page,omitempty"`           // 分页页码
+	PageSize      uint64 `protobuf:"varint,2,opt,name=page_size" json:"page_size,omitempty"` // 每页数量
+	TargetUserId  string `protobuf:"bytes,3,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	RequestUserId string `protobuf:"bytes,4,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	AliasId       string `protobuf:"bytes,5,opt,name=alias_id" json:"alias_id,omitempty"`    // 要查询文件的根目录
+	RootType      uint64 `protobuf:"varint,6,opt,name=root_type" json:"root_type,omitempty"` // 根目录类型 1:根目录 2:非根目录 3:回收站目录
 }
 
 func (x *ListDirectoryReq) Reset() { *x = ListDirectoryReq{} }
@@ -1431,13 +1306,6 @@ func (x *ListDirectoryReq) Reset() { *x = ListDirectoryReq{} }
 func (x *ListDirectoryReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
 
 func (x *ListDirectoryReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *ListDirectoryReq) GetTargetUserId() string {
-	if x != nil {
-		return x.TargetUserId
-	}
-	return ""
-}
 
 func (x *ListDirectoryReq) GetPage() uint64 {
 	if x != nil {
@@ -1451,6 +1319,13 @@ func (x *ListDirectoryReq) GetPageSize() uint64 {
 		return x.PageSize
 	}
 	return 0
+}
+
+func (x *ListDirectoryReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
 }
 
 func (x *ListDirectoryReq) GetRequestUserId() string {
@@ -1467,11 +1342,11 @@ func (x *ListDirectoryReq) GetAliasId() string {
 	return ""
 }
 
-func (x *ListDirectoryReq) GetIsRoot() bool {
+func (x *ListDirectoryReq) GetRootType() uint64 {
 	if x != nil {
-		return x.IsRoot
+		return x.RootType
 	}
-	return false
+	return 0
 }
 
 type ListDirectoryResp struct {
@@ -1565,7 +1440,7 @@ func (x *SearchFilesReq) GetRequestUserId() string {
 }
 
 type SearchFilesResp struct {
-	Files      []*FileMeta `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
+	Files      []*FileItem `protobuf:"bytes,1,rep,name=files" json:"files,omitempty"`
 	TotalCount uint64      `protobuf:"varint,2,opt,name=total_count" json:"total_count,omitempty"`
 }
 
@@ -1575,7 +1450,7 @@ func (x *SearchFilesResp) Marshal(in []byte) ([]byte, error) { return prutal.Mar
 
 func (x *SearchFilesResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *SearchFilesResp) GetFiles() []*FileMeta {
+func (x *SearchFilesResp) GetFiles() []*FileItem {
 	if x != nil {
 		return x.Files
 	}
@@ -1587,23 +1462,6 @@ func (x *SearchFilesResp) GetTotalCount() uint64 {
 		return x.TotalCount
 	}
 	return 0
-}
-
-type UserReq struct {
-	RequestUserId string `protobuf:"bytes,1,opt,name=request_user_id" json:"request_user_id,omitempty"`
-}
-
-func (x *UserReq) Reset() { *x = UserReq{} }
-
-func (x *UserReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
-
-func (x *UserReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
-
-func (x *UserReq) GetRequestUserId() string {
-	if x != nil {
-		return x.RequestUserId
-	}
-	return ""
 }
 
 // ---------- 文件预览 ---------- //
@@ -1724,8 +1582,9 @@ func (x *TranscodeStatusResp) GetRequestUserId() string {
 
 // ---------- 存储管理 ---------- //
 type CleanTrashReq struct {
-	Days          int32  `protobuf:"varint,1,opt,name=days" json:"days,omitempty"` // 清理超过N天的回收站文件
+	Days          int64  `protobuf:"varint,1,opt,name=days" json:"days,omitempty"` // 清理超过N天的回收站文件
 	RequestUserId string `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	TargetUserId  string `protobuf:"bytes,3,opt,name=target_user_id" json:"target_user_id,omitempty"`
 }
 
 func (x *CleanTrashReq) Reset() { *x = CleanTrashReq{} }
@@ -1734,7 +1593,7 @@ func (x *CleanTrashReq) Marshal(in []byte) ([]byte, error) { return prutal.Marsh
 
 func (x *CleanTrashReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
 
-func (x *CleanTrashReq) GetDays() int32 {
+func (x *CleanTrashReq) GetDays() int64 {
 	if x != nil {
 		return x.Days
 	}
@@ -1744,6 +1603,13 @@ func (x *CleanTrashReq) GetDays() int32 {
 func (x *CleanTrashReq) GetRequestUserId() string {
 	if x != nil {
 		return x.RequestUserId
+	}
+	return ""
+}
+
+func (x *CleanTrashReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
 	}
 	return ""
 }
@@ -1771,6 +1637,31 @@ func (x *CleanTrashResp) GetFreedSpace() uint64 {
 		return x.FreedSpace
 	}
 	return 0
+}
+
+type StorageQuotaReq struct {
+	RequestUserId string `protobuf:"bytes,1,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	TargetUserId  string `protobuf:"bytes,2,opt,name=target_user_id" json:"target_user_id,omitempty"`
+}
+
+func (x *StorageQuotaReq) Reset() { *x = StorageQuotaReq{} }
+
+func (x *StorageQuotaReq) Marshal(in []byte) ([]byte, error) { return prutal.MarshalAppend(in, x) }
+
+func (x *StorageQuotaReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *StorageQuotaReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+func (x *StorageQuotaReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
 }
 
 type StorageQuotaResp struct {
@@ -1811,24 +1702,22 @@ type FileService interface {
 	UploadChunk(ctx context.Context, req *UploadChunkReq) (res *UploadChunkResp, err error)
 	UploadVerify(ctx context.Context, req *UploadVerifyReq) (res *UploadVerifyResp, err error)
 	DirectUpload(ctx context.Context, req *DirectUploadReq) (res *DirectUploadResp, err error)
-	TransferSave(ctx context.Context, req *TransferSaveReq) (res *TransferSaveResp, err error)
 	PreDownLoad(ctx context.Context, req *PreDownLoadReq) (res *PreDownloadResp, err error)
 	Download(ctx context.Context, req *DownloadReq) (res *DownloadResp, err error)
 	CreateFolder(ctx context.Context, req *CreateFolderReq) (res *FileAliasItem, err error)
 	RenameFile(ctx context.Context, req *RenameFileReq) (res *FileAliasItem, err error)
+	TransferSave(ctx context.Context, req *TransferSaveReq) (res *TransferSaveResp, err error)
 	MoveFile(ctx context.Context, req *MoveFileReq) (res *FileAliasItem, err error)
-	CopyFile(ctx context.Context, req *CopyFileReq) (res *FileAliasItem, err error)
-	UpdateFilePublic(ctx context.Context, req *UpdateFilePublicReq) (res *FileAliasItem, err error)
-	TrashFile(ctx context.Context, req *FileReq) (res *FileMeta, err error)
-	DeleteFile(ctx context.Context, req *FileReq) (res *Empty, err error)
-	RestoreFile(ctx context.Context, req *FileReq) (res *FileMeta, err error)
-	GetTrashedFiles(ctx context.Context, req *UserReq) (res *ListDirectoryResp, err error)
-	GetFileMeta(ctx context.Context, req *FileReq) (res *FileMeta, err error)
+	TrashFile(ctx context.Context, req *FileReq) (res *FileAliasItem, err error)
+	DeleteFile(ctx context.Context, req *FileReq) (res *FileAliasItem, err error)
+	RestoreFile(ctx context.Context, req *FileReq) (res *FileAliasItem, err error)
+	GetFileMeta(ctx context.Context, req *FileReq) (res *FileMetaResp, err error)
 	ListDirectory(ctx context.Context, req *ListDirectoryReq) (res *ListDirectoryResp, err error)
 	SearchFiles(ctx context.Context, req *SearchFilesReq) (res *SearchFilesResp, err error)
+	BuildSharedUrl(ctx context.Context, req *FileReq) (res *BuildSharedUrlResp, err error)
 	GetPreviewUrl(ctx context.Context, req *FileReq) (res *PreviewResp, err error)
 	GetTranscodeStatus(ctx context.Context, req *FileReq) (res *TranscodeStatusResp, err error)
 	GenerateDocumentPreview(ctx context.Context, req *FileReq) (res *PreviewResp, err error)
-	CleanExpiredTrash(ctx context.Context, req *CleanTrashReq) (res *CleanTrashResp, err error)
-	GetStorageQuota(ctx context.Context, req *UserReq) (res *StorageQuotaResp, err error)
+	CleanTrash(ctx context.Context, req *CleanTrashReq) (res *CleanTrashResp, err error)
+	GetStorageQuota(ctx context.Context, req *StorageQuotaReq) (res *StorageQuotaResp, err error)
 }

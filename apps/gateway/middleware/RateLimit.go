@@ -156,4 +156,8 @@ var apiRateLimitMap = map[string]RateLimitNumber{
 	"type:post uri:/file/create_folder":           {second: 5, count: 200, ok: true},
 	"type:post uri:/file/rename_file":             {second: 5, count: 200, ok: true},
 	"type:post uri:/file/move_file":               {second: 5, count: 200, ok: true},
+	"type:post uri:/file/delete_file":             {second: 5, count: 200, ok: true},
+	"type:post uri:/file/get_file_meta":           {second: 5, count: 200, ok: true},
+	"type:post uri:/file/restore_file":            {second: 5, count: 200, ok: true},
+	"type:post uri:/file/trash_file":              {second: 5, count: 200, ok: true},
 }

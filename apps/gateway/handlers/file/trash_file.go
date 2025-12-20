@@ -7,18 +7,30 @@ import (
 	"github.com/123508/xservergo/apps/gateway/common"
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/file"
-	"github.com/123508/xservergo/pkg/util/id"
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
-func PreDownload(ctx context.Context, c *app.RequestContext) {
+func TrashFile(ctx context.Context, c *app.RequestContext) {
+
 	userId := ctx.Value("userId")
 
 	if userId == nil {
-		userId = id.EmptyUUID.MarshalBase64()
+		c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
+		})
+		return
 	}
 
-	requestUserId := userId.(string)
+	requestUserId, ok := userId.(string)
+
+	if !ok {
+		c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"code": http.StatusBadRequest,
+			"msg":  "请求参数错误",
+		})
+		return
+	}
 
 	init := &FileReq{}
 	if err := c.Bind(init); err != nil {
@@ -29,13 +41,13 @@ func PreDownload(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &file.PreDownLoadReq{
+	req := &file.FileReq{
 		AliasId:       init.AliasId,
 		RequestUserId: requestUserId,
 		TargetUserId:  requestUserId,
 	}
 
-	resp, err := infra.FileClient.PreDownLoad(ctx, req)
+	resp, err := infra.FileClient.TrashFile(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
@@ -47,4 +59,5 @@ func PreDownload(ctx context.Context, c *app.RequestContext) {
 		"msg":  "请求成功",
 		"data": resp,
 	})
+
 }

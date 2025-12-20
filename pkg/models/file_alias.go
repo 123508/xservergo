@@ -16,7 +16,7 @@ type FileAlias struct {
 	CreatedAt   *time.Time `gorm:"column:created_at;comment '创建时间'"`
 	UpdatedAt   *time.Time `gorm:"column:updated_at;comment '更新时间'"`
 	IsDirectory bool       `gorm:"column:is_directory;comment '0:文件 1:目录'"`
-	IsPublic    bool       `gorm:"column:is_public;comment '0不公开 1公开'"`
+	RecoveryID  id.UUID    `gorm:"column:recovery_id;comment '进入回收站时的父id'"`
 	Level       uint64     `gorm:"->;column:level"`
 }
 

@@ -13,58 +13,39 @@ service FileService {
   rpc DirectUpload(DirectUploadReq) returns (DirectUploadResp);       //简单直接上传
 
   // ---------- 文件下载模块 ---------- //
-  rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);       //文件转存
   rpc PreDownLoad(PreDownLoadReq) returns (PreDownloadResp);          // 文件预下载
   rpc Download(DownloadReq) returns (DownloadResp);                   //文件下载
 
   // ---------- 文件操作模块 ---------- //
   rpc CreateFolder(CreateFolderReq) returns (FileAliasItem);            // 创建目录
   rpc RenameFile(RenameFileReq) returns (FileAliasItem);                // 重命名文件
+  rpc TransferSave(TransferSaveReq) returns (TransferSaveResp);         // 文件转存(作为文件拷贝使用时请将targetUserId和requestUserId统一即可)
   rpc MoveFile(MoveFileReq) returns (FileAliasItem);                    // 移动文件
-  rpc CopyFile(CopyFileReq) returns (FileAliasItem);                    // 复制文件
-  rpc UpdateFilePublic(UpdateFilePublicReq) returns (FileAliasItem);    // 修改文件公开状态
 
   // ---------- 回收站管理模块 ---------- //
-  rpc TrashFile(FileReq) returns (FileMeta);                            // 移入回收站
-  rpc DeleteFile(FileReq) returns (Empty);                              // 彻底删除
-  rpc RestoreFile(FileReq) returns (FileMeta);                          // 恢复文件
-  rpc GetTrashedFiles(UserReq) returns (ListDirectoryResp);             // 获取回收站文件
+  rpc TrashFile(FileReq) returns (FileAliasItem);                       // 移入回收站
+  rpc DeleteFile(FileReq) returns (FileAliasItem);                      // 彻底删除
+  rpc RestoreFile(FileReq) returns (FileAliasItem);                     // 恢复文件
 
   // ---------- 文件查询模块 ---------- //
-  rpc GetFileMeta(FileReq) returns (FileMeta);                      // 获取文件元数据
+  rpc GetFileMeta(FileReq) returns (FileMetaResp);                  // 获取文件元数据
   rpc ListDirectory(ListDirectoryReq) returns (ListDirectoryResp);  // 列出目录内容
   rpc SearchFiles(SearchFilesReq) returns (SearchFilesResp);        // 搜索文件
 
   // ---------- 文件预览模块 ---------- //
+  rpc BuildSharedUrl(FileReq)returns(BuildSharedUrlResp);           // 构建临时url用于分享
   rpc GetPreviewUrl(FileReq) returns (PreviewResp);                 // 获取预览URL
   rpc GetTranscodeStatus(FileReq) returns (TranscodeStatusResp);    // 获取转码状态
   rpc GenerateDocumentPreview(FileReq) returns (PreviewResp);       // 生成文档预览
 
   // ---------- 存储管理模块 ---------- //
-  rpc CleanExpiredTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理过期回收站
-  rpc GetStorageQuota(UserReq) returns (StorageQuotaResp);          // 获取存储配额
+  rpc CleanTrash(CleanTrashReq) returns (CleanTrashResp);    // 清理过期回收站
+  rpc GetStorageQuota(StorageQuotaReq) returns (StorageQuotaResp);          // 获取存储配额
 }
 
 // ====================== 数据结构 ====================== //
 
 // ---------- 通用结构 ---------- //
-message FileMeta {
-  string file_id = 1;        // 文件ID
-  string user_id = 2;        // 用户ID
-  string file_md5 = 3;      // 文件MD5
-  string parent_id = 4;      // 父目录ID
-  uint64 file_size = 5;     // 文件大小
-  string file_name = 6;     // 文件名
-  string file_cover = 7;    // 封面URL
-  string file_path = 8;     // 存储路径
-  string created_at = 9;
-  string updated_at = 10;
-  string deleted_at = 11;
-  bool is_public = 13;            // 是否公开
-  FileCategory file_category = 14; // 文件大类
-  string file_type = 15;          // 文件扩展名
-  uint64 status = 16;
-}
 
 message FileItem {
   string file_content_hash = 1; // 文件内容哈希值
@@ -85,7 +66,6 @@ message FileAliasItem{
   string file_id=3;
   string file_name=4;
   bool   is_directory=5;
-  bool   is_public=6;
 }
 
 // 文件大类枚举
@@ -98,8 +78,6 @@ enum FileCategory {
   ARCHIVE = 5;      // 压缩包
   OTHER = 6;        // 其他
 }
-
-message Empty{}
 
 // ---------- 上传相关 ---------- //
 message InitUploadReq {
@@ -262,19 +240,8 @@ message MoveFileReq {
   bool   is_move_to_root=5;
 }
 
-message CopyFileReq {
-  string alias_id = 1;
-  string target_parent_id = 2;
-  string request_user_id=3;
-  string target_user_id=4;
-  bool   is_move_to_root=5;
-}
-
-message UpdateFilePublicReq{
-  string alias_id=1;
-  uint64 is_public=2;
-  string request_user_id=3;
-  string target_user_id=4;
+message BuildSharedUrlResp{
+  string preview_url=1;
 }
 
 // ---------- 回收站管理 ---------- //
@@ -284,15 +251,28 @@ message FileReq {
   string target_user_id=3;
 }
 
+message FileMetaResp{
+    bool   is_directory=1;
+    string alias_id=2;
+    string file_id=3;
+    string file_name=4;
+    string file_content_hash = 5; // 文件内容哈希值
+    uint64 file_size = 6;
+    uint64 status = 7;
+    string file_type=8;
+    string file_cover=9;
+    string created_at=10;
+    string updated_at=11;
+}
+
 // ---------- 文件查询 ---------- //
 message ListDirectoryReq {
-  string target_user_id = 1;
-  uint64 page = 3;            // 分页页码
-  uint64 page_size = 4;       // 每页数量
-//  bool include_trashed = 5;   // 是否包含回收站文件
-  string request_user_id=6;
-  string alias_id=7;         //要查询文件的根目录
-  bool is_root=8;
+  uint64 page = 1;            // 分页页码
+  uint64 page_size = 2;       // 每页数量
+  string target_user_id = 3;
+  string request_user_id=4;
+  string alias_id=5;         // 要查询文件的根目录
+  uint64 root_type=6;        // 根目录类型 1:根目录 2:非根目录 3:回收站目录
 }
 
 message ListDirectoryResp {
@@ -311,12 +291,8 @@ message SearchFilesReq {
 }
 
 message SearchFilesResp {
-  repeated FileMeta files = 1;
+  repeated FileItem files = 1;
   uint64 total_count = 2;
-}
-
-message UserReq {
-  string request_user_id=1;
 }
 
 // ---------- 文件预览 ---------- //
@@ -348,13 +324,19 @@ message TranscodeStatusResp {
 
 // ---------- 存储管理 ---------- //
 message CleanTrashReq {
-  int32 days = 1; // 清理超过N天的回收站文件
+  int64 days = 1; // 清理超过N天的回收站文件
   string request_user_id=2;
+  string target_user_id=3;
 }
 
 message CleanTrashResp {
   uint64 deleted_count = 1; // 删除的文件数
   uint64 freed_space = 2;   // 释放的空间(字节)
+}
+
+message StorageQuotaReq{
+  string request_user_id=1;
+  string target_user_id=2;
 }
 
 message StorageQuotaResp {

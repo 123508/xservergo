@@ -187,6 +187,10 @@ func main() {
 		fileGroup.POST("/create_folder", file.CreateFolder)
 		fileGroup.POST("/rename_file", file.RenameFile)
 		fileGroup.POST("/move_file", file.MoveFile)
+		fileGroup.POST("/delete_file", file.DeleteFile)
+		fileGroup.POST("/get_file_meta", file.GetFileMeta)
+		fileGroup.POST("/restore_file", file.RestoreFile)
+		fileGroup.POST("/trash_file", file.TrashFile)
 
 		if err := hz.Run(); err != nil {
 			panic(err)
