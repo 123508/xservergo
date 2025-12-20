@@ -37,7 +37,7 @@ func Register(ctx context.Context, c *app.RequestContext) {
 
 	result := map[string]interface{}{
 		"code": 0,
-		"msg":  "登录成功",
+		"msg":  "注册成功",
 		"data": common.ParseOperationToMap(resp),
 	}
 

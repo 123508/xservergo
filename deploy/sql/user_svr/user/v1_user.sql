@@ -6,8 +6,8 @@ create table if not exists users(
     id  binary(16) not null comment '用户id',
     username varchar(60) not null default '' comment '用户名称',
     nickname varchar(60) not null default '' comment '用户昵称',
-    email varchar(255) not null default '' comment '用户邮箱',
-    phone varchar(20) not null  comment '用户手机',    -- E.164格式标准存储
+    email varchar(255) default null comment '用户邮箱',
+    phone varchar(20) default null comment '用户手机',    -- E.164格式标准存储
     gender tinyint(1) not null default 0 comment '用户性别:0未知  1男  2女',
     avatar varchar(1000) comment '用户头像',
     status tinyint(1) not null default 0 comment '用户状态:0正常 1冻结',

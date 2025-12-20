@@ -3,8 +3,10 @@ package repo
 import (
 	"context"
 	"errors"
-	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
+	"strings"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
@@ -21,6 +23,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
+	ExistDuplicateUser(ctx context.Context, username, email, phone string) (bool, error, uint64)
 	UpdateUser(ctx context.Context, user *models.User, requestUserId id.UUID) (int, error)
 	DeleteUser(ctx context.Context, userID id.UUID, requestUserId id.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
@@ -59,8 +62,19 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
     users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at) 
 		values (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,null)`
 
+		var email any = nil
+
+		if strings.TrimSpace(user.Email) != "" {
+			email = user.Email
+		}
+
+		var phone any = nil
+		if strings.TrimSpace(user.Phone) != "" {
+			phone = user.Phone
+		}
+
 		if err := tx.Exec(insertUserStmt, user.ID, user.UserName, user.NickName,
-			user.Email, user.Phone, user.Gender, user.Avatar, user.Status, user.AuditFields.Version).Error; err != nil {
+			email, phone, user.Gender, user.Avatar, user.Status, user.AuditFields.Version).Error; err != nil {
 			return err
 		}
 
@@ -174,6 +188,37 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 	}
 
 	return &row, nil
+}
+
+func (r *RepoImpl) ExistDuplicateUser(ctx context.Context, username, email, phone string) (bool, error, uint64) {
+
+	var row models.User
+
+	queryStmt := `select 
+    id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
+		from users where ( username = ? or email = ? or phone = ? ) and is_deleted = 0 limit 1`
+	if err := r.DB.WithContext(ctx).Raw(queryStmt, username, email, phone).Scan(&row).Error; err != nil {
+		logs.ErrorLogger.Error("通过username获取用户信息", zap.Error(err))
+		return false, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err), 0
+	}
+
+	// 不存在重复信息
+	if row.ID.IsZero() {
+		return false, nil, 0
+	}
+
+	// 重复信息为用户名
+	if row.UserName == username {
+		return true, nil, 1
+	}
+
+	// 重复信息为邮箱
+	if row.Email == email {
+		return true, nil, 2
+	}
+
+	// 重复信息为电话
+	return true, nil, 3
 }
 
 func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId id.UUID) (int, error) {

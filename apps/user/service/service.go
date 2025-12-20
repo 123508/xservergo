@@ -99,10 +99,24 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
-	uid := id.NewUUID()
+	//查重用户名
+	ok, err, t := s.userRepo.ExistDuplicateUser(ctx, u.UserName, u.Email, u.Phone)
+	if err != nil {
+		return ParseRepoErrorToCommonError(err, "查询用户失败"), ""
+	}
+	if ok {
+		switch t {
+		case 1:
+			return cerrors.NewCommonError(http.StatusBadRequest, "用户名重复", requestId, nil), requestId
+		case 2:
+			return cerrors.NewCommonError(http.StatusBadRequest, "邮箱重复", requestId, nil), requestId
+		default:
+			return cerrors.NewCommonError(http.StatusBadRequest, "电话号码重复", requestId, nil), requestId
+		}
 
-	u.ID = uid
+	}
 
+	u.ID = id.NewUUID()
 	uLogin.UserID = u.ID
 
 	uLogin.Password = Encryption(uLogin.Password)

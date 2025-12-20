@@ -41,6 +41,7 @@ type FileService interface {
 	RestoreFile(ctx context.Context, aliasId id.UUID, requestUserId, targetUserId id.UUID) (fileAlias models.FileAlias, err error)
 	GetFileMeta(ctx context.Context, aliasId, requestUserId, targetUserId id.UUID) (fileAlias FileMeta, err error)
 	SearchFile(ctx context.Context, keyword, fileType string, page, pageSize uint64, requestUserId, targetUserId id.UUID) (files []FileAliasItem, total uint64, err error)
+	CleanTrash(ctx context.Context, day int64, requestUserId, targetUserId id.UUID) (deleteCount, freeSpace uint64, err error)
 }
 
 type ServiceImpl struct {
@@ -1143,6 +1144,11 @@ func (s *ServiceImpl) SearchFile(ctx context.Context, keyword, fileType string, 
 	}
 
 	return ans, uint64(len(ans)), nil
+}
+
+func (s *ServiceImpl) CleanTrash(ctx context.Context, day int64, requestUserId, targetUserId id.UUID) (deleteCount, freeSpace uint64, err error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (s *ServiceImpl) fillFileAliasWithFile(ctx context.Context, res []models.FileAlias, fileListKey string) (files []FileAliasItem, err error) {
