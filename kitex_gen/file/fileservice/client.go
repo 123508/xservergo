@@ -25,12 +25,11 @@ type Client interface {
 	DeleteFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
 	RestoreFile(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileAliasItem, err error)
 	GetFileMeta(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.FileMetaResp, err error)
-	ListDirectory(ctx context.Context, Req *file.ListDirectoryReq, callOptions ...callopt.Option) (r *file.ListDirectoryResp, err error)
-	SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.SearchFilesResp, err error)
-	BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.BuildSharedUrlResp, err error)
-	GetPreviewUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error)
+	ListDirectory(ctx context.Context, Req *file.ListDirectoryReq, callOptions ...callopt.Option) (r *file.FileListResp, err error)
+	SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.FileListResp, err error)
+	BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewUrlResp, err error)
 	GetTranscodeStatus(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.TranscodeStatusResp, err error)
-	GenerateDocumentPreview(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error)
+	GenerateFilePreview(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewUrlResp, err error)
 	CleanTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error)
 	GetStorageQuota(ctx context.Context, Req *file.StorageQuotaReq, callOptions ...callopt.Option) (r *file.StorageQuotaResp, err error)
 }
@@ -134,24 +133,19 @@ func (p *kFileServiceClient) GetFileMeta(ctx context.Context, Req *file.FileReq,
 	return p.kClient.GetFileMeta(ctx, Req)
 }
 
-func (p *kFileServiceClient) ListDirectory(ctx context.Context, Req *file.ListDirectoryReq, callOptions ...callopt.Option) (r *file.ListDirectoryResp, err error) {
+func (p *kFileServiceClient) ListDirectory(ctx context.Context, Req *file.ListDirectoryReq, callOptions ...callopt.Option) (r *file.FileListResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.ListDirectory(ctx, Req)
 }
 
-func (p *kFileServiceClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.SearchFilesResp, err error) {
+func (p *kFileServiceClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq, callOptions ...callopt.Option) (r *file.FileListResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SearchFiles(ctx, Req)
 }
 
-func (p *kFileServiceClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.BuildSharedUrlResp, err error) {
+func (p *kFileServiceClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewUrlResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.BuildSharedUrl(ctx, Req)
-}
-
-func (p *kFileServiceClient) GetPreviewUrl(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error) {
-	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GetPreviewUrl(ctx, Req)
 }
 
 func (p *kFileServiceClient) GetTranscodeStatus(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.TranscodeStatusResp, err error) {
@@ -159,9 +153,9 @@ func (p *kFileServiceClient) GetTranscodeStatus(ctx context.Context, Req *file.F
 	return p.kClient.GetTranscodeStatus(ctx, Req)
 }
 
-func (p *kFileServiceClient) GenerateDocumentPreview(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewResp, err error) {
+func (p *kFileServiceClient) GenerateFilePreview(ctx context.Context, Req *file.FileReq, callOptions ...callopt.Option) (r *file.PreviewUrlResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.GenerateDocumentPreview(ctx, Req)
+	return p.kClient.GenerateFilePreview(ctx, Req)
 }
 
 func (p *kFileServiceClient) CleanTrash(ctx context.Context, Req *file.CleanTrashReq, callOptions ...callopt.Option) (r *file.CleanTrashResp, err error) {

@@ -134,13 +134,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"GetPreviewUrl": kitex.NewMethodInfo(
-		getPreviewUrlHandler,
-		newGetPreviewUrlArgs,
-		newGetPreviewUrlResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingUnary),
-	),
 	"GetTranscodeStatus": kitex.NewMethodInfo(
 		getTranscodeStatusHandler,
 		newGetTranscodeStatusArgs,
@@ -148,10 +141,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
-	"GenerateDocumentPreview": kitex.NewMethodInfo(
-		generateDocumentPreviewHandler,
-		newGenerateDocumentPreviewArgs,
-		newGenerateDocumentPreviewResult,
+	"GenerateFilePreview": kitex.NewMethodInfo(
+		generateFilePreviewHandler,
+		newGenerateFilePreviewArgs,
+		newGenerateFilePreviewResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
@@ -1860,10 +1853,10 @@ func (p *ListDirectoryArgs) GetFirstArgument() interface{} {
 }
 
 type ListDirectoryResult struct {
-	Success *file.ListDirectoryResp
+	Success *file.FileListResp
 }
 
-var ListDirectoryResult_Success_DEFAULT *file.ListDirectoryResp
+var ListDirectoryResult_Success_DEFAULT *file.FileListResp
 
 func (p *ListDirectoryResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1873,7 +1866,7 @@ func (p *ListDirectoryResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *ListDirectoryResult) Unmarshal(in []byte) error {
-	msg := new(file.ListDirectoryResp)
+	msg := new(file.FileListResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1881,7 +1874,7 @@ func (p *ListDirectoryResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *ListDirectoryResult) GetSuccess() *file.ListDirectoryResp {
+func (p *ListDirectoryResult) GetSuccess() *file.FileListResp {
 	if !p.IsSetSuccess() {
 		return ListDirectoryResult_Success_DEFAULT
 	}
@@ -1889,7 +1882,7 @@ func (p *ListDirectoryResult) GetSuccess() *file.ListDirectoryResp {
 }
 
 func (p *ListDirectoryResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.ListDirectoryResp)
+	p.Success = x.(*file.FileListResp)
 }
 
 func (p *ListDirectoryResult) IsSetSuccess() bool {
@@ -1971,10 +1964,10 @@ func (p *SearchFilesArgs) GetFirstArgument() interface{} {
 }
 
 type SearchFilesResult struct {
-	Success *file.SearchFilesResp
+	Success *file.FileListResp
 }
 
-var SearchFilesResult_Success_DEFAULT *file.SearchFilesResp
+var SearchFilesResult_Success_DEFAULT *file.FileListResp
 
 func (p *SearchFilesResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -1984,7 +1977,7 @@ func (p *SearchFilesResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *SearchFilesResult) Unmarshal(in []byte) error {
-	msg := new(file.SearchFilesResp)
+	msg := new(file.FileListResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -1992,7 +1985,7 @@ func (p *SearchFilesResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *SearchFilesResult) GetSuccess() *file.SearchFilesResp {
+func (p *SearchFilesResult) GetSuccess() *file.FileListResp {
 	if !p.IsSetSuccess() {
 		return SearchFilesResult_Success_DEFAULT
 	}
@@ -2000,7 +1993,7 @@ func (p *SearchFilesResult) GetSuccess() *file.SearchFilesResp {
 }
 
 func (p *SearchFilesResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.SearchFilesResp)
+	p.Success = x.(*file.FileListResp)
 }
 
 func (p *SearchFilesResult) IsSetSuccess() bool {
@@ -2082,10 +2075,10 @@ func (p *BuildSharedUrlArgs) GetFirstArgument() interface{} {
 }
 
 type BuildSharedUrlResult struct {
-	Success *file.BuildSharedUrlResp
+	Success *file.PreviewUrlResp
 }
 
-var BuildSharedUrlResult_Success_DEFAULT *file.BuildSharedUrlResp
+var BuildSharedUrlResult_Success_DEFAULT *file.PreviewUrlResp
 
 func (p *BuildSharedUrlResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
@@ -2095,7 +2088,7 @@ func (p *BuildSharedUrlResult) Marshal(out []byte) ([]byte, error) {
 }
 
 func (p *BuildSharedUrlResult) Unmarshal(in []byte) error {
-	msg := new(file.BuildSharedUrlResp)
+	msg := new(file.PreviewUrlResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2103,7 +2096,7 @@ func (p *BuildSharedUrlResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *BuildSharedUrlResult) GetSuccess() *file.BuildSharedUrlResp {
+func (p *BuildSharedUrlResult) GetSuccess() *file.PreviewUrlResp {
 	if !p.IsSetSuccess() {
 		return BuildSharedUrlResult_Success_DEFAULT
 	}
@@ -2111,7 +2104,7 @@ func (p *BuildSharedUrlResult) GetSuccess() *file.BuildSharedUrlResp {
 }
 
 func (p *BuildSharedUrlResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.BuildSharedUrlResp)
+	p.Success = x.(*file.PreviewUrlResp)
 }
 
 func (p *BuildSharedUrlResult) IsSetSuccess() bool {
@@ -2119,117 +2112,6 @@ func (p *BuildSharedUrlResult) IsSetSuccess() bool {
 }
 
 func (p *BuildSharedUrlResult) GetResult() interface{} {
-	return p.Success
-}
-
-func getPreviewUrlHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	switch s := arg.(type) {
-	case *streaming.Args:
-		st := s.Stream
-		req := new(file.FileReq)
-		if err := st.RecvMsg(req); err != nil {
-			return err
-		}
-		resp, err := handler.(file.FileService).GetPreviewUrl(ctx, req)
-		if err != nil {
-			return err
-		}
-		return st.SendMsg(resp)
-	case *GetPreviewUrlArgs:
-		success, err := handler.(file.FileService).GetPreviewUrl(ctx, s.Req)
-		if err != nil {
-			return err
-		}
-		realResult := result.(*GetPreviewUrlResult)
-		realResult.Success = success
-		return nil
-	default:
-		return errInvalidMessageType
-	}
-}
-func newGetPreviewUrlArgs() interface{} {
-	return &GetPreviewUrlArgs{}
-}
-
-func newGetPreviewUrlResult() interface{} {
-	return &GetPreviewUrlResult{}
-}
-
-type GetPreviewUrlArgs struct {
-	Req *file.FileReq
-}
-
-func (p *GetPreviewUrlArgs) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetReq() {
-		return out, nil
-	}
-	return proto.Marshal(p.Req)
-}
-
-func (p *GetPreviewUrlArgs) Unmarshal(in []byte) error {
-	msg := new(file.FileReq)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Req = msg
-	return nil
-}
-
-var GetPreviewUrlArgs_Req_DEFAULT *file.FileReq
-
-func (p *GetPreviewUrlArgs) GetReq() *file.FileReq {
-	if !p.IsSetReq() {
-		return GetPreviewUrlArgs_Req_DEFAULT
-	}
-	return p.Req
-}
-
-func (p *GetPreviewUrlArgs) IsSetReq() bool {
-	return p.Req != nil
-}
-
-func (p *GetPreviewUrlArgs) GetFirstArgument() interface{} {
-	return p.Req
-}
-
-type GetPreviewUrlResult struct {
-	Success *file.PreviewResp
-}
-
-var GetPreviewUrlResult_Success_DEFAULT *file.PreviewResp
-
-func (p *GetPreviewUrlResult) Marshal(out []byte) ([]byte, error) {
-	if !p.IsSetSuccess() {
-		return out, nil
-	}
-	return proto.Marshal(p.Success)
-}
-
-func (p *GetPreviewUrlResult) Unmarshal(in []byte) error {
-	msg := new(file.PreviewResp)
-	if err := proto.Unmarshal(in, msg); err != nil {
-		return err
-	}
-	p.Success = msg
-	return nil
-}
-
-func (p *GetPreviewUrlResult) GetSuccess() *file.PreviewResp {
-	if !p.IsSetSuccess() {
-		return GetPreviewUrlResult_Success_DEFAULT
-	}
-	return p.Success
-}
-
-func (p *GetPreviewUrlResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.PreviewResp)
-}
-
-func (p *GetPreviewUrlResult) IsSetSuccess() bool {
-	return p.Success != nil
-}
-
-func (p *GetPreviewUrlResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2344,7 +2226,7 @@ func (p *GetTranscodeStatusResult) GetResult() interface{} {
 	return p.Success
 }
 
-func generateDocumentPreviewHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+func generateFilePreviewHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
 		st := s.Stream
@@ -2352,43 +2234,43 @@ func generateDocumentPreviewHandler(ctx context.Context, handler interface{}, ar
 		if err := st.RecvMsg(req); err != nil {
 			return err
 		}
-		resp, err := handler.(file.FileService).GenerateDocumentPreview(ctx, req)
+		resp, err := handler.(file.FileService).GenerateFilePreview(ctx, req)
 		if err != nil {
 			return err
 		}
 		return st.SendMsg(resp)
-	case *GenerateDocumentPreviewArgs:
-		success, err := handler.(file.FileService).GenerateDocumentPreview(ctx, s.Req)
+	case *GenerateFilePreviewArgs:
+		success, err := handler.(file.FileService).GenerateFilePreview(ctx, s.Req)
 		if err != nil {
 			return err
 		}
-		realResult := result.(*GenerateDocumentPreviewResult)
+		realResult := result.(*GenerateFilePreviewResult)
 		realResult.Success = success
 		return nil
 	default:
 		return errInvalidMessageType
 	}
 }
-func newGenerateDocumentPreviewArgs() interface{} {
-	return &GenerateDocumentPreviewArgs{}
+func newGenerateFilePreviewArgs() interface{} {
+	return &GenerateFilePreviewArgs{}
 }
 
-func newGenerateDocumentPreviewResult() interface{} {
-	return &GenerateDocumentPreviewResult{}
+func newGenerateFilePreviewResult() interface{} {
+	return &GenerateFilePreviewResult{}
 }
 
-type GenerateDocumentPreviewArgs struct {
+type GenerateFilePreviewArgs struct {
 	Req *file.FileReq
 }
 
-func (p *GenerateDocumentPreviewArgs) Marshal(out []byte) ([]byte, error) {
+func (p *GenerateFilePreviewArgs) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetReq() {
 		return out, nil
 	}
 	return proto.Marshal(p.Req)
 }
 
-func (p *GenerateDocumentPreviewArgs) Unmarshal(in []byte) error {
+func (p *GenerateFilePreviewArgs) Unmarshal(in []byte) error {
 	msg := new(file.FileReq)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
@@ -2397,38 +2279,38 @@ func (p *GenerateDocumentPreviewArgs) Unmarshal(in []byte) error {
 	return nil
 }
 
-var GenerateDocumentPreviewArgs_Req_DEFAULT *file.FileReq
+var GenerateFilePreviewArgs_Req_DEFAULT *file.FileReq
 
-func (p *GenerateDocumentPreviewArgs) GetReq() *file.FileReq {
+func (p *GenerateFilePreviewArgs) GetReq() *file.FileReq {
 	if !p.IsSetReq() {
-		return GenerateDocumentPreviewArgs_Req_DEFAULT
+		return GenerateFilePreviewArgs_Req_DEFAULT
 	}
 	return p.Req
 }
 
-func (p *GenerateDocumentPreviewArgs) IsSetReq() bool {
+func (p *GenerateFilePreviewArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *GenerateDocumentPreviewArgs) GetFirstArgument() interface{} {
+func (p *GenerateFilePreviewArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-type GenerateDocumentPreviewResult struct {
-	Success *file.PreviewResp
+type GenerateFilePreviewResult struct {
+	Success *file.PreviewUrlResp
 }
 
-var GenerateDocumentPreviewResult_Success_DEFAULT *file.PreviewResp
+var GenerateFilePreviewResult_Success_DEFAULT *file.PreviewUrlResp
 
-func (p *GenerateDocumentPreviewResult) Marshal(out []byte) ([]byte, error) {
+func (p *GenerateFilePreviewResult) Marshal(out []byte) ([]byte, error) {
 	if !p.IsSetSuccess() {
 		return out, nil
 	}
 	return proto.Marshal(p.Success)
 }
 
-func (p *GenerateDocumentPreviewResult) Unmarshal(in []byte) error {
-	msg := new(file.PreviewResp)
+func (p *GenerateFilePreviewResult) Unmarshal(in []byte) error {
+	msg := new(file.PreviewUrlResp)
 	if err := proto.Unmarshal(in, msg); err != nil {
 		return err
 	}
@@ -2436,22 +2318,22 @@ func (p *GenerateDocumentPreviewResult) Unmarshal(in []byte) error {
 	return nil
 }
 
-func (p *GenerateDocumentPreviewResult) GetSuccess() *file.PreviewResp {
+func (p *GenerateFilePreviewResult) GetSuccess() *file.PreviewUrlResp {
 	if !p.IsSetSuccess() {
-		return GenerateDocumentPreviewResult_Success_DEFAULT
+		return GenerateFilePreviewResult_Success_DEFAULT
 	}
 	return p.Success
 }
 
-func (p *GenerateDocumentPreviewResult) SetSuccess(x interface{}) {
-	p.Success = x.(*file.PreviewResp)
+func (p *GenerateFilePreviewResult) SetSuccess(x interface{}) {
+	p.Success = x.(*file.PreviewUrlResp)
 }
 
-func (p *GenerateDocumentPreviewResult) IsSetSuccess() bool {
+func (p *GenerateFilePreviewResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *GenerateDocumentPreviewResult) GetResult() interface{} {
+func (p *GenerateFilePreviewResult) GetResult() interface{} {
 	return p.Success
 }
 
@@ -2827,7 +2709,7 @@ func (p *kClient) GetFileMeta(ctx context.Context, Req *file.FileReq) (r *file.F
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) ListDirectory(ctx context.Context, Req *file.ListDirectoryReq) (r *file.ListDirectoryResp, err error) {
+func (p *kClient) ListDirectory(ctx context.Context, Req *file.ListDirectoryReq) (r *file.FileListResp, err error) {
 	var _args ListDirectoryArgs
 	_args.Req = Req
 	var _result ListDirectoryResult
@@ -2837,7 +2719,7 @@ func (p *kClient) ListDirectory(ctx context.Context, Req *file.ListDirectoryReq)
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq) (r *file.SearchFilesResp, err error) {
+func (p *kClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq) (r *file.FileListResp, err error) {
 	var _args SearchFilesArgs
 	_args.Req = Req
 	var _result SearchFilesResult
@@ -2847,21 +2729,11 @@ func (p *kClient) SearchFiles(ctx context.Context, Req *file.SearchFilesReq) (r 
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq) (r *file.BuildSharedUrlResp, err error) {
+func (p *kClient) BuildSharedUrl(ctx context.Context, Req *file.FileReq) (r *file.PreviewUrlResp, err error) {
 	var _args BuildSharedUrlArgs
 	_args.Req = Req
 	var _result BuildSharedUrlResult
 	if err = p.c.Call(ctx, "BuildSharedUrl", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) GetPreviewUrl(ctx context.Context, Req *file.FileReq) (r *file.PreviewResp, err error) {
-	var _args GetPreviewUrlArgs
-	_args.Req = Req
-	var _result GetPreviewUrlResult
-	if err = p.c.Call(ctx, "GetPreviewUrl", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
@@ -2877,11 +2749,11 @@ func (p *kClient) GetTranscodeStatus(ctx context.Context, Req *file.FileReq) (r 
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) GenerateDocumentPreview(ctx context.Context, Req *file.FileReq) (r *file.PreviewResp, err error) {
-	var _args GenerateDocumentPreviewArgs
+func (p *kClient) GenerateFilePreview(ctx context.Context, Req *file.FileReq) (r *file.PreviewUrlResp, err error) {
+	var _args GenerateFilePreviewArgs
 	_args.Req = Req
-	var _result GenerateDocumentPreviewResult
-	if err = p.c.Call(ctx, "GenerateDocumentPreview", &_args, &_result); err != nil {
+	var _result GenerateFilePreviewResult
+	if err = p.c.Call(ctx, "GenerateFilePreview", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

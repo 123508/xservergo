@@ -657,25 +657,25 @@ func (s *FileServiceImpl) GetFileMeta(ctx context.Context, req *file.FileReq) (r
 }
 
 // ListDirectory implements the FileServiceImpl interface.
-func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirectoryReq) (resp *file.ListDirectoryResp, err error) {
+func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirectoryReq) (resp *file.FileListResp, err error) {
 	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
 	if err != nil {
-		return &file.ListDirectoryResp{}, err
+		return &file.FileListResp{}, err
 	}
 
 	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
 	if err != nil {
-		return &file.ListDirectoryResp{}, err
+		return &file.FileListResp{}, err
 	}
 
 	aliasId, err := unmarshalUUID(ctx, req.AliasId)
 	if err != nil {
-		return &file.ListDirectoryResp{}, err
+		return &file.FileListResp{}, err
 	}
 
 	items, total, err := s.fileService.ListDirectory(ctx, aliasId, req.RootType, req.Page, req.PageSize, requestUid, targetUid)
 	if err != nil {
-		return &file.ListDirectoryResp{}, err
+		return &file.FileListResp{}, err
 	}
 	fileRes := make([]*file.FileItem, len(items))
 	for i, item := range items {
@@ -688,7 +688,7 @@ func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirec
 			CreatedAt: item.CreatedAt,
 		}
 	}
-	return &file.ListDirectoryResp{
+	return &file.FileListResp{
 		Files:      fileRes,
 		TotalCount: total,
 		Page:       req.Page,
@@ -697,19 +697,47 @@ func (s *FileServiceImpl) ListDirectory(ctx context.Context, req *file.ListDirec
 }
 
 // SearchFiles implements the FileServiceImpl interface.
-func (s *FileServiceImpl) SearchFiles(ctx context.Context, req *file.SearchFilesReq) (resp *file.SearchFilesResp, err error) {
-	// TODO: Your code here...
-	return
+func (s *FileServiceImpl) SearchFiles(ctx context.Context, req *file.SearchFilesReq) (resp *file.FileListResp, err error) {
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.FileListResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.FileListResp{}, err
+	}
+
+	if err = validate.IsValidateString(req.Keyword); err != nil {
+		return &file.FileListResp{}, cerrors.NewGRPCError(http.StatusBadRequest, err.Error())
+	}
+
+	items, total, err := s.fileService.SearchFile(ctx, req.Keyword, req.FileType, req.Page, req.PageSize, requestUid, targetUid)
+
+	if err != nil {
+		return &file.FileListResp{}, err
+	}
+	fileRes := make([]*file.FileItem, len(items))
+	for i, item := range items {
+		fileRes[i] = &file.FileItem{
+			FileSize:  item.FileSize,
+			FileName:  item.FileName,
+			FileId:    item.FileID.MarshalBase64(),
+			FileType:  item.FileType,
+			FileCover: item.FileCover,
+			CreatedAt: item.CreatedAt,
+		}
+	}
+	return &file.FileListResp{
+		Files:      fileRes,
+		TotalCount: total,
+		Page:       req.Page,
+		PageSize:   req.PageSize,
+	}, nil
 }
 
 // BuildSharedUrl implements the FileServiceImpl interface.
-func (s *FileServiceImpl) BuildSharedUrl(ctx context.Context, req *file.FileReq) (resp *file.BuildSharedUrlResp, err error) {
-	// TODO: Your code here...
-	return
-}
-
-// GetPreviewUrl implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GetPreviewUrl(ctx context.Context, req *file.FileReq) (resp *file.PreviewResp, err error) {
+func (s *FileServiceImpl) BuildSharedUrl(ctx context.Context, req *file.FileReq) (resp *file.PreviewUrlResp, err error) {
 	// TODO: Your code here...
 	return
 }
@@ -720,8 +748,8 @@ func (s *FileServiceImpl) GetTranscodeStatus(ctx context.Context, req *file.File
 	return
 }
 
-// GenerateDocumentPreview implements the FileServiceImpl interface.
-func (s *FileServiceImpl) GenerateDocumentPreview(ctx context.Context, req *file.FileReq) (resp *file.PreviewResp, err error) {
+// GenerateFilePreview implements the FileServiceImpl interface.
+func (s *FileServiceImpl) GenerateFilePreview(ctx context.Context, req *file.FileReq) (resp *file.PreviewUrlResp, err error) {
 	// TODO: Your code here...
 	return
 }
