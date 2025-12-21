@@ -31,9 +31,9 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	chg := &ChangePwd{}
+	init := &ChangePwd{}
 
-	if err := c.Bind(chg); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -42,9 +42,9 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := infra.UserClient.ChangePassword(ctx, &user.ChangePasswordReq{
-		TargetUserId:  chg.UserId,
-		OldPassword:   chg.OldPassword,
-		NewPassword:   chg.NewPassword,
+		TargetUserId:  init.TargetUserId,
+		OldPassword:   init.OldPassword,
+		NewPassword:   init.NewPassword,
 		RequestUserId: requestUserId,
 	})
 

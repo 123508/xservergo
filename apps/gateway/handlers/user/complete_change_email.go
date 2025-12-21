@@ -44,7 +44,7 @@ func CompleteChangeEmail(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := infra.UserClient.CompleteChangeEmail(ctx, &user.CompleteChangeEmailReq{
-		TargetUserId:     req.UserId,
+		TargetUserId:     req.TargetUserid,
 		VerificationCode: req.VerifyCode,
 		RequestId:        req.RequestId,
 		RequestUserId:    requestUserId,

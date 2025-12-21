@@ -14,6 +14,7 @@ type MoveFileStruct struct {
 	NewParentId  string `json:"new_parent_id"`
 	AliasId      string `json:"alias_id"`
 	IsMoveToRoot bool   `json:"is_move_to_root"`
+	TargetUserId string `json:"target_user_id"`
 }
 
 func MoveFile(ctx context.Context, c *app.RequestContext) {
@@ -51,7 +52,7 @@ func MoveFile(ctx context.Context, c *app.RequestContext) {
 		AliasId:       init.AliasId,
 		NewParentId:   init.NewParentId,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 		IsMoveToRoot:  init.IsMoveToRoot,
 	}
 

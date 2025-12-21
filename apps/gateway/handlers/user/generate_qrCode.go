@@ -11,18 +11,21 @@ import (
 )
 
 func GenerateQrCode(ctx context.Context, c *app.RequestContext) {
-	sign := &DeviceSign{}
-	if err := c.Bind(sign); err != nil {
+	init := &DeviceSign{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
 		})
 		return
 	}
-	resp, err := infra.UserClient.GenerateQrCode(ctx, &user.GenerateQrCodeReq{
-		ClientIp:  sign.ClientIp,
-		UserAgent: sign.UserAgent,
-	})
+
+	req := &user.GenerateQrCodeReq{
+		ClientIp:  init.ClientIp,
+		UserAgent: init.UserAgent,
+	}
+
+	resp, err := infra.UserClient.GenerateQrCode(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

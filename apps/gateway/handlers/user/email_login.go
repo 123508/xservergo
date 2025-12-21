@@ -11,9 +11,9 @@ import (
 )
 
 func EmailLogin(ctx context.Context, c *app.RequestContext) {
-	acc := &EmailLog{}
 
-	if err := c.Bind(acc); err != nil {
+	init := &EmailLog{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -21,10 +21,12 @@ func EmailLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.EmailLogin(ctx, &user.EmailLoginReq{
-		Email:    acc.Email,
-		Password: acc.Password,
-	})
+	req := &user.EmailLoginReq{
+		Email:    init.Email,
+		Password: init.Password,
+	}
+
+	resp, err := infra.UserClient.EmailLogin(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

@@ -12,7 +12,8 @@ import (
 
 type DirectUploadStruct struct {
 	FileItem
-	FileContent []byte `json:"file_content"`
+	TargetUserId string `json:"target_user_id"`
+	FileContent  []byte `json:"file_content"`
 }
 
 func DirectUpload(ctx context.Context, c *app.RequestContext) {
@@ -57,7 +58,7 @@ func DirectUpload(ctx context.Context, c *app.RequestContext) {
 		},
 		Content:       init.FileContent,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.DirectUpload(ctx, req)

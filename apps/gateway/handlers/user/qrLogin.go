@@ -11,8 +11,8 @@ import (
 )
 
 func QrLogin(ctx context.Context, c *app.RequestContext) {
-	qrL := &QrLog{}
-	if err := c.Bind(qrL); err != nil {
+	init := &QrLog{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -20,12 +20,14 @@ func QrLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.QrCodeLoginStatus(ctx, &user.QrCodeLoginStatusReq{
-		Ticket:    qrL.Ticket,
-		Timeout:   qrL.Timeout,
-		RequestId: qrL.RequestId,
-		UserId:    qrL.UserId,
-	})
+	req := &user.QrCodeLoginStatusReq{
+		Ticket:    init.Ticket,
+		Timeout:   init.Timeout,
+		RequestId: init.RequestId,
+		UserId:    init.TargetUserId,
+	}
+
+	resp, err := infra.UserClient.QrCodeLoginStatus(ctx, req)
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
 		return

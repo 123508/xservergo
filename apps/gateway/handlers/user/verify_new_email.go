@@ -31,9 +31,9 @@ func VerifyNewEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &VBEmail{}
+	init := &VBEmail{}
 
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -41,13 +41,15 @@ func VerifyNewEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.VerifyNewEmail(ctx, &user.VerifyNewEmailReq{
-		TargetUserId:     req.UserId,
-		NewEmail:         req.Email,
-		VerificationCode: req.VerifyCode,
-		RequestUserId:    req.RequestId,
+	req := &user.VerifyNewEmailReq{
+		TargetUserId:     init.TargetUserId,
+		NewEmail:         init.Email,
+		VerificationCode: init.VerifyCode,
+		RequestUserId:    init.RequestId,
 		RequestId:        requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.VerifyNewEmail(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

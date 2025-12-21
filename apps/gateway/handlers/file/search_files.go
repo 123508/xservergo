@@ -38,8 +38,8 @@ func SearchFiles(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	dir := &SearchFileStruct{}
-	if err := c.Bind(dir); err != nil {
+	init := &SearchFileStruct{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -48,12 +48,12 @@ func SearchFiles(ctx context.Context, c *app.RequestContext) {
 	}
 
 	req := &file.SearchFilesReq{
-		Keyword:       dir.Keyword,
-		FileType:      dir.FileType,
-		Page:          dir.Page,
-		PageSize:      dir.PageSize,
+		Keyword:       init.Keyword,
+		FileType:      init.FileType,
+		Page:          init.Page,
+		PageSize:      init.PageSize,
 		RequestUserId: requestUserId,
-		TargetUserId:  dir.TargetUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.SearchFiles(ctx, req)

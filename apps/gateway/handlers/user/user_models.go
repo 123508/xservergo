@@ -32,7 +32,7 @@ type SmsLog struct {
 }
 
 type Tokens struct {
-	UserId       string `json:"user_id"`
+	TargetUserId string `json:"target_user_id"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
@@ -49,10 +49,10 @@ type QrQuery struct {
 }
 
 type QrLog struct {
-	Ticket    string `json:"ticket"`
-	Timeout   uint64 `json:"timeout"`
-	RequestId string `json:"request_id"`
-	UserId    string `json:"user_id"`
+	Ticket       string `json:"ticket"`
+	Timeout      uint64 `json:"timeout"`
+	RequestId    string `json:"request_id"`
+	TargetUserId string `json:"target_user_id"`
 }
 
 type QrMobileReq struct {
@@ -61,9 +61,9 @@ type QrMobileReq struct {
 }
 
 type ChangePwd struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
-	UserId      string `json:"user_id"`
+	OldPassword  string `json:"old_password"`
+	NewPassword  string `json:"new_password"`
+	TargetUserId string `json:"target_user_id"`
 }
 
 type ForgetPwd struct {
@@ -81,45 +81,45 @@ type ResetPwd struct {
 }
 
 type UStruct struct {
-	UserId   string `json:"user_id"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	TargetUserId string `json:"target_user_id"`
+	Phone        string `json:"phone"`
+	Email        string `json:"email"`
+	Username     string `json:"username"`
 }
 
 type SBEmail struct {
-	UserId string `json:"user_id"`
-	Email  string `json:"email"`
+	TargetUserId string `json:"target_user_id"`
+	Email        string `json:"email"`
 }
 
 type VBEmail struct {
-	UserId     string `json:"user_id"`
-	Email      string `json:"email"`
-	VerifyCode string `json:"verify_code"`
-	RequestId  string `json:"request_id"`
+	TargetUserId string `json:"target_user_id"`
+	Email        string `json:"email"`
+	VerifyCode   string `json:"verify_code"`
+	RequestId    string `json:"request_id"`
 }
 
 type SBPhone struct {
-	UserId string `json:"user_id"`
-	Phone  string `json:"phone"`
+	TargetUserId string `json:"target_user_id"`
+	Phone        string `json:"phone"`
 }
 
 type VBPhone struct {
-	UserId     string `json:"user_id"`
-	Phone      string `json:"phone"`
-	VerifyCode string `json:"verify_code"`
-	RequestId  string `json:"request_id"`
+	TargetUserId string `json:"target_user_id"`
+	Phone        string `json:"phone"`
+	VerifyCode   string `json:"verify_code"`
+	RequestId    string `json:"request_id"`
 }
 
 type UpdateInfo struct {
-	UserId    string `json:"user_id"`
-	Nickname  string `json:"nickname"`
-	AvatarUrl string `json:"avatar_url"`
-	Gender    uint64 `json:"gender"`
+	TargetUserId string `json:"target_user_id"`
+	Nickname     string `json:"nickname"`
+	AvatarUrl    string `json:"avatar_url"`
+	Gender       uint64 `json:"gender"`
 }
 
 type CompleteReq struct {
-	UserId     string `json:"user_id"`
-	VerifyCode string `json:"verify_code"`
-	RequestId  string `json:"request_id"`
+	TargetUserid string `json:"target_userid"`
+	VerifyCode   string `json:"verify_code"`
+	RequestId    string `json:"request_id"`
 }

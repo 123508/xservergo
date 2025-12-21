@@ -18,7 +18,6 @@ create table if not exists file_alias(
     primary key udx_file_user_id(id),
     unique udx_parent_user_file(parent_id,user_id,file_name),
     key idx_created_at(created_at),
-    key idx_updated_at(updated_at),
     fulltext ft_idx_content(file_name) with parser ngram
 ) engine=InnoDB default charset=utf8mb4 collate=utf8mb4_0900_ai_ci
     COMMENT='文件别名信息表';

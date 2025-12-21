@@ -529,27 +529,35 @@ func (s *ServiceImpl) ListDirectory(ctx context.Context, aliasId id.UUID, rootTy
 		return nil, 0, cerrors.NewCommonError(http.StatusBadRequest, "查询类型错误", "", nil)
 	}
 
-	var count int64
-
-	Rs, err := s.Rds.Get(ctx, s.Keys.FileAliasKey(aliasId)).Uint64()
-
-	if err != nil {
-		err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", aliasId).Count(&count).Error
-		if err != nil {
-			logs.ErrorLogger.Error("请求错误",
-				zap.String("aliasId", aliasId.MarshalBase64()),
-				zap.String("targetUserId", targetUserId.MarshalBase64()),
-				zap.String("requestUserId", requestUserId.MarshalBase64()),
-				zap.Uint64("page", page),
-				zap.Uint64("pageSize", pageSize),
-				zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
-				zap.Error(err))
-			return nil, 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
-		}
-		s.Rds.Set(ctx, s.Keys.FileAliasKey(aliasId), count, 20*time.Minute)
+	takeCount := urds.SimpleCacheComponent[int64]{
+		Rds:       s.Rds,
+		Ctx:       ctx,
+		Key:       s.Keys.FileAliasCountKey(aliasId),
+		Marshal:   json.Marshal,
+		Unmarshal: json.Unmarshal,
+		QueryExec: func() (int64, error) {
+			var count int64
+			err = s.DB.Model(&models.FileAlias{}).Where("parent_id = ?", aliasId).Count(&count).Error
+			if err != nil {
+				return 0, cerrors.NewSQLError(http.StatusInternalServerError, "请求错误", err)
+			}
+			return count, nil
+		},
+		Expires: 20 * time.Minute,
+		Random:  0,
 	}
-
-	count = int64(Rs)
+	count, err := takeCount.QueryWithCache()
+	if err != nil {
+		logs.ErrorLogger.Error("请求错误",
+			zap.String("aliasId", aliasId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Uint64("page", page),
+			zap.Uint64("pageSize", pageSize),
+			zap.Uint64("rootType(1:根目录 2:非根目录 3:回收站目录)", rootType),
+			zap.Error(err))
+		return nil, 0, err
+	}
 
 	// 查询当前目录id下的子目录
 	listQuery := urds.ListCacheComponent[id.UUID, models.FileAlias]{
@@ -1045,8 +1053,12 @@ func (s *ServiceImpl) GetFileMeta(ctx context.Context, aliasId, requestUserId, t
 	result.IsDirectory = rs.IsDirectory
 	result.FileName = rs.FileName
 	result.AliasId = rs.ID.MarshalBase64()
-	result.CreatedAt = rs.CreatedAt.Format("2006-01-02 15:04:05")
-	result.UpdatedAt = rs.UpdatedAt.Format("2006-01-02 15:04:05")
+	if rs.CreatedAt != nil {
+		result.CreatedAt = rs.CreatedAt.Format("2006-01-02 15:04:05")
+	}
+	if rs.UpdatedAt != nil {
+		result.UpdatedAt = rs.UpdatedAt.Format("2006-01-02 15:04:05")
+	}
 
 	// 非文件直接返回
 	if result.IsDirectory {
@@ -1054,7 +1066,7 @@ func (s *ServiceImpl) GetFileMeta(ctx context.Context, aliasId, requestUserId, t
 	}
 
 	// 查询文件本体填充信息
-	file, err := s.takeSingleFile(ctx, aliasId, targetUserId, requestUserId)
+	file, err := s.takeSingleFile(ctx, rs.FileID, targetUserId, requestUserId)
 
 	if err != nil {
 		return FileMeta{}, err
@@ -1147,8 +1159,62 @@ func (s *ServiceImpl) SearchFile(ctx context.Context, keyword, fileType string, 
 }
 
 func (s *ServiceImpl) CleanTrash(ctx context.Context, day int64, requestUserId, targetUserId id.UUID) (deleteCount, freeSpace uint64, err error) {
-	//TODO implement me
-	panic("implement me")
+	sqlStmt := `select ifnull(sum(f.file_size),0) as freeSpace
+        from file_alias fa 
+            inner join 
+            file f
+        on fa.file_id = f.id 
+               and fa.user_id = ?
+               and fa.is_directory = 0 
+               and fa.parent_id = ? 
+               and fa.updated_at <= date_sub(now(),interval ? day) 
+               and fa.recovery_id is not null`
+
+	// 扫描需要清理的空间大小
+	err = s.DB.Raw(sqlStmt, targetUserId, id.RecycleUUID, day).Scan(&freeSpace).Error
+	if err != nil {
+		logs.ErrorLogger.Error("统计待清理空间失败",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Int64("day", day),
+			zap.Error(err))
+		return 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "统计待清理空间失败", err)
+	}
+
+	sqlStmt = `select id from file_alias where 
+                           user_id = ? 
+                         and parent_id = ? 
+                         and updated_at <= date_sub(now(),interval ? day) 
+               			 and recovery_id is not null`
+
+	// 删除回收站过期n天的文件并统计数量
+	row := make([]id.UUID, 0)
+	err = s.DB.Raw(sqlStmt, targetUserId, id.RecycleUUID, day).Scan(&row).Error
+	if err != nil {
+		logs.ErrorLogger.Error("查找文件失败",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Int64("day", day),
+			zap.Error(err))
+		return 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "查找文件失败", err)
+	}
+
+	sqlStmt = `delete from file_alias where id in ?`
+	err = s.DB.Exec(sqlStmt, row).Error
+	if err != nil {
+		logs.ErrorLogger.Error("清理文件失败",
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.Int64("day", day),
+			zap.Error(err))
+		return 0, 0, cerrors.NewSQLError(http.StatusInternalServerError, "清理文件失败", err)
+	}
+
+	s.deleteCacheByIds(ctx, nil, row)
+
+	deleteCount = uint64(len(row))
+
+	return deleteCount, freeSpace, nil
 }
 
 func (s *ServiceImpl) fillFileAliasWithFile(ctx context.Context, res []models.FileAlias, fileListKey string) (files []FileAliasItem, err error) {
@@ -1316,8 +1382,9 @@ func (s *ServiceImpl) insertAndRelateFile(ctx context.Context, file models.File,
 	return res, nil
 }
 
-func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (file models.FileAlias, err error) {
-	simpleQuery := urds.SimpleCacheComponent[id.UUID, models.FileAlias]{
+func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (rs models.FileAlias, err error) {
+
+	simpleQuery := urds.SimpleCacheComponent[models.FileAlias]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.Keys.FileAliasKey(aliasId),
@@ -1325,7 +1392,7 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 		Unmarshal: json.Unmarshal,
 		QueryExec: func() (models.FileAlias, error) {
 			res := models.FileAlias{}
-			err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).Find(&res).Error
+			err = s.DB.Model(&models.FileAlias{}).Where("id = ? and user_id = ?", aliasId, targetUserId).First(&res).Error
 			if err != nil {
 				return models.FileAlias{}, err
 			}
@@ -1340,7 +1407,8 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 		Random:  2 * time.Minute,
 	}
 
-	aliasFile, err := simpleQuery.QueryWithCache()
+	rs, err = simpleQuery.QueryWithCache()
+
 	if err != nil {
 		logs.ErrorLogger.Error("查询失败",
 			zap.String("aliasId", aliasId.MarshalBase64()),
@@ -1350,53 +1418,16 @@ func (s *ServiceImpl) takeSingleFileAlias(ctx context.Context, aliasId id.UUID, 
 		return models.FileAlias{}, err
 	}
 
-	if !aliasFile.IsDirectory {
-		logs.ErrorLogger.Error("文件无法查询子目录",
+	if rs.ID.IsZero() {
+		logs.ErrorLogger.Error("文件不存在",
 			zap.String("aliasId", aliasId.MarshalBase64()),
-			zap.String("requestUserId", requestUserId.MarshalBase64()),
 			zap.String("targetUserId", targetUserId.MarshalBase64()),
-			zap.Error(err))
-		return models.FileAlias{}, err
-	}
-
-	return aliasFile, nil
-}
-
-func (s *ServiceImpl) takeSingleFile(ctx context.Context, fileId id.UUID, targetUserId, requestUserId id.UUID) (file models.File, err error) {
-	simpleQuery := urds.SimpleCacheComponent[id.UUID, models.File]{
-		Rds:       s.Rds,
-		Ctx:       ctx,
-		Key:       s.Keys.FileKey(fileId),
-		Marshal:   json.Marshal,
-		Unmarshal: json.Unmarshal,
-		QueryExec: func() (models.File, error) {
-			res := models.File{}
-			err = s.DB.Model(&models.File{}).Where("id = ?", fileId, targetUserId).Find(&res).Error
-			if err != nil {
-				return models.File{}, err
-			}
-
-			if res.ID.IsZero() {
-				return models.File{}, cerrors.NewSQLError(http.StatusBadRequest, "请求文件不存在", err)
-			}
-
-			return res, nil
-		},
-		Expires: 30 * time.Minute,
-		Random:  2 * time.Minute,
-	}
-
-	File, err := simpleQuery.QueryWithCache()
-	if err != nil {
-		logs.ErrorLogger.Error("查询失败",
-			zap.String("fileId", fileId.MarshalBase64()),
 			zap.String("requestUserId", requestUserId.MarshalBase64()),
-			zap.String("targetUserId", targetUserId.MarshalBase64()),
 			zap.Error(err))
-		return models.File{}, err
+		return models.FileAlias{}, cerrors.NewSQLError(http.StatusBadRequest, "文件不存在", err)
 	}
 
-	return File, nil
+	return rs, nil
 }
 
 func (s *ServiceImpl) takeSingleFileAliasWithCleanCache(ctx context.Context, aliasId id.UUID, targetUserId, requestUserId id.UUID) (file models.FileAlias, err error) {
@@ -1423,6 +1454,43 @@ func (s *ServiceImpl) takeSingleFileAliasWithCleanCache(ctx context.Context, ali
 	s.Rds.Del(ctx, s.Keys.FileAliasKey(aliasId))
 
 	return rs, nil
+}
+
+func (s *ServiceImpl) takeSingleFile(ctx context.Context, fileId id.UUID, targetUserId, requestUserId id.UUID) (file models.File, err error) {
+	simpleQuery := urds.SimpleCacheComponent[models.File]{
+		Rds:       s.Rds,
+		Ctx:       ctx,
+		Key:       s.Keys.FileKey(fileId),
+		Marshal:   json.Marshal,
+		Unmarshal: json.Unmarshal,
+		QueryExec: func() (models.File, error) {
+			res := models.File{}
+			err = s.DB.Model(&models.File{}).Where("id = ?", fileId).First(&res).Error
+			if err != nil {
+				return models.File{}, cerrors.NewSQLError(http.StatusInternalServerError, "查询失败", err)
+			}
+
+			if res.ID.IsZero() {
+				return models.File{}, cerrors.NewSQLError(http.StatusBadRequest, "请求文件不存在", err)
+			}
+
+			return res, nil
+		},
+		Expires: 30 * time.Minute,
+		Random:  2 * time.Minute,
+	}
+
+	File, err := simpleQuery.QueryWithCache()
+	if err != nil {
+		logs.ErrorLogger.Error("查询失败",
+			zap.String("fileId", fileId.MarshalBase64()),
+			zap.String("requestUserId", requestUserId.MarshalBase64()),
+			zap.String("targetUserId", targetUserId.MarshalBase64()),
+			zap.Error(err))
+		return models.File{}, err
+	}
+
+	return File, nil
 }
 
 func (s *ServiceImpl) takeFileList(ctx context.Context, aliasId id.UUID, isRecursive bool, targetUserId, requestUserId id.UUID) (aliasItems []models.FileAlias, err error) {
@@ -1784,4 +1852,35 @@ func (s *ServiceImpl) verifyFile(ctx context.Context, fileId id.UUID) (VerifyFil
 	}
 
 	return VerifyFile{File: f, NeedChunk: make([]uint64, 0)}, nil
+}
+
+func (s *ServiceImpl) deleteCacheByIds(ctx context.Context, fileIds, fileAliasIds []id.UUID) {
+	processBatch := func(ids []id.UUID, keyFunc func(id.UUID) string) error {
+		batchSize := 700
+		for i := 0; i < len(ids); i += batchSize {
+			end := i + batchSize
+			if end > len(ids) {
+				end = len(ids)
+			}
+			batch := ids[i:end]
+
+			// 使用Pipelined函数
+			_, err := s.Rds.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+				for _, oid := range batch {
+					pipe.Del(ctx, keyFunc(oid))
+				}
+				return nil // 返回nil则提交该pipeline
+			})
+			if err != nil {
+				continue
+			}
+		}
+		return nil
+	}
+	if fileIds != nil && len(fileIds) > 0 {
+		processBatch(fileIds, s.Keys.FileKey)
+	}
+	if fileAliasIds != nil && len(fileAliasIds) > 0 {
+		processBatch(fileAliasIds, s.Keys.FileAliasKey)
+	}
 }

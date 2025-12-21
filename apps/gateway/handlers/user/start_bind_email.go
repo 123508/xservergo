@@ -31,8 +31,8 @@ func StartBindEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &SBEmail{}
-	if err := c.Bind(req); err != nil {
+	init := &SBEmail{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -40,11 +40,13 @@ func StartBindEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.StartBindEmail(ctx, &user.StartBindEmailReq{
-		TargetUserId:  req.UserId,
-		NewEmail:      req.Email,
+	req := &user.StartBindEmailReq{
+		TargetUserId:  init.TargetUserId,
+		NewEmail:      init.Email,
 		RequestUserId: requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.StartBindEmail(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

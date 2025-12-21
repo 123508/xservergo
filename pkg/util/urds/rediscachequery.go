@@ -359,7 +359,7 @@ func (c *ListCacheComponent[Id, Item]) partQueryExec(fail, list []Id, itemMap ma
 	return c.Sort(res), nil
 }
 
-type SimpleCacheComponent[Id pub.IntegerNumber, E any] struct {
+type SimpleCacheComponent[E any] struct {
 	Rds       *redis.Client                       //redis客户端
 	Ctx       context.Context                     //上下文传递,之后要做链路追踪
 	Key       string                              //存储的键
@@ -370,7 +370,7 @@ type SimpleCacheComponent[Id pub.IntegerNumber, E any] struct {
 	Random    time.Duration                       //随机过期时间
 }
 
-func NewSimpleCacheComponent[Id pub.IntegerNumber, E any](
+func NewSimpleCacheComponent[E any](
 	rds *redis.Client,
 	ctx context.Context,
 	key string,
@@ -379,8 +379,8 @@ func NewSimpleCacheComponent[Id pub.IntegerNumber, E any](
 	queryExec func() (E, error),
 	expires time.Duration,
 	random time.Duration,
-) *SimpleCacheComponent[Id, E] {
-	return &SimpleCacheComponent[Id, E]{
+) *SimpleCacheComponent[E] {
+	return &SimpleCacheComponent[E]{
 		Rds:       rds,
 		Ctx:       ctx,
 		Key:       key,
@@ -392,11 +392,11 @@ func NewSimpleCacheComponent[Id pub.IntegerNumber, E any](
 	}
 }
 
-func NewSimpleCacheComponentWithDefault[Id pub.IntegerNumber, E any](
+func NewSimpleCacheComponentWithDefault[E any](
 	key string,
 	QueryExec func() (E, error),
-) *SimpleCacheComponent[Id, E] {
-	return &SimpleCacheComponent[Id, E]{
+) *SimpleCacheComponent[E] {
+	return &SimpleCacheComponent[E]{
 		Rds:       db.Rds,
 		Ctx:       context.Background(),
 		Key:       key,
@@ -408,46 +408,46 @@ func NewSimpleCacheComponentWithDefault[Id pub.IntegerNumber, E any](
 	}
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetRedisClient(rds *redis.Client) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetRedisClient(rds *redis.Client) *SimpleCacheComponent[E] {
 	c.Rds = rds
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetContext(ctx context.Context) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetContext(ctx context.Context) *SimpleCacheComponent[E] {
 	c.Ctx = ctx
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetKeyName(key string) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetKeyName(key string) *SimpleCacheComponent[E] {
 	c.Key = key
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetMarshalAndUnmarshal(
+func (c *SimpleCacheComponent[E]) SetMarshalAndUnmarshal(
 	marshal func(v any) ([]byte, error),
 	unmarshal func(data []byte, target any) error,
-) *SimpleCacheComponent[Id, E] {
+) *SimpleCacheComponent[E] {
 	c.Marshal = marshal
 	c.Unmarshal = unmarshal
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetQueryExec(queryExec func() (E, error)) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetQueryExec(queryExec func() (E, error)) *SimpleCacheComponent[E] {
 	c.QueryExec = queryExec
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetExpires(expires time.Duration) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetExpires(expires time.Duration) *SimpleCacheComponent[E] {
 	c.Expires = expires
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) SetRandom(random time.Duration) *SimpleCacheComponent[Id, E] {
+func (c *SimpleCacheComponent[E]) SetRandom(random time.Duration) *SimpleCacheComponent[E] {
 	c.Random = random
 	return c
 }
 
-func (c *SimpleCacheComponent[Id, E]) checkAndRepair() error {
+func (c *SimpleCacheComponent[E]) checkAndRepair() error {
 	if c.Expires <= 0 {
 		c.Expires = time.Duration(3) * time.Minute
 	}
@@ -473,7 +473,7 @@ func (c *SimpleCacheComponent[Id, E]) checkAndRepair() error {
 
 //简单查询,就是查完后放入缓存,之后能从缓存中查数据,查询数据库失败返回空数
 
-func (c *SimpleCacheComponent[Id, E]) QueryWithCache() (E, error) {
+func (c *SimpleCacheComponent[E]) QueryWithCache() (E, error) {
 
 	var items E
 

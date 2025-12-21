@@ -462,7 +462,7 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 
 	wrapper := serializer2.NewSerializerWrapper(serializer2.JSON)
 
-	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[*models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoKey(targetUserId),
@@ -524,7 +524,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 
 	wrapper := serializer2.NewSerializerWrapper(serialType)
 
-	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[*models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoSignKey(suffix, sign),

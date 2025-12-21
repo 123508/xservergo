@@ -11,8 +11,9 @@ import (
 )
 
 type RenameFileStruct struct {
-	NewName string `json:"new_name"`
-	AliasId string `json:"alias_id"`
+	NewName      string `json:"new_name"`
+	AliasId      string `json:"alias_id"`
+	TargetUserId string `json:"target_user_id"`
 }
 
 func RenameFile(ctx context.Context, c *app.RequestContext) {
@@ -50,7 +51,7 @@ func RenameFile(ctx context.Context, c *app.RequestContext) {
 		AliasId:       init.AliasId,
 		NewName:       init.NewName,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.RenameFile(ctx, req)

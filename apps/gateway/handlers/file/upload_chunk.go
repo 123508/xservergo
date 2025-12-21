@@ -17,6 +17,7 @@ type FileChunkReq struct {
 	FileId           string `json:"file_id"`
 	RequestId        string `json:"request_id"`
 	UploadId         string `json:"upload_id"`
+	TargetUserId     string `json:"target_user_id"`
 }
 
 func UploadChunk(ctx context.Context, c *app.RequestContext) {
@@ -41,8 +42,8 @@ func UploadChunk(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	chunk := &FileChunkReq{}
-	if err := c.Bind(chunk); err != nil {
+	init := &FileChunkReq{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -51,14 +52,14 @@ func UploadChunk(ctx context.Context, c *app.RequestContext) {
 	}
 
 	req := &file.UploadChunkReq{
-		ChunkIndex:       chunk.ChunkIndex,
-		ChunkContent:     chunk.ChunkContent,
-		ChunkContentHash: chunk.ChunkContentHash,
-		FileId:           chunk.FileId,
+		ChunkIndex:       init.ChunkIndex,
+		ChunkContent:     init.ChunkContent,
+		ChunkContentHash: init.ChunkContentHash,
+		FileId:           init.FileId,
 		RequestUserId:    requestUserId,
-		TargetUserId:     requestUserId,
-		RequestId:        chunk.RequestId,
-		UploadId:         chunk.UploadId,
+		TargetUserId:     init.TargetUserId,
+		RequestId:        init.RequestId,
+		UploadId:         init.UploadId,
 	}
 
 	resp, err := infra.FileClient.UploadChunk(ctx, req)

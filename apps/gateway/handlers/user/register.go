@@ -11,9 +11,9 @@ import (
 )
 
 func Register(ctx context.Context, c *app.RequestContext) {
-	register := &RegisterModel{}
+	init := &RegisterModel{}
 
-	if err := c.Bind(register); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -21,14 +21,16 @@ func Register(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.Register(ctx, &user.RegisterReq{
-		Username: register.Username,
-		Nickname: register.Nickname,
-		Password: register.Password,
-		Email:    register.Email,
-		Phone:    register.Phone,
-		Gender:   register.Gender,
-	})
+	req := &user.RegisterReq{
+		Username: init.Username,
+		Nickname: init.Nickname,
+		Password: init.Password,
+		Email:    init.Email,
+		Phone:    init.Phone,
+		Gender:   init.Gender,
+	}
+
+	resp, err := infra.UserClient.Register(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

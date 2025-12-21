@@ -44,7 +44,7 @@ func CompleteBindPhone(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := infra.UserClient.CompleteBindPhone(ctx, &user.CompleteBindPhoneReq{
-		TargetUserId:     req.UserId,
+		TargetUserId:     req.TargetUserId,
 		NewPhone:         req.Phone,
 		VerificationCode: req.VerifyCode,
 		RequestId:        req.RequestId,

@@ -11,7 +11,8 @@ import (
 )
 
 type InitUploadReq struct {
-	FileList []FileItem `json:"file_list"`
+	FileList     []FileItem `json:"file_list"`
+	TargetUserId string     `json:"target_user_id"`
 }
 
 func InitUpload(ctx context.Context, c *app.RequestContext) {
@@ -60,7 +61,7 @@ func InitUpload(ctx context.Context, c *app.RequestContext) {
 	req := &file.InitUploadReq{
 		FileList:      list,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.InitUpload(ctx, req)

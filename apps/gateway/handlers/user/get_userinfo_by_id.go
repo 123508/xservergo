@@ -31,9 +31,9 @@ func GetUserInfoById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	us := &UStruct{}
+	init := &UStruct{}
 
-	if err := c.Bind(us); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -41,10 +41,12 @@ func GetUserInfoById(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.GetUserInfoById(ctx, &user.GetUserInfoByIdReq{
-		TargetUserId:  us.UserId,
+	req := &user.GetUserInfoByIdReq{
+		TargetUserId:  init.TargetUserId,
 		RequestUserId: requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.GetUserInfoById(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

@@ -32,7 +32,7 @@ func PreDownload(ctx context.Context, c *app.RequestContext) {
 	req := &file.PreDownLoadReq{
 		AliasId:       init.AliasId,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.PreDownLoad(ctx, req)

@@ -33,9 +33,9 @@ func CompleteBindEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &VBEmail{}
+	init := &VBEmail{}
 
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -44,10 +44,10 @@ func CompleteBindEmail(ctx context.Context, c *app.RequestContext) {
 	}
 
 	resp, err := infra.UserClient.CompleteBindEmail(ctx, &user.CompleteBindEmailReq{
-		TargetUserId:     req.UserId,
-		NewEmail:         req.Email,
-		VerificationCode: req.VerifyCode,
-		RequestId:        req.RequestId,
+		TargetUserId:     init.TargetUserId,
+		NewEmail:         init.Email,
+		VerificationCode: init.VerifyCode,
+		RequestId:        init.RequestId,
 		RequestUserId:    requestUserId,
 		Version:          v,
 	})

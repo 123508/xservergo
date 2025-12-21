@@ -14,6 +14,7 @@ type CreateFolderStruct struct {
 	FolderName    string `json:"folder_name"`
 	ParentAliasId string `json:"parent_alias_id"`
 	IsRoot        bool   `json:"is_root"`
+	TargetUserId  string `json:"target_user_id"`
 }
 
 func CreateFolder(ctx context.Context, c *app.RequestContext) {
@@ -50,7 +51,7 @@ func CreateFolder(ctx context.Context, c *app.RequestContext) {
 	req := &file.CreateFolderReq{
 		FolderName:    init.FolderName,
 		ParentAliasId: init.ParentAliasId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 		RequestUserId: requestUserId,
 		IsRoot:        init.IsRoot,
 	}
