@@ -138,7 +138,7 @@ func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
 	if verifyResp.UserId != userIdBase64 {
 		t.Fatalf("Verified user ID %s does not match original user ID %s", userIdBase64, userId.String())
 	}
-	t.Logf("VerifyToken response: UserId=%s", userIdBase64)
+	t.Logf("VerifyToken response: TargetUserId=%s", userIdBase64)
 
 	// 3. RefreshToken
 	refreshReq := &auth.RefreshTokenReq{
@@ -165,7 +165,7 @@ func TestAuthServiceImpl_TokenLifecycle(t *testing.T) {
 	if verifyResp.UserId != userIdBase64 {
 		t.Fatalf("Verified user ID %s after refresh does not match original user ID %s", userIdBase64, userId.String())
 	}
-	t.Logf("VerifyToken after refresh response: UserId=%s", userIdBase64)
+	t.Logf("VerifyToken after refresh response: TargetUserId=%s", userIdBase64)
 }
 
 func TestAuthServiceImpl_RoleLifecycle(t *testing.T) {

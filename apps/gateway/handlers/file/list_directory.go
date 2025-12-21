@@ -38,8 +38,8 @@ func ListDirectory(ctx context.Context, c *app.RequestContext) {
 		})
 		return
 	}
-	dir := &ListDirectoryReq{}
-	if err := c.Bind(dir); err != nil {
+	init := &ListDirectoryReq{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -48,12 +48,12 @@ func ListDirectory(ctx context.Context, c *app.RequestContext) {
 	}
 
 	req := &file.ListDirectoryReq{
-		TargetUserId:  dir.TargetUserId,
-		Page:          dir.Page,
-		PageSize:      dir.PageSize,
+		TargetUserId:  init.TargetUserId,
+		Page:          init.Page,
+		PageSize:      init.PageSize,
 		RequestUserId: requestUserId,
-		AliasId:       dir.AliasId,
-		RootType:      dir.RootType,
+		AliasId:       init.AliasId,
+		RootType:      init.RootType,
 	}
 
 	resp, err := infra.FileClient.ListDirectory(ctx, req)

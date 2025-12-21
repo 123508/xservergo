@@ -11,8 +11,8 @@ import (
 )
 
 func ForgetPassword(ctx context.Context, c *app.RequestContext) {
-	fog := &ForgetPwd{}
-	if err := c.Bind(fog); err != nil {
+	init := &ForgetPwd{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -20,28 +20,28 @@ func ForgetPassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	ForgetReq := &user.ForgotPasswordReq{
-		Type: fog.Type,
+	req := &user.ForgotPasswordReq{
+		Type: init.Type,
 	}
 
 	ok := false //用于监听优先级
 
-	if fog.Phone != "" {
-		ForgetReq.Identify = &user.ForgotPasswordReq_Phone{Phone: fog.Phone}
+	if init.Phone != "" {
+		req.Identify = &user.ForgotPasswordReq_Phone{Phone: init.Phone}
 		ok = true
 	}
 
-	if !ok && fog.Username != "" {
-		ForgetReq.Identify = &user.ForgotPasswordReq_Username{Username: fog.Username}
+	if !ok && init.Username != "" {
+		req.Identify = &user.ForgotPasswordReq_Username{Username: init.Username}
 		ok = true
 	}
 
-	if !ok && fog.Email != "" {
-		ForgetReq.Identify = &user.ForgotPasswordReq_Email{Email: fog.Email}
+	if !ok && init.Email != "" {
+		req.Identify = &user.ForgotPasswordReq_Email{Email: init.Email}
 		ok = true
 	}
 
-	if !ok || ForgetReq.Identify == nil {
+	if !ok || req.Identify == nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -49,7 +49,7 @@ func ForgetPassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.ForgotPassword(ctx, ForgetReq)
+	resp, err := infra.UserClient.ForgotPassword(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

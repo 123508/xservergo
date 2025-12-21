@@ -10,13 +10,12 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
-type UploadVerifyReq struct {
-	FileIds      []string `json:"file_ids"`
-	RequestId    string   `json:"request_id"`
-	TargetUserId string   `json:"target_user_id"`
+type CleanTrashReq struct {
+	Days         int64  `json:"days"`
+	TargetUserId string `json:"target_user_id"`
 }
 
-func UploadVerify(ctx context.Context, c *app.RequestContext) {
+func CleanTrash(ctx context.Context, c *app.RequestContext) {
 
 	userId := ctx.Value("userId")
 
@@ -38,8 +37,7 @@ func UploadVerify(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	init := &UploadVerifyReq{}
-
+	init := &CleanTrashReq{}
 	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
@@ -48,14 +46,13 @@ func UploadVerify(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &file.UploadVerifyReq{
-		FileId:        init.FileIds,
-		TargetUserId:  init.TargetUserId,
+	req := &file.CleanTrashReq{
+		Days:          init.Days,
 		RequestUserId: requestUserId,
-		RequestId:     init.RequestId,
+		TargetUserId:  init.TargetUserId,
 	}
 
-	resp, err := infra.FileClient.UploadVerify(ctx, req)
+	resp, err := infra.FileClient.CleanTrash(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
@@ -64,7 +61,8 @@ func UploadVerify(ctx context.Context, c *app.RequestContext) {
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"code": 0,
-		"msg":  "请求成功",
+		"msg":  "清理成功",
 		"data": resp,
 	})
+
 }

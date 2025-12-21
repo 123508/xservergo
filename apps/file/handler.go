@@ -756,8 +756,25 @@ func (s *FileServiceImpl) GenerateFilePreview(ctx context.Context, req *file.Fil
 
 // CleanTrash implements the FileServiceImpl interface.
 func (s *FileServiceImpl) CleanTrash(ctx context.Context, req *file.CleanTrashReq) (resp *file.CleanTrashResp, err error) {
-	// TODO: Your code here...
-	return
+	targetUid, err := unmarshalUUID(ctx, req.TargetUserId)
+	if err != nil {
+		return &file.CleanTrashResp{}, err
+	}
+
+	requestUid, err := unmarshalUUID(ctx, req.RequestUserId)
+	if err != nil {
+		return &file.CleanTrashResp{}, err
+	}
+
+	deleteCount, freeSpace, err := s.fileService.CleanTrash(ctx, req.Days, requestUid, targetUid)
+	if err != nil {
+		return &file.CleanTrashResp{}, parseServiceErrToHandlerError(ctx, err)
+	}
+
+	return &file.CleanTrashResp{
+		DeletedCount: deleteCount,
+		FreedSpace:   freeSpace,
+	}, nil
 }
 
 // GetStorageQuota implements the FileServiceImpl interface.

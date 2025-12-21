@@ -133,7 +133,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Status:   0,
 		AuditFields: models.AuditFields{
 			CreatedAt: &timeNow,
-			Version:   &version,
+			Version:   version,
 		},
 	}
 
@@ -141,7 +141,7 @@ func (s *UserServiceImpl) Register(ctx context.Context, req *user.RegisterReq) (
 		Password: req.Password,
 		AuditFields: models.AuditFields{
 			CreatedAt: &timeNow,
-			Version:   &version,
+			Version:   version,
 		},
 	}
 

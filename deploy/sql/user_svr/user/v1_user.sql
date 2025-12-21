@@ -6,8 +6,8 @@ create table if not exists users(
     id  binary(16) not null comment '用户id',
     username varchar(60) not null default '' comment '用户名称',
     nickname varchar(60) not null default '' comment '用户昵称',
-    email varchar(255) not null default '' comment '用户邮箱',
-    phone varchar(20) not null  comment '用户手机',    -- E.164格式标准存储
+    email varchar(255) default null comment '用户邮箱',
+    phone varchar(20) default null comment '用户手机',    -- E.164格式标准存储
     gender tinyint(1) not null default 0 comment '用户性别:0未知  1男  2女',
     avatar varchar(1000) comment '用户头像',
     status tinyint(1) not null default 0 comment '用户状态:0正常 1冻结',
@@ -18,7 +18,6 @@ create table if not exists users(
 
     -- 删除三元组
     deleted_at datetime(3) default null comment '删除时间(软删除)',
-    is_deleted tinyint(1) generated always as (IF(deleted_at is null, 0, 1)) virtual ,
     deleted_date date generated always as (COALESCE(DATE(deleted_at), '9999-12-31')) virtual ,
 
     -- 唯一约束的虚拟列

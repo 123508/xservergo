@@ -44,7 +44,7 @@ func DeleteFile(ctx context.Context, c *app.RequestContext) {
 	req := &file.FileReq{
 		AliasId:       init.AliasId,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.DeleteFile(ctx, req)

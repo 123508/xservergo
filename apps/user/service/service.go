@@ -99,10 +99,24 @@ func (s *ServiceImpl) Register(ctx context.Context, u *models.User, uLogin *mode
 		return cerrors.NewCommonError(http.StatusBadRequest, "请求参数错误", requestId, nil), requestId
 	}
 
-	uid := id.NewUUID()
+	//查重用户名
+	ok, err, t := s.userRepo.ExistDuplicateUser(ctx, u.UserName, u.Email, u.Phone)
+	if err != nil {
+		return ParseRepoErrorToCommonError(err, "查询用户失败"), ""
+	}
+	if ok {
+		switch t {
+		case 1:
+			return cerrors.NewCommonError(http.StatusBadRequest, "用户名重复", requestId, nil), requestId
+		case 2:
+			return cerrors.NewCommonError(http.StatusBadRequest, "邮箱重复", requestId, nil), requestId
+		default:
+			return cerrors.NewCommonError(http.StatusBadRequest, "电话号码重复", requestId, nil), requestId
+		}
 
-	u.ID = uid
+	}
 
+	u.ID = id.NewUUID()
 	uLogin.UserID = u.ID
 
 	uLogin.Password = Encryption(uLogin.Password)
@@ -448,7 +462,7 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 
 	wrapper := serializer2.NewSerializerWrapper(serializer2.JSON)
 
-	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[*models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoKey(targetUserId),
@@ -510,7 +524,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 
 	wrapper := serializer2.NewSerializerWrapper(serialType)
 
-	simple := urds.SimpleCacheComponent[id.UUID, *models.User]{
+	simple := urds.SimpleCacheComponent[*models.User]{
 		Rds:       s.Rds,
 		Ctx:       ctx,
 		Key:       s.keys.DetailUserInfoSignKey(suffix, sign),
@@ -728,22 +742,23 @@ func (s *ServiceImpl) CompleteChangePhone(ctx context.Context, targetUserId, req
 
 func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestUserId id.UUID, nickName, avatar string, gender uint64, version int) (int, error, string) {
 
-	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Second)
 
 	if err != nil {
 		return version, err, ""
 	}
 
-	usr, err, _ := s.GetUserInfoById(ctx, targetUserId, requestUserId)
-	if err != nil {
-		return version, err, requestId
+	usr := &models.User{
+		ID:       targetUserId,
+		NickName: nickName,
+		Avatar:   avatar,
+		Gender:   gender,
+		AuditFields: models.AuditFields{
+			Version: version,
+		},
 	}
 
-	usr.NickName = nickName
-	usr.Avatar = avatar
-	usr.Gender = gender
-
-	v, err := s.userRepo.UpdateUser(ctx, usr, requestUserId)
+	err = s.userRepo.UpdateUser(ctx, usr, requestUserId)
 
 	if err != nil {
 		return version, ParseRepoErrorToCommonError(err, "服务器错误"), requestId
@@ -751,7 +766,7 @@ func (s *ServiceImpl) UpdateUserInfo(ctx context.Context, targetUserId, requestU
 
 	s.CleanCache(ctx, usr)
 
-	return v, nil, requestId
+	return version, nil, requestId
 }
 
 func (s *ServiceImpl) GetVersion(ctx context.Context, userId id.UUID) (v int, err error) {
@@ -760,9 +775,9 @@ func (s *ServiceImpl) GetVersion(ctx context.Context, userId id.UUID) (v int, er
 		return 0, ParseRepoErrorToCommonError(err, "服务器异常")
 	}
 
-	s.Rds.Set(ctx, s.keys.VersionKey(userId), *usr.Version, 7*time.Hour)
+	s.Rds.Set(ctx, s.keys.VersionKey(userId), usr.Version, 7*time.Hour)
 
-	return *usr.Version, nil
+	return usr.Version, nil
 }
 
 func (s *ServiceImpl) AddVersion(ctx context.Context, userId id.UUID) (err error) {
@@ -995,7 +1010,7 @@ func (s *ServiceImpl) CompleteBindPhoneOrEmail(ctx context.Context, targetUserId
 	}
 
 	//CAS校验
-	if *usr.Version != version {
+	if usr.Version != version {
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
@@ -1166,7 +1181,7 @@ func (s *ServiceImpl) CompleteChangePhoneOrEmail(ctx context.Context, targetUser
 	}
 
 	//CAS校验
-	if *usr.Version != version {
+	if usr.Version != version {
 		return version, cerrors.NewCommonError(http.StatusBadRequest, "令牌过期,请使用新令牌", requestId, nil)
 	}
 
@@ -1276,7 +1291,7 @@ func (s *ServiceImpl) LoginWithResp(
 	}
 
 	//获取token部分
-	resp, err := s.RequestToken(ctx, usr.ID, *usr.Version)
+	resp, err := s.RequestToken(ctx, usr.ID, usr.Version)
 
 	if err != nil {
 		return nil, nil, err, requestId

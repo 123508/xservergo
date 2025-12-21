@@ -12,10 +12,11 @@ import (
 )
 
 type DownLoadReq struct {
-	FileId    string `json:"file_id"`
-	ChunkId   string `json:"chunk_id"`
-	Type      uint64 `json:"type"`
-	RequestId string `json:"request_id"`
+	FileId       string `json:"file_id"`
+	ChunkId      string `json:"chunk_id"`
+	Type         uint64 `json:"type"`
+	RequestId    string `json:"request_id"`
+	TargetUserId string `json:"target_user_id"`
 }
 
 func DownLoad(ctx context.Context, c *app.RequestContext) {
@@ -46,7 +47,7 @@ func DownLoad(ctx context.Context, c *app.RequestContext) {
 		Type:          init.Type,
 		RequestId:     init.RequestId,
 		RequestUserId: requestUserId,
-		TargetUserId:  requestUserId,
+		TargetUserId:  init.TargetUserId,
 	}
 
 	resp, err := infra.FileClient.Download(ctx, req)

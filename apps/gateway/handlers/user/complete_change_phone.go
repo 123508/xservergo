@@ -33,9 +33,9 @@ func CompleteChangePhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &CompleteReq{}
+	init := &CompleteReq{}
 
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -43,13 +43,15 @@ func CompleteChangePhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.CompleteChangePhone(ctx, &user.CompleteChangePhoneReq{
-		TargetUserId:     req.UserId,
-		VerificationCode: req.VerifyCode,
-		RequestId:        req.RequestId,
+	req := &user.CompleteChangePhoneReq{
+		TargetUserId:     init.TargetUserid,
+		VerificationCode: init.VerifyCode,
+		RequestId:        init.RequestId,
 		RequestUserId:    requestUserId,
 		Version:          v,
-	})
+	}
+
+	resp, err := infra.UserClient.CompleteChangePhone(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

@@ -311,7 +311,7 @@ func (r *RepoImpl) GrantPermissionToRole(ctx context.Context, permissionCode str
 		Status:       1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
-			Version:   &r.Version,
+			Version:   r.Version,
 		},
 	}
 
@@ -440,7 +440,7 @@ func (r *RepoImpl) AssignRoleToUser(ctx context.Context, roleCode string, userID
 		Status: 1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
-			Version:   &r.Version,
+			Version:   r.Version,
 		},
 	}
 
@@ -621,7 +621,7 @@ func (r *RepoImpl) AssignRoleToUserGroup(ctx context.Context, roleCode string, g
 		Status:  1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
-			Version:   &r.Version,
+			Version:   r.Version,
 		},
 	}
 
@@ -720,7 +720,7 @@ func (r *RepoImpl) AssignUserToGroup(ctx context.Context, userID id.UUID, groupC
 		Status:  1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
-			Version:   &r.Version,
+			Version:   r.Version,
 		},
 	}
 
@@ -1223,7 +1223,7 @@ func (r *RepoImpl) AttachPolicyToPermission(ctx context.Context, permissionCode 
 		Status:         1,
 		AuditFields: models.AuditFields{
 			CreatedBy: operatorId,
-			Version:   &r.Version,
+			Version:   r.Version,
 			CreatedAt: &nowTime,
 		},
 	})

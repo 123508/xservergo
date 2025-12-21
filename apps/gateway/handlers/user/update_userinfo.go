@@ -33,8 +33,8 @@ func UpdateUserinfo(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &UpdateInfo{}
-	if err := c.Bind(req); err != nil {
+	init := &UpdateInfo{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -42,14 +42,16 @@ func UpdateUserinfo(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.UpdateUserInfo(ctx, &user.UpdateUserInfoReq{
-		TargetUserId:  req.UserId,
-		Nickname:      req.Nickname,
-		Avatar:        req.AvatarUrl,
-		Gender:        req.Gender,
+	req := &user.UpdateUserInfoReq{
+		TargetUserId:  init.TargetUserId,
+		Nickname:      init.Nickname,
+		Avatar:        init.AvatarUrl,
+		Gender:        init.Gender,
 		RequestUserId: requestUserId,
 		Version:       v,
-	})
+	}
+
+	resp, err := infra.UserClient.UpdateUserInfo(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
@@ -58,7 +60,7 @@ func UpdateUserinfo(ctx context.Context, c *app.RequestContext) {
 
 	result := map[string]interface{}{
 		"code": 0,
-		"msg":  "绑定成功",
+		"msg":  "更新成功",
 		"data": common.ParseOperationToMap(resp),
 	}
 

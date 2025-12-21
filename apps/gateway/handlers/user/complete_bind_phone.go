@@ -33,9 +33,9 @@ func CompleteBindPhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &VBPhone{}
+	init := &VBPhone{}
 
-	if err := c.Bind(req); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -43,14 +43,16 @@ func CompleteBindPhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.CompleteBindPhone(ctx, &user.CompleteBindPhoneReq{
-		TargetUserId:     req.UserId,
-		NewPhone:         req.Phone,
-		VerificationCode: req.VerifyCode,
-		RequestId:        req.RequestId,
+	req := &user.CompleteBindPhoneReq{
+		TargetUserId:     init.TargetUserId,
+		NewPhone:         init.Phone,
+		VerificationCode: init.VerifyCode,
+		RequestId:        init.RequestId,
 		RequestUserId:    requestUserId,
 		Version:          v,
-	})
+	}
+
+	resp, err := infra.UserClient.CompleteBindPhone(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

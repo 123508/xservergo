@@ -193,6 +193,7 @@ func main() {
 		fileGroup.POST("/trash_file", file.TrashFile)
 		fileGroup.POST("/list_directory", file.ListDirectory)
 		fileGroup.POST("/search_files", file.SearchFiles)
+		fileGroup.POST("/clean_trash", file.CleanTrash)
 
 		if err := hz.Run(); err != nil {
 			panic(err)

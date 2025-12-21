@@ -3,8 +3,10 @@ package repo
 import (
 	"context"
 	"errors"
-	"github.com/123508/xservergo/pkg/util/id"
 	"net/http"
+	"strings"
+
+	"github.com/123508/xservergo/pkg/util/id"
 
 	"github.com/123508/xservergo/pkg/cerrors"
 	"github.com/123508/xservergo/pkg/logs"
@@ -21,7 +23,8 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 	GetUserByPhone(ctx context.Context, phone string) (*models.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*models.User, error)
-	UpdateUser(ctx context.Context, user *models.User, requestUserId id.UUID) (int, error)
+	ExistDuplicateUser(ctx context.Context, username, email, phone string) (bool, error, uint64)
+	UpdateUser(ctx context.Context, user *models.User, requestUserId id.UUID) (err error)
 	DeleteUser(ctx context.Context, userID id.UUID, requestUserId id.UUID) error
 	ListUsers(ctx context.Context, page, pageSize int, filterSql string, filterParams []interface{}, sortSql []string) ([]models.User, error)
 	UpdatePassword(ctx context.Context, userID id.UUID, password string) error
@@ -59,8 +62,19 @@ func (r *RepoImpl) CreateUser(ctx context.Context, user *models.User, uLogin *mo
     users(id, username, nickname, email, phone, gender, avatar, status, created_at, version,deleted_at) 
 		values (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,null)`
 
+		var email any = nil
+
+		if strings.TrimSpace(user.Email) != "" {
+			email = user.Email
+		}
+
+		var phone any = nil
+		if strings.TrimSpace(user.Phone) != "" {
+			phone = user.Phone
+		}
+
 		if err := tx.Exec(insertUserStmt, user.ID, user.UserName, user.NickName,
-			user.Email, user.Phone, user.Gender, user.Avatar, user.Status, user.AuditFields.Version).Error; err != nil {
+			email, phone, user.Gender, user.Avatar, user.Status, user.AuditFields.Version).Error; err != nil {
 			return err
 		}
 
@@ -105,11 +119,11 @@ func (r *RepoImpl) GetUserByID(ctx context.Context, userID id.UUID) (*models.Use
 
 	queryStmt := `select 
     id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
-from users where id = ? and is_deleted = 0 limit 1`
+from users where id = ? and deleted_at is null limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, userID).Scan(&row).Error; err != nil {
-		logs.ErrorLogger.Error("通过id获取用户信息", zap.Error(err))
-		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err)
+		logs.ErrorLogger.Error("通过id获取用户信息失败", zap.Error(err))
+		return nil, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户信息失败", err)
 	}
 
 	return &row, nil
@@ -121,7 +135,7 @@ func (r *RepoImpl) GetUserByEmail(ctx context.Context, email string) (*models.Us
 
 	queryStmt := `select 
     id, username, nickname, email,phone, gender, avatar, status, created_at,updated_at,version
-		from users where email = ? and is_deleted = 0 limit 1`
+		from users where email = ? and deleted_at is null limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, email).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过email获取用户信息", zap.Error(err))
@@ -141,7 +155,7 @@ func (r *RepoImpl) GetUserByPhone(ctx context.Context, phone string) (*models.Us
 
 	queryStmt := `select 
     id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
-		from users where phone = ? and is_deleted = 0 limit 1`
+		from users where phone = ? and deleted_at is null limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, phone).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过phone获取用户信息", zap.Error(err))
@@ -162,7 +176,7 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 
 	queryStmt := `select 
     id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
-		from users where username = ? and is_deleted = 0 limit 1`
+		from users where username = ? and deleted_at is null limit 1`
 
 	if err := r.DB.WithContext(ctx).Raw(queryStmt, username).Scan(&row).Error; err != nil {
 		logs.ErrorLogger.Error("通过username获取用户信息", zap.Error(err))
@@ -176,9 +190,48 @@ func (r *RepoImpl) GetUserByUsername(ctx context.Context, username string) (*mod
 	return &row, nil
 }
 
-func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId id.UUID) (int, error) {
+func (r *RepoImpl) ExistDuplicateUser(ctx context.Context, username, email, phone string) (bool, error, uint64) {
+
+	var row models.User
+
+	queryStmt := `select 
+    id, username, nickname, email, phone, gender, avatar, status, created_at,updated_at,version
+		from users where ( username = ? or email = ? or phone = ? ) and deleted_at is null limit 1`
+	if err := r.DB.WithContext(ctx).Raw(queryStmt, username, email, phone).Scan(&row).Error; err != nil {
+		logs.ErrorLogger.Error("通过username获取用户信息失败",
+			zap.Error(err),
+			zap.String("username", username),
+			zap.String("email", email))
+		return false, cerrors.NewSQLError(http.StatusInternalServerError, "获取用户失败", err), 0
+	}
+
+	// 不存在重复信息
+	if row.ID.IsZero() {
+		return false, nil, 0
+	}
+
+	// 重复信息为用户名
+	if row.UserName == username {
+		return true, nil, 1
+	}
+
+	// 重复信息为邮箱
+	if row.Email == email {
+		return true, nil, 2
+	}
+
+	// 重复信息为电话
+	return true, nil, 3
+}
+
+func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId id.UUID) (err error) {
+
+	if u == nil {
+		return cerrors.NewSQLError(http.StatusBadRequest, "请求参数错误", nil)
+	}
+
 	// 1. 构建更新字段Map
-	updates := make(map[string]interface{})
+	updates := map[string]interface{}{}
 
 	if u.NickName != "" {
 		updates["nickname"] = u.NickName // 修正字段名
@@ -192,40 +245,38 @@ func (r *RepoImpl) UpdateUser(ctx context.Context, u *models.User, requestUserId
 	}
 
 	if !requestUserId.IsZero() {
-		updates["last_updated_by"] = requestUserId
+		updates["updated_by"] = requestUserId
 	}
 
 	// 2. 执行更新（带乐观锁检查）
 	result := r.DB.WithContext(ctx).Model(&models.User{}).
-		Where("id = ? AND version = ? AND deleted_at IS NULL", u.ID, u.AuditFields.Version).
+		Where("id = ? and version = ? and deleted_at is null", u.ID, u.AuditFields.Version).
 		Updates(updates)
 
 	if result.Error != nil {
 		logs.ErrorLogger.Error("更新用户出错",
 			zap.Error(result.Error),
 			zap.ByteString("userID", u.ID[:]),
-			zap.Int("version", *u.Version))
-		return *u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
+			zap.Int("version", u.AuditFields.Version))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
 	}
 
 	// 3. 检查乐观锁冲突
 	if result.RowsAffected == 0 {
-		err := errors.New("更新失败：用户不存在或版本不匹配")
-		logs.ErrorLogger.Error(err.Error(),
+		logs.ErrorLogger.Error("更新失败：用户不存在或版本不匹配",
 			zap.ByteString("userID", u.ID[:]),
-			zap.Int("expected_version", *u.Version))
-		return *u.Version, cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", result.Error)
+			zap.Int("version", u.AuditFields.Version))
+		return cerrors.NewSQLError(http.StatusInternalServerError, "更新用户失败", nil)
 	}
 
-	// 4. 获取新版本号（避免额外查询）
-	return *u.Version + 1, nil
+	return nil
 }
 
 func (r *RepoImpl) DeleteUser(ctx context.Context, userID id.UUID, requestUserId id.UUID) error {
 
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
-		delUserStmt := `update users set deleted_at = CURRENT_TIMESTAMP,last_updated_by = ? where id = ? and is_deleted = 0`
+		delUserStmt := `update users set deleted_at = CURRENT_TIMESTAMP,updated_by = ? where id = ? and  deleted_at is null`
 
 		if err := tx.Exec(delUserStmt, requestUserId, userID).Error; err != nil {
 			return err
@@ -290,8 +341,8 @@ set password = ? , updated_at = CURRENT_TIMESTAMP , version = version+1
 func (r *RepoImpl) ResetEmail(ctx context.Context, userID id.UUID, email string, version int, requestUserId id.UUID) (int, error) {
 
 	setStmt := `update users 
-						set email = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
-						where id = ? and version = ? and is_deleted = 0`
+						set email = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,updated_by = ?
+						where id = ? and version = ? and  deleted_at is null`
 
 	result := r.DB.WithContext(ctx).Exec(setStmt, email, requestUserId, userID, version)
 
@@ -312,8 +363,8 @@ func (r *RepoImpl) ResetEmail(ctx context.Context, userID id.UUID, email string,
 func (r *RepoImpl) ResetPhone(ctx context.Context, userID id.UUID, phone string, version int, requestUserId id.UUID) (int, error) {
 
 	setStmt := `update users 
-						set phone = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
-						where id = ? and version = ? and is_deleted = 0`
+						set phone = ? , version =version+1 , updated_at = CURRENT_TIMESTAMP,updated_by = ?
+						where id = ? and version = ? and deleted_at is null`
 
 	result := r.DB.WithContext(ctx).Exec(setStmt, phone, requestUserId, userID, version)
 
@@ -334,8 +385,8 @@ func (r *RepoImpl) ResetPhone(ctx context.Context, userID id.UUID, phone string,
 func (r *RepoImpl) FreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error) {
 
 	freezeStmt := `update users 
-						set status = 1 , version = version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
- 						where id = ? and version = ? and is_deleted = 0`
+						set status = 1 , version = version+1 , updated_at = CURRENT_TIMESTAMP,updated_by = ?
+ 						where id = ? and version = ? and deleted_at is null`
 
 	result := r.DB.WithContext(ctx).Exec(freezeStmt, requestUserId, userID, version)
 
@@ -357,8 +408,8 @@ func (r *RepoImpl) FreezeUser(ctx context.Context, userID id.UUID, version int, 
 func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID id.UUID, version int, requestUserId id.UUID) (int, error) {
 
 	unFreezeStmt := `update users 
-						set status = 0 , version = version+1 , updated_at = CURRENT_TIMESTAMP,last_updated_by = ?
- 						where id = ? and version = ? and is_deleted = 0`
+						set status = 0 , version = version+1 , updated_at = CURRENT_TIMESTAMP,updated_by = ?
+ 						where id = ? and version = ? and deleted_at is null`
 
 	result := r.DB.WithContext(ctx).Exec(unFreezeStmt, requestUserId, userID, version)
 
@@ -380,7 +431,7 @@ func (r *RepoImpl) UnfreezeUser(ctx context.Context, userID id.UUID, version int
 func (r *RepoImpl) AddVersion(ctx context.Context, userId id.UUID) error {
 	addStmt := `update users
 					set version = version + 1 , updated_at = CURRENT_TIMESTAMP
-					where id = ? and is_deleted = 0`
+					where id = ? and deleted_at is null`
 
 	result := r.DB.WithContext(ctx).Exec(addStmt, userId)
 

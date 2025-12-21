@@ -31,8 +31,8 @@ func StartBindPhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &SBPhone{}
-	if err := c.Bind(req); err != nil {
+	init := &SBPhone{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -40,11 +40,13 @@ func StartBindPhone(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.StartBindPhone(ctx, &user.StartBindPhoneReq{
-		TargetUserId:  req.UserId,
-		NewPhone:      req.Phone,
+	req := &user.StartBindPhoneReq{
+		TargetUserId:  init.TargetUserId,
+		NewPhone:      init.Phone,
 		RequestUserId: requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.StartBindPhone(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

@@ -11,8 +11,8 @@ import (
 )
 
 func ResetPassword(ctx context.Context, c *app.RequestContext) {
-	rst := &ResetPwd{}
-	if err := c.Bind(rst); err != nil {
+	init := &ResetPwd{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -20,13 +20,15 @@ func ResetPassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.ResetPassword(ctx, &user.ResetPasswordReq{
-		TargetUserId:      rst.TargetUserId,
-		VerificationToken: rst.VerifyCode,
-		NewPassword:       rst.NewPassword,
-		RequestId:         rst.RequestId,
-		RequestUserId:     rst.TargetUserId,
-	})
+	req := &user.ResetPasswordReq{
+		TargetUserId:      init.TargetUserId,
+		VerificationToken: init.VerifyCode,
+		NewPassword:       init.NewPassword,
+		RequestId:         init.RequestId,
+		RequestUserId:     init.TargetUserId,
+	}
+
+	resp, err := infra.UserClient.ResetPassword(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

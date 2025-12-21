@@ -12,5 +12,6 @@ type FileItem struct {
 }
 
 type FileReq struct {
-	AliasId string `json:"alias_id"`
+	AliasId      string `json:"alias_id"`
+	TargetUserId string `json:"target_user_id"`
 }

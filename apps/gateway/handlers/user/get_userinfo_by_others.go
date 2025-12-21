@@ -31,9 +31,9 @@ func GetUserInfoByOthers(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	us := &UStruct{}
+	init := &UStruct{}
 
-	if err := c.Bind(us); err != nil {
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -47,16 +47,16 @@ func GetUserInfoByOthers(ctx context.Context, c *app.RequestContext) {
 
 	execute := false
 
-	if us.Phone != "" {
-		req.Identifier = &user.GetUserInfoByOthersReq_Phone{Phone: us.Phone}
+	if init.Phone != "" {
+		req.Identifier = &user.GetUserInfoByOthersReq_Phone{Phone: init.Phone}
 		execute = true
 	}
-	if !execute && us.Email != "" {
-		req.Identifier = &user.GetUserInfoByOthersReq_Email{Email: us.Email}
+	if !execute && init.Email != "" {
+		req.Identifier = &user.GetUserInfoByOthersReq_Email{Email: init.Email}
 		execute = true
 	}
-	if !execute && us.Username != "" {
-		req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: us.UserId}
+	if !execute && init.Username != "" {
+		req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: init.Username}
 		execute = true
 	}
 

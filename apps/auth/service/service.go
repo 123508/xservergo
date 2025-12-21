@@ -263,7 +263,7 @@ func (s *ServiceImpl) CreatePermission(ctx context.Context, permission *models.P
 	}
 
 	permission.AuditFields.CreatedBy = operatorId
-	permission.AuditFields.Version = &s.Version
+	permission.AuditFields.Version = s.Version
 	err := s.authRepo.CreatePermission(ctx, permission)
 	if err != nil {
 		logs.ErrorLogger.Error("创建权限错误:", zap.Error(err))
@@ -346,7 +346,7 @@ func (s *ServiceImpl) CreateRole(ctx context.Context, role *models.Role, operato
 	}
 
 	role.AuditFields = models.AuditFields{
-		Version:   &s.Version,
+		Version:   s.Version,
 		CreatedBy: operatorId,
 	}
 	err := s.authRepo.CreateRole(ctx, role)
@@ -374,7 +374,7 @@ func (s *ServiceImpl) UpdateRole(ctx context.Context, role *models.Role, operato
 	}
 	role.AuditFields = models.AuditFields{
 		UpdatedBy: operatorId,
-		Version:   &s.Version,
+		Version:   s.Version,
 	}
 
 	err := s.authRepo.UpdateRole(ctx, role)
@@ -504,7 +504,7 @@ func (s *ServiceImpl) CreateUserGroup(ctx context.Context, userGroup *models.Use
 	}
 
 	userGroup.AuditFields = models.AuditFields{
-		Version:   &s.Version,
+		Version:   s.Version,
 		CreatedBy: operatorId,
 	}
 	err := s.authRepo.CreateUserGroup(ctx, userGroup)
@@ -533,7 +533,7 @@ func (s *ServiceImpl) UpdateUserGroup(ctx context.Context, userGroup *models.Use
 
 	userGroup.AuditFields = models.AuditFields{
 		UpdatedBy: operatorId,
-		Version:   &s.Version,
+		Version:   s.Version,
 	}
 	err := s.authRepo.UpdateUserGroup(ctx, userGroup)
 	if err != nil {
@@ -843,7 +843,7 @@ func (s *ServiceImpl) CreatePolicy(ctx context.Context, policy *models.Policy, o
 
 	timeNow := time.Now()
 	policy.AuditFields = models.AuditFields{
-		Version:   &s.Version,
+		Version:   s.Version,
 		CreatedBy: operatorId,
 		CreatedAt: &timeNow,
 	}
@@ -864,7 +864,7 @@ func (s *ServiceImpl) UpdatePolicy(ctx context.Context, policy *models.Policy, o
 	policy.AuditFields = models.AuditFields{
 		UpdatedBy: operatorId,
 		UpdatedAt: &timeNow,
-		Version:   &s.Version,
+		Version:   s.Version,
 	}
 	err := s.authRepo.UpdatePolicy(ctx, policy)
 	if err != nil {
@@ -925,7 +925,7 @@ func (s *ServiceImpl) CreatePolicyRule(ctx context.Context, rule *models.PolicyR
 
 	timeNow := time.Now()
 	rule.AuditFields = models.AuditFields{
-		Version:   &s.Version,
+		Version:   s.Version,
 		CreatedBy: operatorId,
 		CreatedAt: &timeNow,
 	}
@@ -946,7 +946,7 @@ func (s *ServiceImpl) UpdatePolicyRule(ctx context.Context, rule *models.PolicyR
 	rule.AuditFields = models.AuditFields{
 		UpdatedBy: operatorId,
 		UpdatedAt: &timeNow,
-		Version:   &s.Version,
+		Version:   s.Version,
 	}
 	err := s.authRepo.UpdatePolicyRule(ctx, rule)
 	if err != nil {

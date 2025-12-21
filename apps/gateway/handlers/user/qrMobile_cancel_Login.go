@@ -32,8 +32,8 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	mobilePre := &QrMobileReq{}
-	if err := c.Bind(mobilePre); err != nil {
+	init := &QrMobileReq{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -41,11 +41,13 @@ func CancelQrLogin(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	_, err := infra.UserClient.CancelQrLogin(ctx, &user.CancelQrLoginReq{
-		Ticket:    mobilePre.Ticket,
+	req := &user.CancelQrLoginReq{
+		Ticket:    init.Ticket,
 		UserId:    uid,
-		RequestId: mobilePre.RequestId,
-	})
+		RequestId: init.RequestId,
+	}
+
+	_, err := infra.UserClient.CancelQrLogin(ctx, req)
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
 		return

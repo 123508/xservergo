@@ -31,8 +31,8 @@ func StartChangeEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	req := &UStruct{}
-	if err := c.Bind(req); err != nil {
+	init := &UStruct{}
+	if err := c.Bind(init); err != nil {
 		c.JSON(http.StatusBadRequest, map[string]interface{}{
 			"code": http.StatusBadRequest,
 			"msg":  "请求参数错误",
@@ -40,10 +40,12 @@ func StartChangeEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.StartChangeEmail(ctx, &user.StartChangeEmailReq{
-		TargetUserId:  req.UserId,
+	req := &user.StartChangeEmailReq{
+		TargetUserId:  init.TargetUserId,
 		RequestUserId: requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.StartChangeEmail(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
