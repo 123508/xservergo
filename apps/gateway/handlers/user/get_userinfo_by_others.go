@@ -56,7 +56,7 @@ func GetUserInfoByOthers(ctx context.Context, c *app.RequestContext) {
 		execute = true
 	}
 	if !execute && init.Username != "" {
-		req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: init.TargetUserId}
+		req.Identifier = &user.GetUserInfoByOthersReq_Username{Username: init.Username}
 		execute = true
 	}
 

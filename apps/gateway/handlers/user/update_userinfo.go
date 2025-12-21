@@ -60,7 +60,7 @@ func UpdateUserinfo(ctx context.Context, c *app.RequestContext) {
 
 	result := map[string]interface{}{
 		"code": 0,
-		"msg":  "绑定成功",
+		"msg":  "更新成功",
 		"data": common.ParseOperationToMap(resp),
 	}
 

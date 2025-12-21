@@ -18,7 +18,6 @@ create table if not exists users(
 
     -- 删除三元组
     deleted_at datetime(3) default null comment '删除时间(软删除)',
-    is_deleted tinyint(1) generated always as (IF(deleted_at is null, 0, 1)) virtual ,
     deleted_date date generated always as (COALESCE(DATE(deleted_at), '9999-12-31')) virtual ,
 
     -- 唯一约束的虚拟列

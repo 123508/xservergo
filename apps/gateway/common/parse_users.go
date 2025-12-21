@@ -24,6 +24,10 @@ func ParseUserInfoToMap(info *user.UserInfo, other ...map[string]interface{}) ma
 		result["username"] = info.Username
 	}
 
+	if info.Nickname != "" {
+		result["nickname"] = info.Nickname
+	}
+
 	if info.Email != "" {
 		result["email"] = info.Email
 	}

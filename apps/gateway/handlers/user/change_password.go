@@ -41,12 +41,14 @@ func ChangePassword(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.ChangePassword(ctx, &user.ChangePasswordReq{
+	req := &user.ChangePasswordReq{
 		TargetUserId:  init.TargetUserId,
 		OldPassword:   init.OldPassword,
 		NewPassword:   init.NewPassword,
 		RequestUserId: requestUserId,
-	})
+	}
+
+	resp, err := infra.UserClient.ChangePassword(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))

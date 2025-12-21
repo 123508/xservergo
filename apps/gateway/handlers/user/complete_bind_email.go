@@ -43,14 +43,16 @@ func CompleteBindEmail(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := infra.UserClient.CompleteBindEmail(ctx, &user.CompleteBindEmailReq{
+	req := &user.CompleteBindEmailReq{
 		TargetUserId:     init.TargetUserId,
 		NewEmail:         init.Email,
 		VerificationCode: init.VerifyCode,
 		RequestId:        init.RequestId,
 		RequestUserId:    requestUserId,
 		Version:          v,
-	})
+	}
+
+	resp, err := infra.UserClient.CompleteBindEmail(ctx, req)
 
 	if err != nil {
 		c.JSON(common.ParseGRPCError(err))
