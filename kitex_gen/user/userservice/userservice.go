@@ -232,6 +232,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingUnary),
 	),
+	"EnsureUserOAuthToken": kitex.NewMethodInfo(
+		ensureUserOAuthTokenHandler,
+		newEnsureUserOAuthTokenArgs,
+		newEnsureUserOAuthTokenResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingUnary),
+	),
 	"StartDeactivateUser": kitex.NewMethodInfo(
 		startDeactivateUserHandler,
 		newStartDeactivateUserArgs,
@@ -3795,6 +3802,117 @@ func (p *SearchUserByUsernameResult) GetResult() interface{} {
 	return p.Success
 }
 
+func ensureUserOAuthTokenHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new(user.EnsureUserOAuthTokenReq)
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.(user.UserService).EnsureUserOAuthToken(ctx, req)
+		if err != nil {
+			return err
+		}
+		return st.SendMsg(resp)
+	case *EnsureUserOAuthTokenArgs:
+		success, err := handler.(user.UserService).EnsureUserOAuthToken(ctx, s.Req)
+		if err != nil {
+			return err
+		}
+		realResult := result.(*EnsureUserOAuthTokenResult)
+		realResult.Success = success
+		return nil
+	default:
+		return errInvalidMessageType
+	}
+}
+func newEnsureUserOAuthTokenArgs() interface{} {
+	return &EnsureUserOAuthTokenArgs{}
+}
+
+func newEnsureUserOAuthTokenResult() interface{} {
+	return &EnsureUserOAuthTokenResult{}
+}
+
+type EnsureUserOAuthTokenArgs struct {
+	Req *user.EnsureUserOAuthTokenReq
+}
+
+func (p *EnsureUserOAuthTokenArgs) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetReq() {
+		return out, nil
+	}
+	return proto.Marshal(p.Req)
+}
+
+func (p *EnsureUserOAuthTokenArgs) Unmarshal(in []byte) error {
+	msg := new(user.EnsureUserOAuthTokenReq)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Req = msg
+	return nil
+}
+
+var EnsureUserOAuthTokenArgs_Req_DEFAULT *user.EnsureUserOAuthTokenReq
+
+func (p *EnsureUserOAuthTokenArgs) GetReq() *user.EnsureUserOAuthTokenReq {
+	if !p.IsSetReq() {
+		return EnsureUserOAuthTokenArgs_Req_DEFAULT
+	}
+	return p.Req
+}
+
+func (p *EnsureUserOAuthTokenArgs) IsSetReq() bool {
+	return p.Req != nil
+}
+
+func (p *EnsureUserOAuthTokenArgs) GetFirstArgument() interface{} {
+	return p.Req
+}
+
+type EnsureUserOAuthTokenResult struct {
+	Success *user.EnsureUserOAuthTokenResp
+}
+
+var EnsureUserOAuthTokenResult_Success_DEFAULT *user.EnsureUserOAuthTokenResp
+
+func (p *EnsureUserOAuthTokenResult) Marshal(out []byte) ([]byte, error) {
+	if !p.IsSetSuccess() {
+		return out, nil
+	}
+	return proto.Marshal(p.Success)
+}
+
+func (p *EnsureUserOAuthTokenResult) Unmarshal(in []byte) error {
+	msg := new(user.EnsureUserOAuthTokenResp)
+	if err := proto.Unmarshal(in, msg); err != nil {
+		return err
+	}
+	p.Success = msg
+	return nil
+}
+
+func (p *EnsureUserOAuthTokenResult) GetSuccess() *user.EnsureUserOAuthTokenResp {
+	if !p.IsSetSuccess() {
+		return EnsureUserOAuthTokenResult_Success_DEFAULT
+	}
+	return p.Success
+}
+
+func (p *EnsureUserOAuthTokenResult) SetSuccess(x interface{}) {
+	p.Success = x.(*user.EnsureUserOAuthTokenResp)
+}
+
+func (p *EnsureUserOAuthTokenResult) IsSetSuccess() bool {
+	return p.Success != nil
+}
+
+func (p *EnsureUserOAuthTokenResult) GetResult() interface{} {
+	return p.Success
+}
+
 func startDeactivateUserHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	switch s := arg.(type) {
 	case *streaming.Args:
@@ -4998,6 +5116,16 @@ func (p *kClient) SearchUserByUsername(ctx context.Context, Req *user.SearchUser
 	_args.Req = Req
 	var _result SearchUserByUsernameResult
 	if err = p.c.Call(ctx, "SearchUserByUsername", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) EnsureUserOAuthToken(ctx context.Context, Req *user.EnsureUserOAuthTokenReq) (r *user.EnsureUserOAuthTokenResp, err error) {
+	var _args EnsureUserOAuthTokenArgs
+	_args.Req = Req
+	var _result EnsureUserOAuthTokenResult
+	if err = p.c.Call(ctx, "EnsureUserOAuthToken", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

@@ -42,6 +42,7 @@ service UserService {
   rpc UpdateUserInfo(UpdateUserInfoReq) returns (OperationResult) {}       // 更新用户信息
   rpc ListUsers(ListUsersReq) returns (ListUsersResp) {}                   // 用户列表
   rpc SearchUserByUsername(SearchUserByUsernameReq) returns (SearchUserByUsernameResp){} // 根据用户昵称模糊查询
+  rpc EnsureUserOAuthToken(EnsureUserOAuthTokenReq) returns (EnsureUserOAuthTokenResp){};
 
   // ---------- 账户状态 ---------- //
   rpc StartDeactivateUser(StartDeactivateReq) returns (OperationResult) {} // 预冻结用户
@@ -416,6 +417,16 @@ message SearchUserByUsernameResp {
   uint64 total_count = 2;         // 总数
   uint64 total_pages = 3;         // 总页数
   uint64 current_page = 4;        // 当前页
+}
+
+message EnsureUserOAuthTokenReq{
+  string target_user_id = 1;
+  string request_user_id = 2;
+  repeated string providers = 3; // 第三方提供者列表
+}
+
+message EnsureUserOAuthTokenResp{
+  repeated string fail_provider=1;
 }
 
 // ---------- 账户状态 ---------- //

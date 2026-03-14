@@ -7,6 +7,7 @@ import (
 
 	"github.com/123508/xservergo/apps/gateway/infra"
 	"github.com/123508/xservergo/kitex_gen/auth"
+	"github.com/123508/xservergo/pkg/config"
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
@@ -54,6 +55,17 @@ func ParseToken() app.HandlerFunc {
 			ctx = context.WithValue(ctx, "userId", userId)
 			ctx = context.WithValue(ctx, "version", resp.Version)
 		}
+
+		if err == nil && 10*resp.Ttl < int64(config.Conf.AccessTokenTTL)*3 {
+			refreshTokenReq := &auth.RefreshTokenReq{
+				RefreshToken: refreshToken,
+			}
+			if refreshResp, err := infra.AuthClient.RefreshToken(ctx, refreshTokenReq); err == nil {
+				ctx = context.WithValue(ctx, "accessToken", refreshResp.AccessToken)
+				ctx = context.WithValue(ctx, "refreshToken", refreshResp.RefreshToken)
+			}
+		}
+
 		c.Next(ctx)
 	}
 }

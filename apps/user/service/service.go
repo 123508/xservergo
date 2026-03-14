@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -428,8 +429,6 @@ func (s *ServiceImpl) Logout(ctx context.Context, reqeustUid, targetUid id.UUID,
 		return err, ""
 	}
 
-	//权限校验
-
 	//业务代码
 	if token == nil {
 		return cerrors.NewCommonError(http.StatusBadRequest, "请求错误", "", nil), requestId
@@ -499,7 +498,7 @@ func (s *ServiceImpl) GetUserInfoById(ctx context.Context, targetUserId, request
 
 func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, requestUserId id.UUID, queryType QueryType, serialType serializer2.SerializerType) (*models.User, error, string) {
 
-	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+	requestId, err := s.GenerateRequestId(ctx, 1*time.Minute)
 
 	if err != nil {
 		return nil, err, ""
@@ -569,7 +568,7 @@ func (s *ServiceImpl) GetUserInfoBySpecialSig(ctx context.Context, sign string, 
 
 func (s *ServiceImpl) ChangePassword(ctx context.Context, targetUserId, requestUserId id.UUID, oldPwd, newPwd string) (error, string) {
 
-	requestId, err := s.GenerateRequestId(ctx, 1*time.Second)
+	requestId, err := s.GenerateRequestId(ctx, 10*time.Minute)
 
 	if err != nil {
 		return err, ""
@@ -662,7 +661,7 @@ func (s *ServiceImpl) SendPhoneCode(ctx context.Context, key string, phone strin
 
 	//TODO 这里之后调用发送验证码的逻辑
 
-	fmt.Printf("发送手机验证码:%s,手机号:%s\n", vCode, phone)
+	log.Printf("发送手机验证码:%s,手机号:%s\n", vCode, phone)
 
 	if err := s.Rds.
 		Set(ctx,
@@ -686,7 +685,7 @@ func (s *ServiceImpl) SendEmailCode(ctx context.Context, key string, email strin
 
 	//TODO 这里之后调用发送验证码的逻辑
 
-	fmt.Printf("发送邮箱验证码:%s,邮箱:%s\n", vCode, email)
+	log.Printf("发送邮箱验证码:%s,邮箱:%s\n", vCode, email)
 
 	if err := s.Rds.
 		Set(ctx,

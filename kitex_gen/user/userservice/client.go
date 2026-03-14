@@ -42,6 +42,7 @@ type Client interface {
 	UpdateUserInfo(ctx context.Context, Req *user.UpdateUserInfoReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	ListUsers(ctx context.Context, Req *user.ListUsersReq, callOptions ...callopt.Option) (r *user.ListUsersResp, err error)
 	SearchUserByUsername(ctx context.Context, Req *user.SearchUserByUsernameReq, callOptions ...callopt.Option) (r *user.SearchUserByUsernameResp, err error)
+	EnsureUserOAuthToken(ctx context.Context, Req *user.EnsureUserOAuthTokenReq, callOptions ...callopt.Option) (r *user.EnsureUserOAuthTokenResp, err error)
 	StartDeactivateUser(ctx context.Context, Req *user.StartDeactivateReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	DeactivateUser(ctx context.Context, Req *user.DeactivateUserReq, callOptions ...callopt.Option) (r *user.OperationResult, err error)
 	StartReactiveUser(ctx context.Context, Req *user.StartReactivateUserReq, callOptions ...callopt.Option) (r *user.StartReactivateUserResp, err error)
@@ -234,6 +235,11 @@ func (p *kUserServiceClient) ListUsers(ctx context.Context, Req *user.ListUsersR
 func (p *kUserServiceClient) SearchUserByUsername(ctx context.Context, Req *user.SearchUserByUsernameReq, callOptions ...callopt.Option) (r *user.SearchUserByUsernameResp, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SearchUserByUsername(ctx, Req)
+}
+
+func (p *kUserServiceClient) EnsureUserOAuthToken(ctx context.Context, Req *user.EnsureUserOAuthTokenReq, callOptions ...callopt.Option) (r *user.EnsureUserOAuthTokenResp, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.EnsureUserOAuthToken(ctx, Req)
 }
 
 func (p *kUserServiceClient) StartDeactivateUser(ctx context.Context, Req *user.StartDeactivateReq, callOptions ...callopt.Option) (r *user.OperationResult, err error) {
