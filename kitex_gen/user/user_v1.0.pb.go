@@ -2148,6 +2148,60 @@ func (x *SearchUserByUsernameResp) GetCurrentPage() uint64 {
 	return 0
 }
 
+type EnsureUserOAuthTokenReq struct {
+	TargetUserId  string   `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
+	RequestUserId string   `protobuf:"bytes,2,opt,name=request_user_id" json:"request_user_id,omitempty"`
+	Providers     []string `protobuf:"bytes,3,rep,name=providers" json:"providers,omitempty"` // 第三方提供者列表
+}
+
+func (x *EnsureUserOAuthTokenReq) Reset() { *x = EnsureUserOAuthTokenReq{} }
+
+func (x *EnsureUserOAuthTokenReq) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *EnsureUserOAuthTokenReq) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *EnsureUserOAuthTokenReq) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *EnsureUserOAuthTokenReq) GetRequestUserId() string {
+	if x != nil {
+		return x.RequestUserId
+	}
+	return ""
+}
+
+func (x *EnsureUserOAuthTokenReq) GetProviders() []string {
+	if x != nil {
+		return x.Providers
+	}
+	return nil
+}
+
+type EnsureUserOAuthTokenResp struct {
+	FailProvider []string `protobuf:"bytes,1,rep,name=fail_provider" json:"fail_provider,omitempty"`
+}
+
+func (x *EnsureUserOAuthTokenResp) Reset() { *x = EnsureUserOAuthTokenResp{} }
+
+func (x *EnsureUserOAuthTokenResp) Marshal(in []byte) ([]byte, error) {
+	return prutal.MarshalAppend(in, x)
+}
+
+func (x *EnsureUserOAuthTokenResp) Unmarshal(in []byte) error { return prutal.Unmarshal(in, x) }
+
+func (x *EnsureUserOAuthTokenResp) GetFailProvider() []string {
+	if x != nil {
+		return x.FailProvider
+	}
+	return nil
+}
+
 // ---------- 账户状态 ---------- //
 type StartDeactivateReq struct {
 	TargetUserId  string `protobuf:"bytes,1,opt,name=target_user_id" json:"target_user_id,omitempty"`
@@ -2473,6 +2527,7 @@ type UserService interface {
 	UpdateUserInfo(ctx context.Context, req *UpdateUserInfoReq) (res *OperationResult, err error)
 	ListUsers(ctx context.Context, req *ListUsersReq) (res *ListUsersResp, err error)
 	SearchUserByUsername(ctx context.Context, req *SearchUserByUsernameReq) (res *SearchUserByUsernameResp, err error)
+	EnsureUserOAuthToken(ctx context.Context, req *EnsureUserOAuthTokenReq) (res *EnsureUserOAuthTokenResp, err error)
 	StartDeactivateUser(ctx context.Context, req *StartDeactivateReq) (res *OperationResult, err error)
 	DeactivateUser(ctx context.Context, req *DeactivateUserReq) (res *OperationResult, err error)
 	StartReactiveUser(ctx context.Context, req *StartReactivateUserReq) (res *StartReactivateUserResp, err error)

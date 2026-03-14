@@ -10,6 +10,7 @@ create table if not exists user_login_log(
      fail_reason varchar(255) null comment '登录失败原因',
      login_ip varchar(50) default null comment '用户登录ip',
      user_agent varchar(255) default null comment '浏览器UA',
+
      device varchar(64) default null comment '设备标识',
      created_at datetime(3) not null default current_timestamp(3) comment '登录时间',
 

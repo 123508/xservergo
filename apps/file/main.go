@@ -32,7 +32,7 @@ func main() {
 	}
 
 	if mysqlDB != nil && redisDB != nil {
-		fmt.Println("数据库初始化成功")
+		log.Println("数据库初始化成功")
 	}
 
 	//p := provider.NewOpenTelemetryProvider(

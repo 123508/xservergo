@@ -3,3 +3,7 @@
 ./config/conf.yaml
 *.log
 config/conf.yaml
+apps/file/store
+apps/file/temp
+test
+/segments

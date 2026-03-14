@@ -1400,3 +1400,9 @@ func (s *UserServiceImpl) AddVersion(ctx context.Context, req *user.VersionReq) 
 		Timestamp: time.Now().String(),
 	}, nil
 }
+
+// EnsureUserOAuthToken implements the UserServiceImpl interface.
+func (s *UserServiceImpl) EnsureUserOAuthToken(ctx context.Context, req *user.EnsureUserOAuthTokenReq) (resp *user.EnsureUserOAuthTokenResp, err error) {
+	// TODO: Your code here...
+	return
+}
